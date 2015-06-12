@@ -19,5 +19,12 @@
         <module>routing-bird-shared</module>
         <module>routing-bird-health</module>
         <module>routing-bird-server</module>
+        <module>deployable</module>
+        <module>deployable-reporter-shared</module>
+        <module>deployable-reporter-service</module>
+        <module>deployable-scripts</module>
+        <module>deployable-config-shared</module>
+        <module>deployable-config-extractor</module>
+        <module>hello</module>
     </modules>
 </project>

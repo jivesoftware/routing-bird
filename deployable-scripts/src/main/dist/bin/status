@@ -1,0 +1,14 @@
+#!/bin/bash
+
+APP_ROOT=$(cd $(dirname $0)/..; pwd);
+SERVICE_NAME=$(basename $APP_ROOT);
+
+IS_RUNNING=`ps -ef | grep "\-DserviceName="${SERVICE_NAME} | grep -v "grep " | wc -l`
+if [ $IS_RUNNING -eq 0 ]; then
+    echo "${SERVICE_NAME} stopped"
+    exit 1;
+else
+    PID=`ps -ef | grep "\-DserviceName="${SERVICE_NAME} | grep -v "grep " | awk '{ print $2 }'`
+    echo "${SERVICE_NAME} running (pid=${PID})"
+    exit 0;
+fi

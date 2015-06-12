@@ -1,0 +1,7 @@
+#!/bin/bash
+
+APP_ROOT=$(cd $(dirname $0)/..; pwd);
+PORT=`grep InstanceConfig_default_managePort $APP_ROOT/config/instance.properties | sed -e 's/[^=]*=//'`
+
+cd $APP_ROOT && curl -s localhost:${PORT}/manage/health
+exit 0;

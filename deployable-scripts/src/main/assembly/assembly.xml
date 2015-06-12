@@ -1,0 +1,23 @@
+<assembly>
+    <id>bin</id>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <fileSets>
+        <fileSet>
+            <outputDirectory>/bin</outputDirectory>
+            <directory>${project.basedir}/src/main/dist/bin</directory>
+            <filtered>false</filtered>
+            <fileMode>755</fileMode>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>/etc</outputDirectory>
+            <directory>${project.basedir}/src/main/dist/etc</directory>
+            <filtered>false</filtered>
+        </fileSet>
+    </fileSets>
+
+</assembly>

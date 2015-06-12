@@ -1,0 +1,14 @@
+#!/bin/bash
+
+APP_ROOT=$(cd $(dirname $0)/..; pwd);
+VAR_DATA=$APP_ROOT/var/data
+VAR_LOG=$APP_ROOT/var/log
+
+if [ ! -d $VAR_DATA ]; then
+    mkdir -p $VAR_DATA
+fi
+
+if [ ! -d $VAR_LOG ]; then
+    mkdir -p $VAR_LOG
+fi
+exit 0;

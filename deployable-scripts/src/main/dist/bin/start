@@ -1,0 +1,71 @@
+#!/bin/bash
+
+APP_ROOT=$(cd $(dirname $0)/..; pwd);
+VAR_DATA=$APP_ROOT/var/data
+VAR_LOG=$APP_ROOT/var/log
+LOG4J=file://${APP_ROOT}/etc/log4j2.xml
+LOG_PATH=${APP_ROOT}/var/log
+SERVICE_NAME=$(basename $APP_ROOT);
+
+
+CLASSPATH=`grep classpath $APP_ROOT/lib/build.properties | sed -e 's/[^=]*=//' | sed 's/\\\\//g'`
+DEPLOYABLE_ARTIFACT=`grep deployable.artifact $APP_ROOT/lib/build.properties | sed -e 's/[^=]*=//'`
+JAVA_MAIN=`grep "java.main" $APP_ROOT/lib/build.properties | sed -e 's/[^=]*=//'`
+
+JMX_PORT=`grep InstanceConfig_default_jmxPort $APP_ROOT/config/instance.properties | sed -e 's/[^=]*=//'`
+DEBUG_PORT=`grep InstanceConfig_default_debugPort $APP_ROOT/config/instance.properties | sed -e 's/[^=]*=//'`
+
+JAVA_XMX=`grep JavaStartupConfig_default_xmx $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`
+JAVA_XMS=`grep JavaStartupConfig_default_xms $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`
+JAVA_FLAGS=`grep JavaStartupConfig_default_flags $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//' | tr -d '\\'`
+
+
+# is the service already running?
+if ps -efwww | grep -v grep | grep "\-DserviceName="${SERVICE_NAME} > /dev/null
+then
+    echo "$SERVICE_NAME service running"
+    exit 0
+fi
+
+echo "starting serviceNamed="$SERVICE_NAME
+
+DATE_SUFFIX="-$(/bin/date +%Y-%m-%d_%H%M%S)"
+
+function build_plugin_classpath() {
+    CP=""
+    for JAR in $APP_ROOT/plugin-lib/*.*;
+    do
+      if [ "${CP}x" != "x" ]; then
+        CP="${CP}:"
+      fi
+      CP="${CP}${JAR}"
+    done
+    echo $CP
+}
+
+PLUGIN_CLASSPATH=$(build_plugin_classpath);
+
+# start java process
+echo "java.classpath="${CLASSPATH}:${PLUGIN_CLASSPATH}
+echo "java.artifact="${DEPLOYABLE_ARTIFACT}
+echo "java.main="${JAVA_MAIN}
+echo "java.xmx="${JAVA_XMX}
+echo "java.xms="${JAVA_XMS}
+echo "java.flags="${JAVA_FLAGS}
+
+
+cd $APP_ROOT && nohup $JAVA_HOME/bin/java \
+  -DserviceName=${SERVICE_NAME} \
+  -cp ${DEPLOYABLE_ARTIFACT}:${CLASSPATH}:${PLUGIN_CLASSPATH} \
+  ${JAVA_FLAGS} \
+  -Xms${JAVA_XMS}m \
+  -Xmx${JAVA_XMX}m \
+  -server -ea \
+  -XX:+PrintGCDetails -XX:+PrintGCDateStamps \
+  -Xloggc:${LOG_PATH}/gc${DATE_SUFFIX}.log -XX:OnOutOfMemoryError="kill -9 %p" \
+  -Dcom.sun.management.jmxremote.port=${JMX_PORT} -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
+  -Dlog4j.configurationFile=${LOG4J} -Dlog.dir=${LOG_PATH} -Dlog.name=service.log \
+  -Xdebug -Xrunjdwp:transport=dt_socket,address=${DEBUG_PORT},server=y,suspend=n \
+  ${JAVA_MAIN} config/config.properties >> ${LOG_PATH}/stdout.log 2>&1 &
+
+exit 0
