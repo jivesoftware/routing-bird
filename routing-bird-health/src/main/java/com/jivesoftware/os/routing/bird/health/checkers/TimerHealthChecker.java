@@ -1,12 +1,12 @@
 package com.jivesoftware.os.routing.bird.health.checkers;
 
+import com.jivesoftware.os.mlogger.core.Timer;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponse;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponseImpl;
 import com.jivesoftware.os.routing.bird.health.api.HealthCheckUtil;
 import com.jivesoftware.os.routing.bird.health.api.HealthChecker;
 import com.jivesoftware.os.routing.bird.health.api.HealthFactory;
 import com.jivesoftware.os.routing.bird.health.api.TimerHealthCheckConfig;
-import com.jivesoftware.os.mlogger.core.Timer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 

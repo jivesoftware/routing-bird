@@ -15,12 +15,12 @@
  */
 package com.jivesoftware.os.routing.bird.server;
 
-import com.jivesoftware.os.jive.utils.health.HealthCheck;
-import com.jivesoftware.os.jive.utils.health.HealthCheckService;
 import com.jivesoftware.os.routing.bird.endpoints.base.RestfulBaseEndpoints;
 import com.jivesoftware.os.routing.bird.endpoints.base.RestfulBaseEndpoints.ResfulServiceName;
 import com.jivesoftware.os.routing.bird.endpoints.logging.level.LogLevelRestEndpoints;
 import com.jivesoftware.os.routing.bird.endpoints.logging.metric.LogMetricRestfulEndpoints;
+import com.jivesoftware.os.routing.bird.health.HealthCheck;
+import com.jivesoftware.os.routing.bird.health.HealthCheckService;
 import java.io.File;
 import java.util.Arrays;
 

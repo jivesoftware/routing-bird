@@ -9,7 +9,6 @@
     </parent>
     <groupId>com.jivesoftware.os.routing.bird</groupId>
     <artifactId>merlin-config</artifactId>
-    <name>merlin-config</name>
     <properties>
         <module.type>shared_lib</module.type>
     </properties>

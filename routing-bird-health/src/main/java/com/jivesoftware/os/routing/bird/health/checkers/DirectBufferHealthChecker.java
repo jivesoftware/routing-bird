@@ -1,12 +1,12 @@
 package com.jivesoftware.os.routing.bird.health.checkers;
 
-import com.jivesoftware.os.routing.bird.health.api.MinMaxHealthCheckConfig;
-import com.jivesoftware.os.routing.bird.health.api.MinMaxHealthChecker;
-import com.jivesoftware.os.routing.bird.health.api.ScheduledHealthCheck;
 import com.jivesoftware.os.mlogger.core.Counter;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.mlogger.core.ValueType;
+import com.jivesoftware.os.routing.bird.health.api.MinMaxHealthCheckConfig;
+import com.jivesoftware.os.routing.bird.health.api.MinMaxHealthChecker;
+import com.jivesoftware.os.routing.bird.health.api.ScheduledHealthCheck;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;

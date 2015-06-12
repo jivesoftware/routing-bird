@@ -1,8 +1,8 @@
 package com.jivesoftware.os.routing.bird.health.api;
 
+import com.jivesoftware.os.mlogger.core.Counter;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponse;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponseImpl;
-import com.jivesoftware.os.mlogger.core.Counter;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 

@@ -13,10 +13,10 @@
     </parent>
     <modules>
         <module>inheritance-poms</module>
+        <module>merlin-config</module>
         <module>routing-bird-http-client</module>
         <module>routing-bird-http-server-endpoints</module>
         <module>routing-bird-shared</module>
-        <module>merlin-config</module>
         <module>routing-bird-health</module>
         <module>routing-bird-server</module>
     </modules>

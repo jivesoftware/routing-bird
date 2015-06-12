@@ -29,5 +29,4 @@
             <artifactId>core</artifactId>
         </dependency>
     </dependencies>
-    <name>routing-bird-health</name>
 </project>

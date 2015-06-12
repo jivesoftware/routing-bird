@@ -16,13 +16,13 @@
 package com.jivesoftware.os.routing.bird.endpoints.base;
 
 import com.google.common.base.Joiner;
-import com.jivesoftware.os.jive.utils.health.HealthCheckResponse;
-import com.jivesoftware.os.jive.utils.health.HealthCheckService;
 import com.jivesoftware.os.mlogger.core.LoggerSummary;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
-import com.jivesoftware.os.routing.bird.shared.ResponseHelper;
 import com.jivesoftware.os.routing.bird.endpoints.logging.metric.MetricsHelper;
+import com.jivesoftware.os.routing.bird.health.HealthCheckResponse;
+import com.jivesoftware.os.routing.bird.health.HealthCheckService;
+import com.jivesoftware.os.routing.bird.shared.ResponseHelper;
 import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;

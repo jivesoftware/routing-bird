@@ -16,13 +16,13 @@
     <dependencies>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
-            <artifactId>routing-bird-http-client</artifactId>
+            <artifactId>routing-bird-shared</artifactId>
             <version>0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
-            <artifactId>health</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <artifactId>routing-bird-health</artifactId>
+            <version>0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
