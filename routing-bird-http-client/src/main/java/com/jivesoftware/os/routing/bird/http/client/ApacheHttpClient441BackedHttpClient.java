@@ -27,6 +27,7 @@ import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 
@@ -122,6 +123,22 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
                 ? postJsonBody.substring(0, JSON_POST_LOG_LENGTH_LIMIT) : postJsonBody;
             throw new HttpClientException("Error executing POST request to: "
                 + clientToString() + " path: " + path + " JSON body: " + trimmedPostBody, e);
+        }
+    }
+
+    @Override
+    public HttpResponse postBytes(String path, byte[] postBytes, Map<String, String> headers) throws HttpClientException {
+        try {
+            HttpPost post = new HttpPost(path);
+
+            setRequestHeaders(headers, post);
+
+            post.setEntity(new ByteArrayEntity(postBytes, ContentType.APPLICATION_OCTET_STREAM));
+            post.setHeader(CONTENT_TYPE_HEADER_NAME, APPLICATION_OCTET_STREAM_TYPE);
+            return execute(post);
+        } catch (Exception e) {
+            throw new HttpClientException("Error executing POST request to: "
+                + clientToString() + " path: " + path + " JSON body of length: " + postBytes.length, e);
         }
     }
 

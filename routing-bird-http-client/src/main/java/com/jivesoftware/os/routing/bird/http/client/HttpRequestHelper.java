@@ -15,6 +15,7 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
@@ -39,7 +40,7 @@ public class HttpRequestHelper {
 
     /**
      * Sends the request to the server and returns the deserialized results.
-     * <p/>
+     * <p>
      * If the response body is empty, and the status code is successful, the client returns an empty (but valid) result.
      *
      * @param endpointUrl path to the REST service
@@ -62,13 +63,13 @@ public class HttpRequestHelper {
 
     /**
      * Sends the request to the server and returns the deserialized results.
-     * <p/>
+     * <p>
      * If the response body is empty, and the status code is successful, the client returns an empty (but valid) result.
      *
      * @param requestParamsObject request object
-     * @param endpointUrl path to the REST service
-     * @param resultClass type of the result class
-     * @param emptyResult an instance an empty result.
+     * @param endpointUrl         path to the REST service
+     * @param resultClass         type of the result class
+     * @param emptyResult         an instance an empty result.
      * @return the result
      * @throws RuntimeException on marshalling, request, or deserialization failure
      */
@@ -90,6 +91,39 @@ public class HttpRequestHelper {
         }
 
         return extractResultFromResponse(responseBody, resultClass);
+    }
+
+    /**
+     * Sends the request to the server and returns the deserialized results.
+     * <p>
+     * If the response body is empty, and the status code is successful, the client returns an empty (but valid) result.
+     *
+     * @param requestParamsObject request object
+     * @param endpointUrl         path to the REST service
+     * @param parametrized        type of the result class
+     * @param parameterClasses    parameters of the result class
+     * @param emptyResult         an instance an empty result.
+     * @return the result
+     * @throws RuntimeException on marshalling, request, or deserialization failure
+     */
+    public <T> T executeRequest(Object requestParamsObject, String endpointUrl, Class<T> parametrized, Class<?>[] parameterClasses, T emptyResult) {
+
+        String postEntity;
+        try {
+            postEntity = mapper.writeValueAsString(requestParamsObject);
+        } catch (IOException e) {
+            throw new RuntimeException("Error serializing request parameters object to a string.  Object "
+                + "was " + requestParamsObject, e);
+        }
+
+        byte[] responseBody = executePostJson(httpClient, endpointUrl, postEntity);
+
+        if (responseBody.length == 0) {
+            LOG.warn("Received empty response from http call.  Posted request body was: " + postEntity);
+            return emptyResult;
+        }
+        JavaType resultType = mapper.getTypeFactory().constructParametricType(parametrized, parameterClasses);
+        return extractResultFromResponse(responseBody, resultType);
     }
 
     public HttpStreamResponse executeStreamingPostRequest(Object requestParamsObject, String endpointUrl) throws HttpClientException {
@@ -120,7 +154,7 @@ public class HttpRequestHelper {
         }
 
         if (!isSuccessStatusCode(response.getStatusCode())) {
-            throw new RuntimeException("Received non success status code (" + response.getStatusCode() + ") "
+            throw new NonSuccessStatusCodeException(response.getStatusCode(), "Received non success status code (" + response.getStatusCode() + ") "
                 + "from the server.  The reason phrase on the response was \"" + response.getStatusReasonPhrase() + "\" "
                 + "and the body of the response was \"" + new String(responseBody, UTF_8) + "\".");
         }
@@ -144,7 +178,7 @@ public class HttpRequestHelper {
         }
 
         if (!isSuccessStatusCode(response.getStatusCode())) {
-            throw new RuntimeException("Received non success status code (" + response.getStatusCode() + ") "
+            throw new NonSuccessStatusCodeException(response.getStatusCode(), "Received non success status code (" + response.getStatusCode() + ") "
                 + "from the server.  The reason phrase on the response was \"" + response.getStatusReasonPhrase() + "\" "
                 + "and the body of the response was \"" + new String(responseBody, UTF_8) + "\".");
         }
@@ -157,6 +191,19 @@ public class HttpRequestHelper {
         try {
             result = mapper.readValue(responseBody, 0, responseBody.length, resultClass);
         } catch (Exception e) {
+            throw new RuntimeException("Error deserializing response body into result "
+                + "object.  Response body was \"" + (responseBody != null ? new String(responseBody, UTF_8) : "null")
+                + "\".", e);
+        }
+
+        return result;
+    }
+
+    private <T> T extractResultFromResponse(byte[] responseBody, JavaType type) {
+        T result;
+        try {
+            result = mapper.readValue(responseBody, 0, responseBody.length, type);
+        } catch (IOException e) {
             throw new RuntimeException("Error deserializing response body into result "
                 + "object.  Response body was \"" + (responseBody != null ? new String(responseBody, UTF_8) : "null")
                 + "\".", e);
