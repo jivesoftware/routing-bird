@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.jivesoftware.os.upena.hello.routing.bird.deployable;
+package com.jivesoftware.os.routing.bird.hello.echo.bird.deployable;
 
 import com.jivesoftware.os.routing.bird.deployable.Deployable;
 import com.jivesoftware.os.routing.bird.hello.routing.bird.service.HelloRoutingBirdService;
@@ -33,9 +33,9 @@ public class Main {
     }
 
     public void run(String[] args) throws Exception {
+
         Deployable deployable = new Deployable(args);
         deployable.buildManageServer().start();
-
 
         TenantsServiceConnectionDescriptorProvider connections = deployable.getTenantRoutingProvider().getConnections("hello-echo-bird-deployable", "main");
         TenantRoutingHttpClientInitializer<String> tenantRoutingHttpClientInitializer = new TenantRoutingHttpClientInitializer<>();
@@ -43,15 +43,12 @@ public class Main {
         HelloRoutingBirdService helloRoutingBirdService = new HelloRoutingBirdServiceInitializer()
                 .initialize(deployable.config(HelloRoutingBirdServiceConfig.class), client);
 
-
         deployable.addEndpoints(HelloRoutingBirdServiceRestEndpoints.class);
         deployable.addInjectables(HelloRoutingBirdService.class, helloRoutingBirdService);
 
         Resource resource = new Resource(new File(System.getProperty("user.dir"))).setDirectoryListingAllowed(true);
         deployable.addResource(resource);
         deployable.buildServer().start();
-
-        //deployable.buildStatusReporter(null).start();
 
     }
 }
