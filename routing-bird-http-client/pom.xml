@@ -30,9 +30,8 @@
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
-            <artifactId>upena-routing-shared</artifactId>
+            <artifactId>routing-bird-shared</artifactId>
             <version>0.1-SNAPSHOT</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>

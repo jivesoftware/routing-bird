@@ -17,10 +17,10 @@ package com.jivesoftware.os.routing.bird.http.server.endpoints;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
-import com.jivesoftware.os.upena.routing.shared.ConnectionDescriptor;
-import com.jivesoftware.os.upena.routing.shared.HostPort;
-import com.jivesoftware.os.upena.routing.shared.InMemoryConnectionsDescriptorsProvider;
-import com.jivesoftware.os.upena.routing.shared.ResponseHelper;
+import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
+import com.jivesoftware.os.routing.bird.shared.HostPort;
+import com.jivesoftware.os.routing.bird.shared.InMemoryConnectionsDescriptorsProvider;
+import com.jivesoftware.os.routing.bird.shared.ResponseHelper;
 import java.util.Collection;
 import java.util.HashMap;
 import javax.ws.rs.GET;

@@ -15,9 +15,9 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
-import com.jivesoftware.os.upena.routing.shared.ConnectionDescriptor;
-import com.jivesoftware.os.upena.routing.shared.HostPort;
-import com.jivesoftware.os.upena.routing.shared.NextClientStrategy;
+import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
+import com.jivesoftware.os.routing.bird.shared.HostPort;
+import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 

@@ -25,7 +25,7 @@
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
-            <artifactId>upena-routing-shared</artifactId>
+            <artifactId>routing-bird-shared</artifactId>
             <version>0.1-SNAPSHOT</version>
         </dependency>
         <dependency>

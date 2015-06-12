@@ -17,11 +17,11 @@ package com.jivesoftware.os.routing.bird.http.client;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
-import com.jivesoftware.os.upena.routing.shared.ClientCall;
-import com.jivesoftware.os.upena.routing.shared.ClientCall.ClientResponse;
-import com.jivesoftware.os.upena.routing.shared.ConnectionDescriptor;
-import com.jivesoftware.os.upena.routing.shared.NextClientStrategy;
-import com.jivesoftware.os.upena.routing.shared.TimestampedClients;
+import com.jivesoftware.os.routing.bird.shared.ClientCall;
+import com.jivesoftware.os.routing.bird.shared.ClientCall.ClientResponse;
+import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
+import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
+import com.jivesoftware.os.routing.bird.shared.TimestampedClients;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;

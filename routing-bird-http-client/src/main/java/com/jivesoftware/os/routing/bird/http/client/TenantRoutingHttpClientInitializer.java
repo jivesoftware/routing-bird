@@ -15,11 +15,11 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
-import com.jivesoftware.os.upena.routing.shared.ClientConnectionsFactory;
-import com.jivesoftware.os.upena.routing.shared.ClientsCloser;
-import com.jivesoftware.os.upena.routing.shared.ConnectionDescriptor;
-import com.jivesoftware.os.upena.routing.shared.TenantRoutingClient;
-import com.jivesoftware.os.upena.routing.shared.TenantsServiceConnectionDescriptorProvider;
+import com.jivesoftware.os.routing.bird.shared.ClientConnectionsFactory;
+import com.jivesoftware.os.routing.bird.shared.ClientsCloser;
+import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
+import com.jivesoftware.os.routing.bird.shared.TenantRoutingClient;
+import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescriptorProvider;
 import java.util.ArrayList;
 import java.util.List;
 

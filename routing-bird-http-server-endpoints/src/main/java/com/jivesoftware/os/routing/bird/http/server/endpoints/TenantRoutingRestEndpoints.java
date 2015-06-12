@@ -17,9 +17,9 @@ package com.jivesoftware.os.routing.bird.http.server.endpoints;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
-import com.jivesoftware.os.upena.routing.shared.ResponseHelper;
-import com.jivesoftware.os.upena.routing.shared.TenantRoutingProvider;
-import com.jivesoftware.os.upena.routing.shared.TenantsRoutingReport;
+import com.jivesoftware.os.routing.bird.shared.ResponseHelper;
+import com.jivesoftware.os.routing.bird.shared.TenantRoutingProvider;
+import com.jivesoftware.os.routing.bird.shared.TenantsRoutingReport;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;

@@ -15,9 +15,9 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
-import com.jivesoftware.os.upena.routing.shared.ClientCall;
-import com.jivesoftware.os.upena.routing.shared.NextClientStrategy;
-import com.jivesoftware.os.upena.routing.shared.TenantRoutingClient;
+import com.jivesoftware.os.routing.bird.shared.ClientCall;
+import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
+import com.jivesoftware.os.routing.bird.shared.TenantRoutingClient;
 
 public class TenantRoutingHttpClient<T> implements TenantAwareHttpClient<T> {
 
