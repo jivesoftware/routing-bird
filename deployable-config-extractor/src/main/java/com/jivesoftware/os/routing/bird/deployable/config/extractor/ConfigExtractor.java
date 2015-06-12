@@ -16,6 +16,7 @@
 package com.jivesoftware.os.routing.bird.deployable.config.extractor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jivesoftware.os.routing.bird.deployable.config.shared.DeployableConfig;
 import com.jivesoftware.os.routing.bird.health.api.HealthCheckConfig;
 import com.jivesoftware.os.routing.bird.http.client.HttpClient;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientConfig;
@@ -23,7 +24,6 @@ import com.jivesoftware.os.routing.bird.http.client.HttpClientConfiguration;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientFactory;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientFactoryProvider;
 import com.jivesoftware.os.routing.bird.http.client.HttpRequestHelper;
-import com.jivesoftware.os.upena.config.shared.UpenaConfig;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -88,8 +88,8 @@ public class ConfigExtractor {
             Map<String, String> defaultServiceConfig = extractAndPublish(serviceConfig,
                 new File(configDir, "default-service-config.properties"), "default", instanceKey, buildRequestHelper);
 
-            UpenaConfig getServiceOverrides = new UpenaConfig("override", instanceKey, defaultServiceConfig);
-            UpenaConfig gotSerivceConfig = buildRequestHelper.executeRequest(getServiceOverrides, "/upenaConfig/get", UpenaConfig.class, null);
+            DeployableConfig getServiceOverrides = new DeployableConfig("override", instanceKey, defaultServiceConfig);
+            DeployableConfig gotSerivceConfig = buildRequestHelper.executeRequest(getServiceOverrides, "/upenaConfig/get", DeployableConfig.class, null);
             if (gotSerivceConfig == null) {
                 System.out.println("Failed to publish default service config for " + Arrays.deepToString(args));
             } else {
@@ -101,8 +101,8 @@ public class ConfigExtractor {
             Map<String, String> defaultHealthConfig = extractAndPublish(healthConfig,
                 new File(configDir, "default-health-config.properties"), "default-health", instanceKey, buildRequestHelper);
 
-            UpenaConfig getHealthOverrides = new UpenaConfig("override-health", instanceKey, defaultHealthConfig);
-            UpenaConfig gotHealthConfig = buildRequestHelper.executeRequest(getHealthOverrides, "/upenaConfig/get", UpenaConfig.class, null);
+            DeployableConfig getHealthOverrides = new DeployableConfig("override-health", instanceKey, defaultHealthConfig);
+            DeployableConfig gotHealthConfig = buildRequestHelper.executeRequest(getHealthOverrides, "/upenaConfig/get", DeployableConfig.class, null);
             if (gotHealthConfig == null) {
                 System.out.println("Failed to publish default health config for " + Arrays.deepToString(args));
             } else {
@@ -161,8 +161,8 @@ public class ConfigExtractor {
             config.put(entry.getKey().toString(), entry.getValue().toString());
         }
 
-        UpenaConfig setDefaults = new UpenaConfig(context, instanceKey, config);
-        UpenaConfig setConfig = buildRequestHelper.executeRequest(setDefaults, "/upenaConfig/set", UpenaConfig.class, null);
+        DeployableConfig setDefaults = new DeployableConfig(context, instanceKey, config);
+        DeployableConfig setConfig = buildRequestHelper.executeRequest(setDefaults, "/upenaConfig/set", DeployableConfig.class, null);
         if (setConfig == null) {
             System.out.println("Failed to publish default config for " + instanceKey);
         }

@@ -9,8 +9,8 @@
 package com.jivesoftware.os.routing.bird.deployable;
 
 import com.google.inject.Singleton;
+import com.jivesoftware.os.routing.bird.deployable.reporter.service.StatusReportBroadcaster;
 import com.jivesoftware.os.routing.bird.shared.ResponseHelper;
-import com.jivesoftware.os.upena.reporter.service.StatusReportBroadcaster;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;

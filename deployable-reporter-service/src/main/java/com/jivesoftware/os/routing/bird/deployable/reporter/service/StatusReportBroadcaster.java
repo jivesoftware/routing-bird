@@ -16,7 +16,7 @@
 package com.jivesoftware.os.routing.bird.deployable.reporter.service;
 
 import com.jivesoftware.os.mlogger.core.LoggerSummary;
-import com.jivesoftware.os.upena.reporter.shared.StatusReport;
+import com.jivesoftware.os.routing.bird.deployable.reporter.shared.StatusReport;
 import java.io.File;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
