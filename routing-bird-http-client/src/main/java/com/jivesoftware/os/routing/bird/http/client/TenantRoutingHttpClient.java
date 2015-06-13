@@ -28,9 +28,9 @@ public class TenantRoutingHttpClient<T> implements TenantAwareHttpClient<T> {
     }
 
     @Override
-    public HttpResponse call(T tenant,
+    public <R> R call(T tenant,
         NextClientStrategy strategy,
-        ClientCall<HttpClient, HttpResponse, HttpClientException> clientCall)
+        ClientCall<HttpClient, R, HttpClientException> clientCall)
         throws HttpClientException {
         return tenantRoutingClient.tenantAwareCall(tenant, strategy, clientCall);
     }

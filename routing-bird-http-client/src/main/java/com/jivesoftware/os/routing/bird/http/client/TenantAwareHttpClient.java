@@ -20,9 +20,9 @@ import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
 
 public interface TenantAwareHttpClient<T> {
 
-    HttpResponse call(T tenant,
+    <R> R call(T tenant,
         NextClientStrategy strategy,
-        ClientCall<HttpClient, HttpResponse, HttpClientException> clientCall)
+        ClientCall<HttpClient, R, HttpClientException> clientCall)
         throws HttpClientException;
 
 }
