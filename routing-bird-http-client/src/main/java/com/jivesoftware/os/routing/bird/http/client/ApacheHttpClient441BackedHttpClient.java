@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.StatusLine;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -102,6 +103,20 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
         try {
             return execute(get);
+        } catch (Exception e) {
+            throw new HttpClientException("Error executing GET request to: " + clientToString()
+                + " path: " + path, e);
+        }
+    }
+
+    @Override
+    public HttpResponse delete(String path, Map<String, String> headers) throws HttpClientException {
+        HttpDelete delete = new HttpDelete(path);
+
+        setRequestHeaders(headers, delete);
+
+        try {
+            return execute(delete);
         } catch (Exception e) {
             throw new HttpClientException("Error executing GET request to: " + clientToString()
                 + " path: " + path, e);

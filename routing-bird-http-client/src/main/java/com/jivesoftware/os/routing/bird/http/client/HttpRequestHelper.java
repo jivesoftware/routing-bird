@@ -61,6 +61,16 @@ public class HttpRequestHelper {
         return extractResultFromResponse(responseBody, resultClass);
     }
 
+    public <T> T executeDeleteRequest(String endpointUrl, Class<T> resultClass, T emptyResult) {
+        byte[] responseBody = executeDeleteJson(httpClient, endpointUrl);
+        if (responseBody.length == 0) {
+            LOG.warn("Received empty response from http call. The endpoint posted to was " + endpointUrl + "\".");
+            return emptyResult;
+        } else {
+            return this.extractResultFromResponse(responseBody, resultClass);
+        }
+    }
+
     /**
      * Sends the request to the server and returns the deserialized results.
      * <p>
@@ -160,6 +170,29 @@ public class HttpRequestHelper {
         }
 
         return responseBody;
+    }
+
+    private byte[] executeDeleteJson(HttpClient httpClient, String endpointUrl) {
+        HttpResponse response;
+        try {
+            response = httpClient.delete(endpointUrl, null);
+        } catch (HttpClientException var5) {
+            throw new RuntimeException("Error posting query request to server.  The endpoint posted to was \"" + endpointUrl + "\".", var5);
+        }
+
+        byte[] responseBody = response.getResponseBody();
+        if (responseBody == null) {
+            responseBody = EMPTY_RESPONSE;
+        }
+
+        if (!this.isSuccessStatusCode(response.getStatusCode())) {
+            throw new NonSuccessStatusCodeException(response.getStatusCode(),
+                "Received non success status code (" + response.getStatusCode() + ") " + "from the server.  The reason phrase on the response was \"" +
+                    response.getStatusReasonPhrase() + "\" " + "and the body of the response was \"" + new String(
+                    responseBody, UTF_8) + "\".");
+        } else {
+            return responseBody;
+        }
     }
 
     private byte[] executePostJson(HttpClient httpClient, String endpointUrl, String postEntity) {
