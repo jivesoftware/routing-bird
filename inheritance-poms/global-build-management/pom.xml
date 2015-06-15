@@ -14,9 +14,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mlogger-version>0.10</mlogger-version>
-        <jetty-version>9.2.10.v20150310</jetty-version>
+        <jetty-version>9.1.0.v20131115</jetty-version>
         <jackson-version>2.2.3</jackson-version>
-        <glassfish-version>2.17</glassfish-version>
+        <glassfish-version>2.3.1</glassfish-version>
         <log4j-version>2.1</log4j-version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <test.excludedGroups>blocked-by-jira,slow</test.excludedGroups>
@@ -140,7 +140,7 @@
             <dependency>
                 <groupId>org.glassfish.hk2</groupId>
                 <artifactId>hk2-api</artifactId>
-                <version>2.4.0-b10</version>
+                <version>2.2.0</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish.jersey.core</groupId>
