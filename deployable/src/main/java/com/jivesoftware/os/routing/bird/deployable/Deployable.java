@@ -40,6 +40,7 @@ import com.jivesoftware.os.routing.bird.shared.TenantRoutingProvider;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.merlin.config.Config;
 
@@ -200,6 +201,9 @@ public class Deployable {
 
     private class LoggerSummaryHealthCheck implements HealthCheck {
 
+        private final AtomicLong lastErrorCount = new AtomicLong();
+        private final AtomicLong lastCheckTimestamp = new AtomicLong();
+        private final AtomicLong lastErrorDelta = new AtomicLong();
         private final LoggerSummary loggerSummary;
 
         public LoggerSummaryHealthCheck(LoggerSummary loggerSummary) {
@@ -217,12 +221,28 @@ public class Deployable {
 
                 @Override
                 public double getHealth() {
-                    return loggerSummary.errors > 0 ? 0d : 1d;
+                    long errors = loggerSummary.errors;
+                    long delta = errors - lastErrorCount.getAndSet(errors);
+                    lastErrorDelta.set(delta);
+                    long now = System.currentTimeMillis();
+                    long elapse = now - lastCheckTimestamp.getAndSet(now);
+                    if (elapse > 0 && delta > 0) {
+                        double errorRatePerMilli = (double) delta / (double) elapse;
+                        double errorsRatePerMinute = errorRatePerMilli * (60 * 1000);
+                        if (errorsRatePerMinute < 10) {
+                            return (1d - Math.log10(errorsRatePerMinute));
+                        } else {
+                            return Double.MIN_VALUE;
+                        }
+                    }
+                    return 1d;
                 }
 
                 @Override
                 public String getStatus() {
-                    return "infos:" + loggerSummary.infos + " warns:" + loggerSummary.warns + " errors:" + loggerSummary.errors;
+                    return "infos:" + loggerSummary.infos
+                        + " warns:" + loggerSummary.warns
+                        + " errors:" + loggerSummary.errors + " (" + lastErrorDelta.get() + ")";
                 }
 
                 @Override
