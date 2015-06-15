@@ -25,6 +25,6 @@ echo "classpath="${DEPLOYABLE_ARTIFACT}:${CLASSPATH}:${PLUGIN_CLASSPATH}
 echo "plugin-classpath="${PLUGIN_CLASSPATH}
 cd $APP_ROOT && $JAVA_HOME/bin/java \
   -cp ${DEPLOYABLE_ARTIFACT}:${CLASSPATH}:${PLUGIN_CLASSPATH} \
-  com.jivesoftware.os.upena.uba.config.extractor.ConfigExtractor ${CONFIG_HOST} ${CONFIG_PORT} ${INSTANCE_KEY} com.jivesoftware
+  com.jivesoftware.os.routing.bird.deployable.config.extractor.ConfigExtractor ${CONFIG_HOST} ${CONFIG_PORT} ${INSTANCE_KEY} com.jivesoftware
 echo "Generated default config."
 exit 0;
