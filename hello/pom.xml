@@ -5,12 +5,12 @@
     <parent>
         <groupId>com.jivesoftware.os.routing.bird.inheritance.poms</groupId>
         <artifactId>global-repo-management</artifactId>
-        <version>0.9</version>
+        <version>0.10-SNAPSHOT</version>
         <relativePath>../inheritance-poms/global-repo-management/pom.xml</relativePath>
     </parent>
     <groupId>com.jivesoftware.os.routing.bird</groupId>
     <artifactId>hello</artifactId>
-    <version>0.9</version>
+    <version>0.10-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
         <module>hello-routing-bird-deployable</module>
