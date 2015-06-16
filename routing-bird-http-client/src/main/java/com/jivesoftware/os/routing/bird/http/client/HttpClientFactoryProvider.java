@@ -35,11 +35,19 @@ public class HttpClientFactoryProvider {
 
         final HttpClientConfig httpClientConfig = locateConfig(configurations, HttpClientConfig.class, HttpClientConfig.newBuilder().build());
         final PoolingHttpClientConnectionManager clientConnectionManager = new PoolingHttpClientConnectionManager();
-        if (httpClientConfig.getMaxConnectionsPerHost() > 0) {
-            clientConnectionManager.setMaxTotal(httpClientConfig.getMaxConnectionsPerHost());
+
+        if (httpClientConfig.getMaxConnections() > 0) {
+            clientConnectionManager.setMaxTotal(httpClientConfig.getMaxConnections());
         } else {
             clientConnectionManager.setMaxTotal(Integer.MAX_VALUE);
         }
+
+        if (httpClientConfig.getMaxConnectionsPerHost() > 0) {
+            clientConnectionManager.setDefaultMaxPerRoute(httpClientConfig.getMaxConnectionsPerHost());
+        } else {
+            clientConnectionManager.setDefaultMaxPerRoute(Integer.MAX_VALUE);
+        }
+
         clientConnectionManager.setDefaultSocketConfig(SocketConfig.custom()
             .setSoTimeout(httpClientConfig.getSocketTimeoutInMillis() > 0 ? httpClientConfig.getSocketTimeoutInMillis() : 0)
             .build());
