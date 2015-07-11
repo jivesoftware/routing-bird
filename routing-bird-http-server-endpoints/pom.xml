@@ -12,7 +12,6 @@
     <artifactId>routing-bird-http-server-endpoints</artifactId>
     <properties>
         <module.type>shared_lib</module.type>
-        <jetty.version>9.1.0.M0</jetty.version>
     </properties>
     <dependencies>
         <dependency>
