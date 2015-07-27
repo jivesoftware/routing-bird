@@ -36,7 +36,7 @@ public class TenantRoutingClient<T, C, E extends Throwable> {
         this.clientsCloser = clientsCloser;
     }
 
-    public <R> R tenantAwareCall(T tenant, NextClientStrategy strategy, ClientCall<C, R, E> call) throws E {
+    public <R> R tenantAwareCall(T tenant, NextClientStrategy strategy, String family, ClientCall<C, R, E> call) throws E {
         if (tenant == null) {
             throw new IllegalArgumentException("tenant cannot be null.");
         }
@@ -56,7 +56,7 @@ public class TenantRoutingClient<T, C, E extends Throwable> {
             }
             tenantsHttpClient.put(tenant, timestampedClients);
         }
-        return timestampedClients.call(strategy, call);
+        return timestampedClients.call(strategy, family, call);
     }
 
     public void closeAll() {

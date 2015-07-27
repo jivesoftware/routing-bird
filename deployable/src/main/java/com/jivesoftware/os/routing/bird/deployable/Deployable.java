@@ -69,13 +69,14 @@ public class Deployable {
         this.mainProperties = new MainProperties(args);
         this.configBinder = configBinder;
         this.instanceConfig = instanceConfig;
-        init(null);
+        init(connectionsDescriptorProvider);
     }
 
     private void init(ConnectionDescriptorsProvider connectionsDescriptorProvider) {
         if (connectionsDescriptorProvider == null) {
+
             TenantRoutingBirdProviderBuilder tenantRoutingBirdBuilder = new TenantRoutingBirdProviderBuilder(instanceConfig.getRoutesHost(),
-                instanceConfig.getRoutesPort());
+                instanceConfig.getRoutesPort(), instanceConfig.getRoutesPath());
             connectionsDescriptorProvider = tenantRoutingBirdBuilder.build();
         }
 

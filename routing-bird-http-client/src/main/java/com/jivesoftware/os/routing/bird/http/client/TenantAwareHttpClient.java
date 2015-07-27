@@ -22,6 +22,7 @@ public interface TenantAwareHttpClient<T> {
 
     <R> R call(T tenant,
         NextClientStrategy strategy,
+        String family,
         ClientCall<HttpClient, R, HttpClientException> clientCall)
         throws HttpClientException;
 

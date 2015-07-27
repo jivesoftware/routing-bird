@@ -27,7 +27,6 @@ import com.jivesoftware.os.routing.bird.http.client.HttpClientException;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientFactoryProvider;
 import com.jivesoftware.os.routing.bird.http.client.HttpResponse;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
-import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsRequest;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsResponse;
 import java.io.IOException;
 import java.util.Arrays;
@@ -38,10 +37,12 @@ public class TenantRoutingBirdProviderBuilder {
 
     private final String routesHost;
     private final int routesPort;
+    private final String routesPath;
 
-    public TenantRoutingBirdProviderBuilder(String routesHost, int routesPort) {
+    public TenantRoutingBirdProviderBuilder(String routesHost, int routesPort, String routesPath) {
         this.routesHost = routesHost;
         this.routesPort = routesPort;
+        this.routesPath = routesPath;
     }
 
     public ConnectionDescriptorsProvider build() {
@@ -53,44 +54,40 @@ public class TenantRoutingBirdProviderBuilder {
 
         final ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-        ConnectionDescriptorsProvider connectionsProvider = new ConnectionDescriptorsProvider() {
-            @Override
-            public ConnectionDescriptorsResponse requestConnections(ConnectionDescriptorsRequest connectionsRequest) {
-                LOG.info("Requesting connections:" + connectionsRequest);
-
-                String postEntity;
-                try {
-                    postEntity = mapper.writeValueAsString(connectionsRequest);
-                } catch (JsonProcessingException e) {
-                    LOG.error("Error serializing request parameters object to a string.  Object "
-                            + "was " + connectionsRequest + " " + e.getMessage());
-                    return null;
-                }
-
-                HttpResponse response;
-                String path = "/upena/request/connections";
-                try {
-                    response = httpClient.postJson(path, postEntity, null);
-                } catch (HttpClientException e) {
-                    LOG.error("Error posting query request to server.  The entity posted "
-                            + "was \"" + postEntity + "\" and the endpoint posted to was \"" + path + "\". " + e.getMessage());
-                    return null;
-                }
-
-                int statusCode = response.getStatusCode();
-                if (statusCode >= 200 && statusCode < 300) {
-                    byte[] responseBody = response.getResponseBody();
-                    try {
-                        ConnectionDescriptorsResponse connectionDescriptorsResponse = mapper.readValue(responseBody, ConnectionDescriptorsResponse.class);
-                        LOG.info("Request:" + connectionsRequest + "\nConnectionDescriptors:" + connectionDescriptorsResponse);
-                        return connectionDescriptorsResponse;
-                    } catch (IOException x) {
-                        LOG.error("Failed to deserialize response:" + new String(responseBody) + " " + x.getMessage());
-                        return null;
-                    }
-                }
+        ConnectionDescriptorsProvider connectionsProvider = (connectionsRequest) -> {
+            LOG.info("Requesting connections:" + connectionsRequest);
+            
+            String postEntity;
+            try {
+                postEntity = mapper.writeValueAsString(connectionsRequest);
+            } catch (JsonProcessingException e) {
+                LOG.error("Error serializing request parameters object to a string.  Object "
+                    + "was " + connectionsRequest + " " + e.getMessage());
                 return null;
             }
+
+            HttpResponse response;
+            try {
+                response = httpClient.postJson(routesPath, postEntity, null);
+            } catch (HttpClientException e) {
+                LOG.error("Error posting query request to server.  The entity posted "
+                    + "was \"" + postEntity + "\" and the endpoint posted to was \"" + routesPath + "\". " + e.getMessage());
+                return null;
+            }
+
+            int statusCode = response.getStatusCode();
+            if (statusCode >= 200 && statusCode < 300) {
+                byte[] responseBody = response.getResponseBody();
+                try {
+                    ConnectionDescriptorsResponse connectionDescriptorsResponse = mapper.readValue(responseBody, ConnectionDescriptorsResponse.class);
+                    LOG.info("Request:" + connectionsRequest + "\nConnectionDescriptors:" + connectionDescriptorsResponse);
+                    return connectionDescriptorsResponse;
+                } catch (IOException x) {
+                    LOG.error("Failed to deserialize response:" + new String(responseBody) + " " + x.getMessage());
+                    return null;
+                }
+            }
+            return null;
         };
         return connectionsProvider;
     }

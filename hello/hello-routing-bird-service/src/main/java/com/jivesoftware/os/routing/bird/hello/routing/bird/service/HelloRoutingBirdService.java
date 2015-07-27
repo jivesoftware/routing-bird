@@ -45,7 +45,7 @@ public class HelloRoutingBirdService {
     public String echo(String tenantId, String message, int echos) throws HttpClientException {
         LOG.info("echo: tenantId:" + tenantId + " message:" + message + " echos:" + echos);
         if (echos > 0) {
-            HttpResponse got = tenantAwareHttpClient.call(tenantId, new RoundRobinStrategy(),
+            HttpResponse got = tenantAwareHttpClient.call(tenantId, new RoundRobinStrategy(), "echo",
                 client -> new ClientResponse<>(client.get("/echo?tenantId=" + tenantId + "&message=" + message + "&echos=" + (echos - 1), null), true));
             return "{" + new String(got.getResponseBody()) + " " + message + "}";
         }

@@ -17,6 +17,7 @@ package com.jivesoftware.os.routing.bird.http.client;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.routing.bird.http.client.ClientHealthProvider.ClientHealth;
 import com.jivesoftware.os.routing.bird.shared.ClientCall;
 import com.jivesoftware.os.routing.bird.shared.ClientCall.ClientResponse;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
@@ -34,6 +35,7 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
     private final long timestamp;
     private final ConnectionDescriptor[] connectionDescriptors;
     private final C[] clients;
+    private final ClientHealth[] clientHealths;
     private final int deadAfterNErrors;
     private final long checkDeadEveryNMillis;
     private final AtomicInteger[] clientsErrors;
@@ -42,11 +44,13 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
     public ErrorCheckingTimestampedClients(long timestamp,
         ConnectionDescriptor[] connectionDescriptors,
         C[] clients,
+        ClientHealth[] clientHealths,
         int deadAfterNErrors,
         long checkDeadEveryNMillis) {
         this.timestamp = timestamp;
         this.connectionDescriptors = connectionDescriptors;
         this.clients = clients;
+        this.clientHealths = clientHealths;
         this.deadAfterNErrors = deadAfterNErrors;
         this.checkDeadEveryNMillis = checkDeadEveryNMillis;
         int l = clients.length;
@@ -59,7 +63,7 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
     }
 
     @Override
-    public <R> R call(NextClientStrategy strategy, ClientCall<C, R, HttpClientException> httpCall) throws HttpClientException {
+    public <R> R call(NextClientStrategy strategy, String family, ClientCall<C, R, HttpClientException> httpCall) throws HttpClientException {
         long now = System.currentTimeMillis();
         int[] clientIndexes = strategy.getClients(connectionDescriptors);
         for (int clientIndex : clientIndexes) {
@@ -70,7 +74,10 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
             if (deathTimestamp == 0 || now - deathTimestamp > checkDeadEveryNMillis) {
                 try {
                     LOG.debug("Next index:{} possibleClients:{}", clientIndex, clients.length);
+                    clientHealths[clientIndex].attempt(family);
+                    long start = System.currentTimeMillis();
                     ClientResponse<R> clientResponse = httpCall.call(clients[clientIndex]);
+                    clientHealths[clientIndex].success(family, System.currentTimeMillis() - start);
                     clientsDeathTimestamp[clientIndex].set(0);
                     clientsErrors[clientIndex].set(0);
                     if (clientResponse.responseComplete) {
@@ -80,13 +87,18 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
                     if (e.getCause() instanceof IOException) {
                         if (clientsErrors[clientIndex].incrementAndGet() > deadAfterNErrors) {
                             clientsDeathTimestamp[clientIndex].set(now + checkDeadEveryNMillis);
+                            clientHealths[clientIndex].markedDead();
                         }
+                        clientHealths[clientIndex].connectivityError();
                     } else {
+                        clientHealths[clientIndex].fatalError(e);
                         throw e;
                     }
                 } finally {
                     strategy.usedClientAtIndex(clientIndex);
                 }
+            } else {
+                clientHealths[clientIndex].stillDead();
             }
         }
         throw new HttpClientException("No clients are available");
@@ -104,10 +116,10 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
 
     @Override
     public String toString() {
-        return "TimestampedClient{" +
-            "timestamp=" + timestamp +
-            ", clients=" + Arrays.toString(clients) +
-            '}';
+        return "TimestampedClient{"
+            + "timestamp=" + timestamp
+            + ", clients=" + Arrays.toString(clients)
+            + '}';
     }
 
 }

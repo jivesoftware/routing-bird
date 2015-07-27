@@ -30,8 +30,9 @@ public class TenantRoutingHttpClient<T> implements TenantAwareHttpClient<T> {
     @Override
     public <R> R call(T tenant,
         NextClientStrategy strategy,
+        String family,
         ClientCall<HttpClient, R, HttpClientException> clientCall)
         throws HttpClientException {
-        return tenantRoutingClient.tenantAwareCall(tenant, strategy, clientCall);
+        return tenantRoutingClient.tenantAwareCall(tenant, strategy, family, clientCall);
     }
 }

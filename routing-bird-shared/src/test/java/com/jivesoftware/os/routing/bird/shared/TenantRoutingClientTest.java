@@ -67,14 +67,14 @@ public class TenantRoutingClientTest {
         TenantRoutingClient<String, TestClient, IOException> instance = new TenantRoutingClient<>(
             tenantsServiceConnectionDescriptorProvider, clientConnectionsFactory, closer);
         Boolean expResult = true;
-        Boolean result = instance.tenantAwareCall(tenantId, strategy, clientCall);
+        Boolean result = instance.tenantAwareCall(tenantId, strategy, "a", clientCall);
 
         Assert.assertEquals(result, expResult);
         Mockito.verifyZeroInteractions(closer);
 
         initDescriptorsPool(System.currentTimeMillis() + 1000);
 
-        result = instance.tenantAwareCall(tenantId, strategy, clientCall);
+        result = instance.tenantAwareCall(tenantId, strategy, "a", clientCall);
         Assert.assertEquals(result, expResult);
         Mockito.verify(closer).closeClients(testClients);
     }
@@ -102,7 +102,7 @@ public class TenantRoutingClientTest {
         }
 
         @Override
-        public <R> R call(NextClientStrategy strategy, ClientCall<TestClient, R, IOException> httpCall) throws IOException {
+        public <R> R call(NextClientStrategy strategy, String family, ClientCall<TestClient, R, IOException> httpCall) throws IOException {
             return httpCall.call(clients[0]).response;
         }
 

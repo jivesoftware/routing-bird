@@ -15,6 +15,7 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
+import com.jivesoftware.os.routing.bird.http.client.ClientHealthProvider.ClientHealth;
 import com.jivesoftware.os.routing.bird.shared.ClientConnectionsFactory;
 import com.jivesoftware.os.routing.bird.shared.ClientsCloser;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
@@ -23,15 +24,17 @@ import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescripto
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class TenantRoutingHttpClientInitializer<T> {
 
-    public TenantAwareHttpClient<T> initialize(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider) {
+    public TenantAwareHttpClient<T> initialize(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
+        ClientHealthProvider clientHealthProvider, int deadAfterNErrors,
+        long checkDeadEveryNMillis) {
 
         ClientConnectionsFactory<HttpClient, HttpClientException> clientConnectionsFactory = connectionDescriptors -> {
             List<ConnectionDescriptor> descriptors = connectionDescriptors.getConnectionDescriptors();
             ConnectionDescriptor[] connections = descriptors.toArray(new ConnectionDescriptor[descriptors.size()]);
             HttpClient[] httpClients = new HttpClient[descriptors.size()];
+            ClientHealth[] clientHealths = new ClientHealth[descriptors.size()];
             HttpClientFactoryProvider httpClientFactoryProvider = new HttpClientFactoryProvider();
             for (int i = 0; i < connections.length; i++) {
                 ConnectionDescriptor connection = connections[i];
@@ -44,9 +47,12 @@ public class TenantRoutingHttpClientInitializer<T> {
                 HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config);
                 HttpClient httpClient = createHttpClientFactory.createClient(connection.getHostPort().getHost(), connection.getHostPort().getPort());
                 httpClients[i] = httpClient;
+                clientHealths[i] = clientHealthProvider.get(connection.getHostPort());
+
             }
 
-            return new ErrorCheckingTimestampedClients<>(System.currentTimeMillis(), connections, httpClients, 10, 10_000); //TODO config
+            return new ErrorCheckingTimestampedClients<>(System.currentTimeMillis(), connections, httpClients, clientHealths, deadAfterNErrors,
+                checkDeadEveryNMillis); //TODO config
         };
 
         ClientsCloser<HttpClient> clientsCloser = clients -> {

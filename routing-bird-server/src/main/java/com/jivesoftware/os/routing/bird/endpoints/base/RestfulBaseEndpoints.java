@@ -31,10 +31,8 @@ import java.io.RandomAccessFile;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -322,8 +320,6 @@ public class RestfulBaseEndpoints {
         return Response.ok("Forced GC", MediaType.TEXT_PLAIN).build();
     }
 
-
-
     @GET
     @Path("/threadDump")
     @Produces(MediaType.TEXT_PLAIN)
@@ -332,75 +328,36 @@ public class RestfulBaseEndpoints {
         for (Map.Entry<Thread, StackTraceElement[]> trace : Thread.getAllStackTraces().entrySet()) {
             threadDumps.add(new ThreadDump(trace.getKey(), trace.getValue()));
         }
-        threadDumps = mergeThread(threadDumps);
-        Collections.sort(threadDumps, new Comparator<ThreadDump>() {
-
-            @Override
-            public int compare(ThreadDump o1, ThreadDump o2) {
-                int a = 0;
-                for (Thread t : o1.threads) {
-                    a += t.getState().ordinal();
-                }
-                int b = 0;
-                for (Thread t : o2.threads) {
-                    b += t.getState().ordinal();
-                }
-                return Integer.compare(a, b);
-            }
-        });
+        Collections.sort(threadDumps, (o1, o2) -> Integer.compare(o1.thread.getState().ordinal(), o2.thread.getState().ordinal()));
 
         StringBuilder builder = new StringBuilder();
         for (ThreadDump threadDump : threadDumps) {
 
-            for (Thread thread : threadDump.threads) {
-                builder.append(String.format("\"%s\" %s prio=%d tid=%d nid=1 %s\njava.lang.Thread.State: %s\n",
-                    thread.getName(),
-                    (thread.isDaemon() ? "daemon" : ""),
-                    thread.getPriority(),
-                    thread.getId(),
-                    Thread.State.WAITING.equals(thread.getState()) ? "in Object.wait()" : thread.getState().name().toLowerCase(),
-                    (thread.getState().equals(Thread.State.WAITING) ? "WAITING (on object monitor)" : thread.getState())));
-            }
+            builder.append(String.format("\"%s\" %s prio=%d tid=%d nid=1 %s\njava.lang.Thread.State: %s\n",
+                threadDump.thread.getName(),
+                (threadDump.thread.isDaemon() ? "daemon" : ""),
+                threadDump.thread.getPriority(),
+                threadDump.thread.getId(),
+                Thread.State.WAITING.equals(threadDump.thread.getState()) ? "in Object.wait()" : threadDump.thread.getState().name().toLowerCase(),
+                (threadDump.thread.getState().equals(Thread.State.WAITING) ? "WAITING (on object monitor)" : threadDump.thread.getState())));
             for (StackTraceElement stackTraceElement : threadDump.trace) {
                 builder.append("\n        at ");
                 builder.append(stackTraceElement);
             }
             builder.append("\n\n");
         }
-
         return Response.ok(builder.toString()).build();
-    }
-
-    private List<ThreadDump> mergeThread(List<ThreadDump> threadDumps) {
-        List<ThreadDump> merged = new ArrayList<>();
-        // merge threads at the same point. Lumps
-        for (int i = 0; i < threadDumps.size(); i++) {
-            ThreadDump idump = threadDumps.get(i);
-            if (!idump.threads.isEmpty()) {
-                for (int j = i + 1; j < threadDumps.size(); j++) {
-                    ThreadDump jdump = threadDumps.get(j);
-                    if (idump.trace.length > 0 && jdump.trace.length > 0 && idump.trace[0].equals(jdump.trace[0])) {
-                        idump.threads.addAll(jdump.threads);
-                        jdump.threads.clear();
-                    }
-                }
-                merged.add(idump);
-            }
-
-        }
-        return merged;
     }
 
     static class ThreadDump {
 
-        List<Thread> threads;
+        Thread thread;
         StackTraceElement[] trace;
 
         public ThreadDump(Thread thread, StackTraceElement[] trace) {
-            this.threads = new ArrayList<>(Arrays.asList(thread));
+            this.thread = thread;
             this.trace = trace;
         }
-
     }
 
     class GCLoad {

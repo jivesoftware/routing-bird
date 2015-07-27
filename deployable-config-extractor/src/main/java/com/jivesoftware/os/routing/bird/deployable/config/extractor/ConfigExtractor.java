@@ -57,12 +57,14 @@ public class ConfigExtractor {
         String configHost = args[0];
         String configPort = args[1];
         String instanceKey = args[2];
+        String setPath = args[3];
+        String getPath = args[4];
 
         HttpRequestHelper buildRequestHelper = buildRequestHelper(configHost, Integer.parseInt(configPort));
 
         try {
             Set<URL> packages = new HashSet<>();
-            for (int i = 3; i < args.length; i++) {
+            for (int i = 5; i < args.length; i++) {
                 packages.addAll(ClasspathHelper.forPackage(args[i]));
             }
 
@@ -86,10 +88,10 @@ public class ConfigExtractor {
             }
 
             Map<String, String> defaultServiceConfig = extractAndPublish(serviceConfig,
-                new File(configDir, "default-service-config.properties"), "default", instanceKey, buildRequestHelper);
+                new File(configDir, "default-service-config.properties"), "default", instanceKey, buildRequestHelper, setPath);
 
             DeployableConfig getServiceOverrides = new DeployableConfig("override", instanceKey, defaultServiceConfig);
-            DeployableConfig gotSerivceConfig = buildRequestHelper.executeRequest(getServiceOverrides, "/upenaConfig/get", DeployableConfig.class, null);
+            DeployableConfig gotSerivceConfig = buildRequestHelper.executeRequest(getServiceOverrides, getPath, DeployableConfig.class, null);
             if (gotSerivceConfig == null) {
                 System.out.println("Failed to publish default service config for " + Arrays.deepToString(args));
             } else {
@@ -99,10 +101,10 @@ public class ConfigExtractor {
             }
 
             Map<String, String> defaultHealthConfig = extractAndPublish(healthConfig,
-                new File(configDir, "default-health-config.properties"), "default-health", instanceKey, buildRequestHelper);
+                new File(configDir, "default-health-config.properties"), "default-health", instanceKey, buildRequestHelper, setPath);
 
             DeployableConfig getHealthOverrides = new DeployableConfig("override-health", instanceKey, defaultHealthConfig);
-            DeployableConfig gotHealthConfig = buildRequestHelper.executeRequest(getHealthOverrides, "/upenaConfig/get", DeployableConfig.class, null);
+            DeployableConfig gotHealthConfig = buildRequestHelper.executeRequest(getHealthOverrides, getPath, DeployableConfig.class, null);
             if (gotHealthConfig == null) {
                 System.out.println("Failed to publish default health config for " + Arrays.deepToString(args));
             } else {
@@ -149,7 +151,8 @@ public class ConfigExtractor {
         File defaultServiceConfigFile,
         String context,
         String instanceKey,
-        HttpRequestHelper buildRequestHelper) throws IOException {
+        HttpRequestHelper buildRequestHelper,
+        String setPath) throws IOException {
 
         ConfigExtractor serviceConfigExtractor = new ConfigExtractor(new PropertyPrefix(), serviceConfig);
         serviceConfigExtractor.writeDefaultsToFile(defaultServiceConfigFile);
@@ -162,7 +165,7 @@ public class ConfigExtractor {
         }
 
         DeployableConfig setDefaults = new DeployableConfig(context, instanceKey, config);
-        DeployableConfig setConfig = buildRequestHelper.executeRequest(setDefaults, "/upenaConfig/set", DeployableConfig.class, null);
+        DeployableConfig setConfig = buildRequestHelper.executeRequest(setDefaults, setPath, DeployableConfig.class, null);
         if (setConfig == null) {
             System.out.println("Failed to publish default config for " + instanceKey);
         }

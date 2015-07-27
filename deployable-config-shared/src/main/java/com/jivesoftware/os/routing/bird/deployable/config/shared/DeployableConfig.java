@@ -36,7 +36,7 @@ public class DeployableConfig {
 
     @Override
     public String toString() {
-        return "UpenaConfig{"
+        return "DeployableConfig{"
                 + "context=" + context
                 + ", instanceKey=" + instanceKey
                 + ", properties=" + properties

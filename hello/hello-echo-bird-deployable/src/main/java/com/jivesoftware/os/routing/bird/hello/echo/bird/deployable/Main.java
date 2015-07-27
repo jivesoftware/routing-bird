@@ -20,6 +20,7 @@ import com.jivesoftware.os.routing.bird.hello.routing.bird.service.HelloRoutingB
 import com.jivesoftware.os.routing.bird.hello.routing.bird.service.HelloRoutingBirdServiceInitializer;
 import com.jivesoftware.os.routing.bird.hello.routing.bird.service.HelloRoutingBirdServiceInitializer.HelloRoutingBirdServiceConfig;
 import com.jivesoftware.os.routing.bird.hello.routing.bird.service.endpoints.HelloRoutingBirdServiceRestEndpoints;
+import com.jivesoftware.os.routing.bird.http.client.HttpDeliveryClientHealthProvider;
 import com.jivesoftware.os.routing.bird.http.client.TenantAwareHttpClient;
 import com.jivesoftware.os.routing.bird.http.client.TenantRoutingHttpClientInitializer;
 import com.jivesoftware.os.routing.bird.server.util.Resource;
@@ -39,9 +40,10 @@ public class Main {
 
         TenantsServiceConnectionDescriptorProvider connections = deployable.getTenantRoutingProvider().getConnections("hello-echo-bird-deployable", "main");
         TenantRoutingHttpClientInitializer<String> tenantRoutingHttpClientInitializer = new TenantRoutingHttpClientInitializer<>();
-        TenantAwareHttpClient<String> client = tenantRoutingHttpClientInitializer.initialize(connections);
+        HttpDeliveryClientHealthProvider deliveryClientHealthProvider = new HttpDeliveryClientHealthProvider(null, "", 5000, 100);
+        TenantAwareHttpClient<String> client = tenantRoutingHttpClientInitializer.initialize(connections, deliveryClientHealthProvider, 10, 10_000);
         HelloRoutingBirdService helloRoutingBirdService = new HelloRoutingBirdServiceInitializer()
-                .initialize(deployable.config(HelloRoutingBirdServiceConfig.class), client);
+            .initialize(deployable.config(HelloRoutingBirdServiceConfig.class), client);
 
         deployable.addEndpoints(HelloRoutingBirdServiceRestEndpoints.class);
         deployable.addInjectables(HelloRoutingBirdService.class, helloRoutingBirdService);

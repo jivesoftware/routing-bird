@@ -34,6 +34,11 @@ public interface InstanceConfig extends Config {
 
     void setRoutesPort(int port);
 
+    @Default("/upena/request/connections")
+    String getRoutesPath();
+
+    void setRoutesPath(String path);
+
     @Default("-1")
     String getClusterKey();
 
