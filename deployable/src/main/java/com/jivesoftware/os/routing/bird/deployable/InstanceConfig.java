@@ -39,6 +39,12 @@ public interface InstanceConfig extends Config {
 
     void setRoutesPath(String path);
 
+
+    @Default("/upena/connections/health")
+    String getConnectionsHealth();
+
+    void setConnectionsHealth(String path);
+
     @Default("-1")
     String getClusterKey();
 
