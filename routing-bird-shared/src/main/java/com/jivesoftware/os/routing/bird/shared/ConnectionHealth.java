@@ -1,7 +1,5 @@
 package com.jivesoftware.os.routing.bird.shared;
 
-import com.jivesoftware.os.routing.bird.shared.HostPort;
-
 /**
  *
  * @author jonathan.colt

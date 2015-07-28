@@ -1,11 +1,12 @@
 package com.jivesoftware.os.routing.bird.http.client;
 
-import com.jivesoftware.os.routing.bird.shared.ConnectionHealth;
-import com.jivesoftware.os.routing.bird.shared.ConnectionHealthLatencyStats;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.routing.bird.shared.ConnectionHealth;
+import com.jivesoftware.os.routing.bird.shared.ConnectionHealthLatencyStats;
 import com.jivesoftware.os.routing.bird.shared.HostPort;
+import com.jivesoftware.os.routing.bird.shared.InstanceConnectionHealth;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,6 +28,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
+    private final String instanceId;
     private final HttpRequestHelper httpRequestHelper;
     private final String path;
     private final long interval;
@@ -34,7 +36,8 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
     private final Map<HostPort, Health> healths = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
-    public HttpDeliveryClientHealthProvider(HttpRequestHelper httpRequestHelper, String path, long interval, int sampleWindow) {
+    public HttpDeliveryClientHealthProvider(String instanceId,HttpRequestHelper httpRequestHelper, String path, long interval, int sampleWindow) {
+        this.instanceId = instanceId;
         this.httpRequestHelper = httpRequestHelper;
         this.path = path;
         this.interval = interval;
@@ -76,7 +79,8 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
                         fs.ds.getPercentile(75d),
                         fs.ds.getPercentile(90d),
                         fs.ds.getPercentile(95d),
-                        fs.ds.getPercentile(99d));
+                        fs.ds.getPercentile(99d),
+                        fs.ds.getPercentile(99.9d));
 
                     deliverableHealth.add(new ConnectionHealth(h.hostPort,
                         h.timestamp,
@@ -93,14 +97,12 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
                 }
             }
 
-            httpRequestHelper.executeRequest(deliverableHealth, path, String.class, null);
+            httpRequestHelper.executeRequest(new InstanceConnectionHealth(instanceId, deliverableHealth), path, String.class, null);
         } catch (Exception x) {
             LOG.warn("Failed tp delivery client health.", x);
         }
 
     }
-
-
 
     static class Health implements ClientHealth {
 
