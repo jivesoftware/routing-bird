@@ -66,7 +66,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
     public void run() {
         try {
             List<ConnectionHealth> deliverableHealth = new ArrayList<>();
-
+            long time = System.currentTimeMillis();
             for (Health h : healths.values()) {
                 for (Map.Entry<String, FamilyStats> familyStats : h.familyStats.entrySet()) {
 
@@ -91,8 +91,8 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
                         familyStats.getKey(),
                         fs.attempts.get(),
                         fs.success.get(),
-                        fs.attemptsPerSecond,
-                        fs.successPerSecond,
+                        0,
+                        fs.successPerSecond(time),
                         latencyStats));
                 }
             }
@@ -177,8 +177,8 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
         final AtomicLong attempts = new AtomicLong(0);
         final AtomicLong success = new AtomicLong(0);
         final DescriptiveStatistics ds;
-        long lastSecond;
-        long attemptsPerSecond;
+        long successes;
+        long lastSuccessSecond;
         long successPerSecond;
 
         FamilyStats(int window) {
@@ -186,28 +186,29 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
         }
 
         public void attempt(long timestamp) {
-            long second = timestamp / 1000;
-            if (lastSecond != second) {
-                lastSecond = second;
-                attemptsPerSecond = 0;
-            }
-            attemptsPerSecond++;
-
             attempts.incrementAndGet();
         }
 
         public void success(long timestamp, long latency) {
             long second = timestamp / 1000;
-            if (lastSecond != second) {
-                lastSecond = second;
-                successPerSecond = 0;
+            if (lastSuccessSecond < second) {
+                lastSuccessSecond = second;
+                successPerSecond = successes;
+                successes = 0;
             }
-            successPerSecond++;
-
+            successes++;
             success.incrementAndGet();
             ds.addValue(latency);
         }
 
+        public long successPerSecond(long time) {
+            long second = System.currentTimeMillis() / 1000;
+            if (lastSuccessSecond < second) {
+                lastSuccessSecond = successes;
+                successes = 0;
+            }
+            return successPerSecond;
+        }
     }
 
     static HttpRequestHelper buildRequestHelper(String host, int port) {
