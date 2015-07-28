@@ -1,5 +1,7 @@
 package com.jivesoftware.os.routing.bird.http.client;
 
+import com.jivesoftware.os.routing.bird.shared.ConnectionHealth;
+import com.jivesoftware.os.routing.bird.shared.ConnectionHealthLatencyStats;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
@@ -60,14 +62,14 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
     @Override
     public void run() {
         try {
-            List<DeliverableHealth> deliverableHealth = new ArrayList<>();
+            List<ConnectionHealth> deliverableHealth = new ArrayList<>();
 
             for (Health h : healths.values()) {
                 for (Map.Entry<String, FamilyStats> familyStats : h.familyStats.entrySet()) {
 
                     FamilyStats fs = familyStats.getValue();
 
-                    DeliverableLatencyStats latencyStats = new DeliverableLatencyStats(fs.ds.getMean(),
+                    ConnectionHealthLatencyStats latencyStats = new ConnectionHealthLatencyStats(fs.ds.getMean(),
                         fs.ds.getMin(),
                         fs.ds.getMax(),
                         fs.ds.getPercentile(50d),
@@ -76,7 +78,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
                         fs.ds.getPercentile(95d),
                         fs.ds.getPercentile(99d));
 
-                    deliverableHealth.add(new DeliverableHealth(h.hostPort,
+                    deliverableHealth.add(new ConnectionHealth(h.hostPort,
                         h.timestamp,
                         h.connectivityErrors,
                         h.firstMarkedAsDeadTimestamp,
@@ -98,70 +100,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
 
     }
 
-    static public class DeliverableHealth {
 
-        public HostPort hostPort;
-        public long timestamp;
-        public long connectivityErrors;
-        public long firstMarkedAsDeadTimestamp;
-        public long lastMarkedAsDeadTimestamp;
-        public String fatalError;
-
-        public String family;
-        public long attempt;
-        public long success;
-        public long attemptPerSecond;
-        public long successPerSecond;
-        public DeliverableLatencyStats deliverableLatencyStats;
-
-        public DeliverableHealth() {
-        }
-
-        public DeliverableHealth(HostPort hostPort, long timestamp, long connectivityErrors, long firstMarkedAsDeadTimestamp, long lastMarkedAsDeadTimestamp,
-            String fatalError, String family, long attempt, long success, long attemptPerSecond, long successPerSecond,
-            DeliverableLatencyStats deliverableLatencyStats) {
-            this.hostPort = hostPort;
-            this.timestamp = timestamp;
-            this.connectivityErrors = connectivityErrors;
-            this.firstMarkedAsDeadTimestamp = firstMarkedAsDeadTimestamp;
-            this.lastMarkedAsDeadTimestamp = lastMarkedAsDeadTimestamp;
-            this.fatalError = fatalError;
-            this.family = family;
-            this.attempt = attempt;
-            this.success = success;
-            this.attemptPerSecond = attemptPerSecond;
-            this.successPerSecond = successPerSecond;
-            this.deliverableLatencyStats = deliverableLatencyStats;
-        }
-
-    }
-
-    static public class DeliverableLatencyStats {
-
-        public double latencyMean;
-        public double latencyMin;
-        public double latencyMax;
-        public double latency50th;
-        public double latency75th;
-        public double latency95th;
-        public double latency99th;
-        public double latency999th;
-
-        public DeliverableLatencyStats() {
-        }
-
-        public DeliverableLatencyStats(double latencyMean, double latencyMin, double latencyMax, double latency50th, double latency75th, double latency95th,
-            double latency99th, double latency999th) {
-            this.latencyMean = latencyMean;
-            this.latencyMin = latencyMin;
-            this.latencyMax = latencyMax;
-            this.latency50th = latency50th;
-            this.latency75th = latency75th;
-            this.latency95th = latency95th;
-            this.latency99th = latency99th;
-            this.latency999th = latency999th;
-        }
-    }
 
     static class Health implements ClientHealth {
 
