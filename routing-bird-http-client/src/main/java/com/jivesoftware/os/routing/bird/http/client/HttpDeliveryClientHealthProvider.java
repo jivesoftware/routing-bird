@@ -36,7 +36,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
     private final Map<HostPort, Health> healths = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
-    public HttpDeliveryClientHealthProvider(String instanceId,HttpRequestHelper httpRequestHelper, String path, long interval, int sampleWindow) {
+    public HttpDeliveryClientHealthProvider(String instanceId, HttpRequestHelper httpRequestHelper, String path, long interval, int sampleWindow) {
         this.instanceId = instanceId;
         this.httpRequestHelper = httpRequestHelper;
         this.path = path;
@@ -202,10 +202,15 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
         }
 
         public long successPerSecond(long time) {
-            long second = System.currentTimeMillis() / 1000;
+            long second = time / 1000;
             if (lastSuccessSecond < second) {
-                lastSuccessSecond = successes;
+                if (second - lastSuccessSecond > 1) {
+                    successPerSecond = 0;
+                } else {
+                    successPerSecond = successes;
+                }
                 successes = 0;
+                lastSuccessSecond = successes;
             }
             return successPerSecond;
         }
