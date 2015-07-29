@@ -40,7 +40,8 @@ public class TenantRoutingProviderTest {
         ConnectionDescriptorsRequest request = new ConnectionDescriptorsRequest("tenant", "1234", "serviceA", "port1");
 
         List<ConnectionDescriptor> connections = new ArrayList<>();
-        connections.add(new ConnectionDescriptor(new HostPort("a", 1), new HashMap<String, String>()));
+        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
+        connections.add(new ConnectionDescriptor(instanceDescriptor, new HostPort("a", 1), new HashMap<>()));
         ConnectionDescriptorsResponse response = new ConnectionDescriptorsResponse(0, null, "releaseGroupA", connections);
         Mockito.when(connectionDescriptorsProvider.requestConnections(Mockito.eq(request))).thenReturn(response);
 

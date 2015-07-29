@@ -18,17 +18,25 @@ package com.jivesoftware.os.routing.bird.shared;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
+import java.util.Objects;
 
 public class ConnectionDescriptor {
 
+    private final InstanceDescriptor instanceDescriptor;
     private final HostPort hostPort;
     private final Map<String, String> properties;
 
     @JsonCreator
-    public ConnectionDescriptor(@JsonProperty("hostPort") HostPort hostPort,
+    public ConnectionDescriptor(@JsonProperty("instanceDescriptor") InstanceDescriptor instanceDescriptor,
+        @JsonProperty("hostPort") HostPort hostPort,
         @JsonProperty("properties") Map<String, String> properties) {
+        this.instanceDescriptor = instanceDescriptor;
         this.hostPort = hostPort;
         this.properties = properties;
+    }
+
+    public InstanceDescriptor getInstanceDescriptor() {
+        return instanceDescriptor;
     }
 
     public HostPort getHostPort() {
@@ -41,34 +49,41 @@ public class ConnectionDescriptor {
 
     @Override
     public String toString() {
-        return "ConnectionDescriptor{" +
-            "hostPort=" + hostPort +
-            ", properties=" + properties +
-            '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        ConnectionDescriptor that = (ConnectionDescriptor) o;
-
-        if (hostPort != null ? !hostPort.equals(that.hostPort) : that.hostPort != null) {
-            return false;
-        }
-        return !(properties != null ? !properties.equals(that.properties) : that.properties != null);
-
+        return "ConnectionDescriptor{"
+            + "instanceDescriptor=" + instanceDescriptor
+            + ", hostPort=" + hostPort
+            + ", properties=" + properties
+            + '}';
     }
 
     @Override
     public int hashCode() {
-        int result = hostPort != null ? hostPort.hashCode() : 0;
-        result = 31 * result + (properties != null ? properties.hashCode() : 0);
-        return result;
+        int hash = 3;
+        hash = 67 * hash + Objects.hashCode(this.instanceDescriptor);
+        hash = 67 * hash + Objects.hashCode(this.hostPort);
+        hash = 67 * hash + Objects.hashCode(this.properties);
+        return hash;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final ConnectionDescriptor other = (ConnectionDescriptor) obj;
+        if (!Objects.equals(this.instanceDescriptor, other.instanceDescriptor)) {
+            return false;
+        }
+        if (!Objects.equals(this.hostPort, other.hostPort)) {
+            return false;
+        }
+        if (!Objects.equals(this.properties, other.properties)) {
+            return false;
+        }
+        return true;
+    }
+
 }
