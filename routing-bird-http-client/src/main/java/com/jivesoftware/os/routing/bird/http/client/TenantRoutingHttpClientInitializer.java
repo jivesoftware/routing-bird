@@ -47,7 +47,7 @@ public class TenantRoutingHttpClientInitializer<T> {
                 HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config);
                 HttpClient httpClient = createHttpClientFactory.createClient(connection.getHostPort().getHost(), connection.getHostPort().getPort());
                 httpClients[i] = httpClient;
-                clientHealths[i] = clientHealthProvider.get(connection.getHostPort());
+                clientHealths[i] = clientHealthProvider.get(connection);
 
             }
 

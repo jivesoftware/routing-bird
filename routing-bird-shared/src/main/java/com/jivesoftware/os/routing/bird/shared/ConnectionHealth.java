@@ -5,7 +5,7 @@ package com.jivesoftware.os.routing.bird.shared;
  * @author jonathan.colt
  */
 public class ConnectionHealth {
-    public HostPort hostPort;
+    public ConnectionDescriptor connectionDescriptor;
     public long timestampMillis;
     public long connectivityErrors;
     public long firstMarkedAsDeadTimestampMillis;
@@ -21,10 +21,10 @@ public class ConnectionHealth {
     public ConnectionHealth() {
     }
 
-    public ConnectionHealth(HostPort hostPort, long timestampMillis, long connectivityErrors, long firstMarkedAsDeadTimestampMillis,
+    public ConnectionHealth(ConnectionDescriptor connectionDescriptor, long timestampMillis, long connectivityErrors, long firstMarkedAsDeadTimestampMillis,
         long lastMarkedAsDeadTimestampMillis, String fatalError, String family, long attempt, long success, long attemptPerSecond, long successPerSecond,
         ConnectionHealthLatencyStats deliverableLatencyStats) {
-        this.hostPort = hostPort;
+        this.connectionDescriptor = connectionDescriptor;
         this.timestampMillis = timestampMillis;
         this.connectivityErrors = connectivityErrors;
         this.firstMarkedAsDeadTimestampMillis = firstMarkedAsDeadTimestampMillis;

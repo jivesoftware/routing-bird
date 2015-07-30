@@ -1,6 +1,6 @@
 package com.jivesoftware.os.routing.bird.http.client;
 
-import com.jivesoftware.os.routing.bird.shared.HostPort;
+import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
 
 /**
  *
@@ -8,7 +8,7 @@ import com.jivesoftware.os.routing.bird.shared.HostPort;
  */
 public interface ClientHealthProvider {
 
-    ClientHealth get(HostPort hostPort);
+    ClientHealth get(ConnectionDescriptor connectionDescriptor);
 
     interface ClientHealth {
 

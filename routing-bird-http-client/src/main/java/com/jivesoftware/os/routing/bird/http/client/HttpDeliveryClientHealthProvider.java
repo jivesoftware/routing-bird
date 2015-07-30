@@ -3,6 +3,7 @@ package com.jivesoftware.os.routing.bird.http.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
 import com.jivesoftware.os.routing.bird.shared.ConnectionHealth;
 import com.jivesoftware.os.routing.bird.shared.ConnectionHealthLatencyStats;
 import com.jivesoftware.os.routing.bird.shared.HostPort;
@@ -56,9 +57,9 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
     }
 
     @Override
-    public ClientHealth get(HostPort hostPort) {
-        return healths.computeIfAbsent(hostPort, (t) -> {
-            return new Health(t, sampleWindow);
+    public ClientHealth get(ConnectionDescriptor connectionDescriptor) {
+        return healths.computeIfAbsent(connectionDescriptor.getHostPort(), (key) -> {
+            return new Health(connectionDescriptor, sampleWindow);
         });
     }
 
@@ -82,7 +83,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
                         fs.ds.getPercentile(99d),
                         fs.ds.getPercentile(99.9d));
 
-                    deliverableHealth.add(new ConnectionHealth(h.hostPort,
+                    deliverableHealth.add(new ConnectionHealth(h.connectionDescriptor,
                         h.timestamp,
                         h.connectivityErrors,
                         h.firstMarkedAsDeadTimestamp,
@@ -106,7 +107,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
 
     static class Health implements ClientHealth {
 
-        HostPort hostPort;
+        ConnectionDescriptor connectionDescriptor;
         long lastDeliveryTimestamp = System.currentTimeMillis();
         long timestamp;
         long connectivityErrors = 0;
@@ -116,8 +117,8 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
         Map<String, FamilyStats> familyStats = new ConcurrentHashMap<>();
         int sampleWindow;
 
-        public Health(HostPort hostPort, int sampleWindow) {
-            this.hostPort = hostPort;
+        public Health(ConnectionDescriptor connectionDescriptor, int sampleWindow) {
+            this.connectionDescriptor = connectionDescriptor;
             this.sampleWindow = sampleWindow;
         }
 
