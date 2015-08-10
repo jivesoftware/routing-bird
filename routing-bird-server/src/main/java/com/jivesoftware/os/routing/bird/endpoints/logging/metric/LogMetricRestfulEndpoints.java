@@ -16,10 +16,13 @@
 package com.jivesoftware.os.routing.bird.endpoints.logging.metric;
 
 import com.google.inject.Singleton;
+import com.jivesoftware.os.mlogger.core.Counter;
 import com.jivesoftware.os.mlogger.core.CountersAndTimers;
 import com.jivesoftware.os.mlogger.core.LoggerSummary;
+import com.jivesoftware.os.mlogger.core.TenantMetricStream;
 import com.jivesoftware.os.routing.bird.endpoints.logging.metric.LoggerMetrics.MetricsStream;
 import com.jivesoftware.os.routing.bird.shared.ResponseHelper;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -32,6 +35,42 @@ import javax.ws.rs.core.Response;
 @Singleton
 @Path("/logging/metric")
 public class LogMetricRestfulEndpoints {
+
+    @GET
+    @Path("/listTenantMetrics")
+    public Response listTenantCounters(@QueryParam("tenant") @DefaultValue("") String tenant, @QueryParam("callback") @DefaultValue("") String callback) {
+
+        try {
+
+            final Metrics metrics = new Metrics();
+            TenantMetricStream tenantMetricStream = (tenant1, cat) -> {
+                if (cat != null) {
+                    for (Entry<String, Counter> c : cat.getCounters()) {
+                        metrics.metrics.add(new KeyAndMetric(c.getKey(), c.getValue().getValue()));
+                    }
+                }
+                return true;
+            };
+            Collection<CountersAndTimers> all = CountersAndTimers.getAll();
+            for (CountersAndTimers a : all) {
+                if (tenant.isEmpty()) {
+                    a.streamAllTenantMetrics(tenantMetricStream);
+                } else {
+                    a.streamTenantMetrics(tenant, tenantMetricStream);
+                }
+            }
+
+            if (callback.length() > 0) {
+                return ResponseHelper.INSTANCE.jsonpResponse(callback, metrics);
+            } else {
+                return ResponseHelper.INSTANCE.jsonResponse(metrics);
+            }
+
+        } catch (Exception ex) {
+            return ResponseHelper.INSTANCE.errorResponse("Failed to list counters.", ex);
+        }
+
+    }
 
     @GET
     @Path("/listCounters")

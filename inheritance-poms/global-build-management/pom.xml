@@ -13,7 +13,7 @@
     <packaging>pom</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <mlogger-version>0.10</mlogger-version>
+        <mlogger-version>0.13</mlogger-version>
         <jetty-version>9.1.1.v20140108</jetty-version>
         <jackson-version>2.2.3</jackson-version>
         <glassfish-version>2.13</glassfish-version>
