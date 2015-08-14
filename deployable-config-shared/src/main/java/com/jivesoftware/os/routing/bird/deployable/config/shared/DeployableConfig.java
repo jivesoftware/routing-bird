@@ -23,23 +23,27 @@ public class DeployableConfig {
 
     public final String context;
     public final String instanceKey;
+    public final String instanceVersion;
     public final Map<String, String> properties;
 
     @JsonCreator
     public DeployableConfig(@JsonProperty("context") String context,
-            @JsonProperty("instanceKey") String instanceKey,
-            @JsonProperty("properties") Map<String, String> properties) {
+        @JsonProperty("instanceKey") String instanceKey,
+        @JsonProperty("instanceVersion") String instanceVersion,
+        @JsonProperty("properties") Map<String, String> properties) {
         this.context = context;
         this.instanceKey = instanceKey;
+        this.instanceVersion = instanceVersion;
         this.properties = properties;
     }
 
     @Override
     public String toString() {
         return "DeployableConfig{"
-                + "context=" + context
-                + ", instanceKey=" + instanceKey
-                + ", properties=" + properties
-                + '}';
+            + "context=" + context
+            + ", instanceKey=" + instanceKey
+            + ", instanceVersion=" + instanceVersion
+            + ", properties=" + properties
+            + '}';
     }
 }

@@ -6,6 +6,7 @@ DEPLOYABLE_ARTIFACT=`grep deployable.artifact $APP_ROOT/lib/build.properties | s
 CONFIG_HOST=`grep InstanceConfig_default_routesHost $APP_ROOT/config/instance.properties | sed -e 's/.*=//g'`
 CONFIG_PORT=`grep InstanceConfig_default_routesPort $APP_ROOT/config/instance.properties | sed -e 's/.*=//g'`
 INSTANCE_KEY=`grep InstanceConfig_default_instanceKey $APP_ROOT/config/instance.properties | sed -e 's/.*=//g'`
+INSTANCE_VERSION=`grep InstanceConfig_default_version $APP_ROOT/config/instance.properties | sed -e 's/.*=//g'`
 
 function build_plugin_classpath() {
     CP=""
@@ -25,6 +26,6 @@ echo "classpath="${DEPLOYABLE_ARTIFACT}:${CLASSPATH}:${PLUGIN_CLASSPATH}
 echo "plugin-classpath="${PLUGIN_CLASSPATH}
 cd $APP_ROOT && $JAVA_HOME/bin/java \
   -cp ${DEPLOYABLE_ARTIFACT}:${CLASSPATH}:${PLUGIN_CLASSPATH} \
-  com.jivesoftware.os.routing.bird.deployable.config.extractor.ConfigExtractor ${CONFIG_HOST} ${CONFIG_PORT} ${INSTANCE_KEY} /upenaConfig/set /upenaConfig/get com.jivesoftware 
+  com.jivesoftware.os.routing.bird.deployable.config.extractor.ConfigExtractor ${CONFIG_HOST} ${CONFIG_PORT} ${INSTANCE_KEY} ${INSTANCE_VERSION} /upenaConfig/set /upenaConfig/get com.jivesoftware 
 echo "Generated default config."
 exit 0;

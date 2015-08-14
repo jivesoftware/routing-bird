@@ -57,8 +57,9 @@ public class ConfigExtractor {
         String configHost = args[0];
         String configPort = args[1];
         String instanceKey = args[2];
-        String setPath = args[3];
-        String getPath = args[4];
+        String instanceVersion = args[3];
+        String setPath = args[4];
+        String getPath = args[5];
 
         HttpRequestHelper buildRequestHelper = buildRequestHelper(configHost, Integer.parseInt(configPort));
 
@@ -88,9 +89,9 @@ public class ConfigExtractor {
             }
 
             Map<String, String> defaultServiceConfig = extractAndPublish(serviceConfig,
-                new File(configDir, "default-service-config.properties"), "default", instanceKey, buildRequestHelper, setPath);
+                new File(configDir, "default-service-config.properties"), "default", instanceKey, instanceVersion, buildRequestHelper, setPath);
 
-            DeployableConfig getServiceOverrides = new DeployableConfig("override", instanceKey, defaultServiceConfig);
+            DeployableConfig getServiceOverrides = new DeployableConfig("override", instanceKey, instanceVersion, defaultServiceConfig);
             DeployableConfig gotSerivceConfig = buildRequestHelper.executeRequest(getServiceOverrides, getPath, DeployableConfig.class, null);
             if (gotSerivceConfig == null) {
                 System.out.println("Failed to publish default service config for " + Arrays.deepToString(args));
@@ -101,9 +102,9 @@ public class ConfigExtractor {
             }
 
             Map<String, String> defaultHealthConfig = extractAndPublish(healthConfig,
-                new File(configDir, "default-health-config.properties"), "default-health", instanceKey, buildRequestHelper, setPath);
+                new File(configDir, "default-health-config.properties"), "default-health", instanceKey, instanceVersion, buildRequestHelper, setPath);
 
-            DeployableConfig getHealthOverrides = new DeployableConfig("override-health", instanceKey, defaultHealthConfig);
+            DeployableConfig getHealthOverrides = new DeployableConfig("override-health", instanceKey, instanceVersion, defaultHealthConfig);
             DeployableConfig gotHealthConfig = buildRequestHelper.executeRequest(getHealthOverrides, getPath, DeployableConfig.class, null);
             if (gotHealthConfig == null) {
                 System.out.println("Failed to publish default health config for " + Arrays.deepToString(args));
@@ -151,6 +152,7 @@ public class ConfigExtractor {
         File defaultServiceConfigFile,
         String context,
         String instanceKey,
+        String instanceVersion,
         HttpRequestHelper buildRequestHelper,
         String setPath) throws IOException {
 
@@ -164,7 +166,7 @@ public class ConfigExtractor {
             config.put(entry.getKey().toString(), entry.getValue().toString());
         }
 
-        DeployableConfig setDefaults = new DeployableConfig(context, instanceKey, config);
+        DeployableConfig setDefaults = new DeployableConfig(context, instanceKey, instanceVersion, config);
         DeployableConfig setConfig = buildRequestHelper.executeRequest(setDefaults, setPath, DeployableConfig.class, null);
         if (setConfig == null) {
             System.out.println("Failed to publish default config for " + instanceKey);
