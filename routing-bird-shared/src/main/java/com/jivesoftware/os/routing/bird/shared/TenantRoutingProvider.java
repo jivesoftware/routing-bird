@@ -18,9 +18,9 @@ package com.jivesoftware.os.routing.bird.shared;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TenantRoutingProvider {
+public class TenantRoutingProvider<T> {
 
-    private final ConcurrentHashMap<String, TenantsServiceConnectionDescriptorProvider> serviceConnectionDescriptorsProvider = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, TenantsServiceConnectionDescriptorProvider<T>> serviceConnectionDescriptorsProvider = new ConcurrentHashMap<>();
     private final String instanceId;
     private final ConnectionDescriptorsProvider connectionsDescriptorProvider;
 
@@ -34,13 +34,13 @@ public class TenantRoutingProvider {
     }
 
     public void invalidateAll() {
-        for (TenantsServiceConnectionDescriptorProvider v : serviceConnectionDescriptorsProvider.values()) {
+        for (TenantsServiceConnectionDescriptorProvider<T> v : serviceConnectionDescriptorsProvider.values()) {
             v.invalidateAll();
         }
     }
 
-    public void invalidateTenant(String connectToService, String portName, String tenantId) {
-        TenantsServiceConnectionDescriptorProvider got = serviceConnectionDescriptorsProvider.get(key(connectToService, portName));
+    public void invalidateTenant(String connectToService, String portName, T tenantId) {
+        TenantsServiceConnectionDescriptorProvider<T> got = serviceConnectionDescriptorsProvider.get(key(connectToService, portName));
         if (got != null) {
             got.invalidateTenant(tenantId);
         }
@@ -48,7 +48,7 @@ public class TenantRoutingProvider {
 
     public TenantsRoutingReport getRoutingReport() {
         TenantsRoutingReport report = new TenantsRoutingReport();
-        for (Entry<String, TenantsServiceConnectionDescriptorProvider> e : serviceConnectionDescriptorsProvider.entrySet()) {
+        for (Entry<String, TenantsServiceConnectionDescriptorProvider<T>> e : serviceConnectionDescriptorsProvider.entrySet()) {
             report.serviceReport.put(e.getKey(), e.getValue().getRoutingReport());
         }
         return report;
@@ -62,12 +62,12 @@ public class TenantRoutingProvider {
             return null;
         }
         String key = key(connectToServiceNamed, portName);
-        TenantsServiceConnectionDescriptorProvider got = serviceConnectionDescriptorsProvider.get(key);
+        TenantsServiceConnectionDescriptorProvider<T> got = serviceConnectionDescriptorsProvider.get(key);
         if (got != null) {
             return got;
         }
-        got = new TenantsServiceConnectionDescriptorProvider(instanceId, connectionsDescriptorProvider, connectToServiceNamed, portName);
-        TenantsServiceConnectionDescriptorProvider had = serviceConnectionDescriptorsProvider.putIfAbsent(key(connectToServiceNamed, portName), got);
+        got = new TenantsServiceConnectionDescriptorProvider<>(instanceId, connectionsDescriptorProvider, connectToServiceNamed, portName);
+        TenantsServiceConnectionDescriptorProvider<T> had = serviceConnectionDescriptorsProvider.putIfAbsent(key(connectToServiceNamed, portName), got);
         if (had != null) {
             got = had;
         }

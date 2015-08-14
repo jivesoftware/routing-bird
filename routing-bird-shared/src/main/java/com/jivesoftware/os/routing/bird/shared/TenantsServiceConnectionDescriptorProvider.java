@@ -51,8 +51,8 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
         tenantToUserId.remove(tenantId);
     }
 
-    public TenantsRoutingServiceReport getRoutingReport() {
-        TenantsRoutingServiceReport report = new TenantsRoutingServiceReport();
+    public TenantsRoutingServiceReport<T> getRoutingReport() {
+        TenantsRoutingServiceReport<T> report = new TenantsRoutingServiceReport<>();
         report.tenantToUserId.putAll(tenantToUserId);
         report.userIdsConnectionDescriptors.putAll(userIdsConnectionDescriptors);
         return report;

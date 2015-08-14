@@ -93,7 +93,7 @@ public class TenantsServiceConnectionDescriptorsProviderTest {
         Assert.assertNotNull(descriptors);
         Assert.assertEquals(descriptors.size(), 1);
         Assert.assertEquals(descriptors.get(0), descriptor);
-        TenantsRoutingServiceReport routingReport = tenantsServiceConnectionPoolProvider.getRoutingReport();
+        TenantsRoutingServiceReport<String> routingReport = tenantsServiceConnectionPoolProvider.getRoutingReport();
         Assert.assertNotNull(routingReport);
 
         Map<String, String> tenantToUser = routingReport.tenantToUserId;

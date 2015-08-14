@@ -18,7 +18,7 @@ package com.jivesoftware.os.routing.bird.shared;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TenantsRoutingReport {
+public class TenantsRoutingReport<T> {
 
-    public Map<String, TenantsRoutingServiceReport> serviceReport = new HashMap<>();
+    public Map<String, TenantsRoutingServiceReport<T>> serviceReport = new HashMap<>();
 }

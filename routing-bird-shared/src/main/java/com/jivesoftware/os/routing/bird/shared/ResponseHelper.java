@@ -1,6 +1,5 @@
 package com.jivesoftware.os.routing.bird.shared;
 
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,24 +25,24 @@ public class ResponseHelper {
     private ResponseHelper() {
     }
 
-    private final static MetricLogger log = MetricLoggerFactory.getLogger();
-    private final static ObjectMapper jsonMapper = new ObjectMapper();
+    private final static MetricLogger LOG = MetricLoggerFactory.getLogger();
+    private final static ObjectMapper MAPPER = new ObjectMapper();
 
     static {
-        jsonMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        MAPPER.configure(SerializationFeature.INDENT_OUTPUT, true);
     }
 
     public ResponseHelper register(Module module) {
-        jsonMapper.registerModule(module);
+        MAPPER.registerModule(module);
         return this;
     }
 
     public Response jsonResponse(File jsonFile) {
         String jsonString;
         try {
-            jsonString = jsonMapper.writeValueAsString(jsonMapper.readValue(jsonFile, ObjectNode.class));
+            jsonString = MAPPER.writeValueAsString(MAPPER.readValue(jsonFile, ObjectNode.class));
         } catch (Exception x) {
-            log.error("failed to marshall object to jsonString. object=" + jsonFile, x);
+            LOG.error("failed to marshall object to jsonString. object=" + jsonFile, x);
             return errorResponse("server failed to jsonFile result object to jsonString.", x);
         }
         return Response.ok().entity(jsonString).type(MediaType.APPLICATION_JSON_TYPE).build();
@@ -52,10 +51,10 @@ public class ResponseHelper {
     public Response jsonpResponse(String callbackName, File jsonFile) {
         String jsonString;
         try {
-            jsonString = jsonMapper.writeValueAsString(jsonMapper.readValue(jsonFile, ObjectNode.class));
+            jsonString = MAPPER.writeValueAsString(MAPPER.readValue(jsonFile, ObjectNode.class));
             jsonString = callbackName + "(" + jsonString + ");";
         } catch (Exception x) {
-            log.error("failed to marshall object to jsonString. object=" + jsonFile, x);
+            LOG.error("failed to marshall object to jsonString. object=" + jsonFile, x);
             return errorResponse("server failed to marshall result object to jsonString.", x);
         }
         return Response.ok().entity(jsonString).type(MediaType.APPLICATION_JSON_TYPE).build();
@@ -65,9 +64,9 @@ public class ResponseHelper {
     public Response jsonResponse(Object jsonableObject) {
         String jsonString;
         try {
-            jsonString = jsonMapper.writeValueAsString(jsonableObject);
+            jsonString = MAPPER.writeValueAsString(jsonableObject);
         } catch (Exception x) {
-            log.error("failed to marshall object to jsonString. object=" + jsonableObject, x);
+            LOG.error("failed to marshall object to jsonString. object=" + jsonableObject, x);
             return errorResponse("server failed to marshall result object to jsonString.", x);
         }
         return Response.ok().entity(jsonString).type(MediaType.APPLICATION_JSON_TYPE).build();
@@ -76,10 +75,10 @@ public class ResponseHelper {
     public Response jsonpResponse(String callbackName, Object jsonableObject) {
         String jsonString;
         try {
-            jsonString = jsonMapper.writeValueAsString(jsonableObject);
+            jsonString = MAPPER.writeValueAsString(jsonableObject);
             jsonString = callbackName + "(" + jsonString + ");";
         } catch (Exception x) {
-            log.error("failed to marshall object to jsonString. object=" + jsonableObject, x);
+            LOG.error("failed to marshall object to jsonString. object=" + jsonableObject, x);
             return errorResponse("server failed to marshall result object to jsonString.", x);
         }
         return Response.ok().entity(jsonString).type(MediaType.APPLICATION_JSON_TYPE).build();

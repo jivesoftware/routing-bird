@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class InstanceDescriptor {
 
+    public final String publicHost;
     public final String clusterKey;
     public final String clusterName;
     public final String serviceKey;
@@ -39,7 +40,8 @@ public class InstanceDescriptor {
     public final boolean enabled;
 
     @JsonCreator
-    public InstanceDescriptor(@JsonProperty(value = "clusterKey") String clusterKey,
+    public InstanceDescriptor(@JsonProperty(value = "publicHost") String publicHost,
+        @JsonProperty(value = "clusterKey") String clusterKey,
         @JsonProperty("clusterName") String clusterName,
         @JsonProperty("serviceKey") String serviceKey,
         @JsonProperty("serviceName") String serviceName,
@@ -51,6 +53,8 @@ public class InstanceDescriptor {
         @JsonProperty("repository") String repository,
         @JsonProperty("restartTimestampGMTMillis") long restartTimestampGMTMillis,
         @JsonProperty("enabled") boolean enabled) {
+
+        this.publicHost = publicHost;
         this.clusterKey = clusterKey;
         this.clusterName = clusterName.replaceAll("[^a-zA-Z0-9-_\\.]", "_");
         this.serviceKey = serviceKey;
@@ -106,7 +110,8 @@ public class InstanceDescriptor {
     @Override
     public String toString() {
         return "InstanceDescriptor{"
-            + "clusterKey=" + clusterKey
+            + "publicHost=" + publicHost
+            + ", clusterKey=" + clusterKey
             + ", clusterName=" + clusterName
             + ", serviceKey=" + serviceKey
             + ", serviceName=" + serviceName
@@ -137,6 +142,9 @@ public class InstanceDescriptor {
             return false;
         }
         if (enabled != that.enabled) {
+            return false;
+        }
+        if (publicHost != null ? !publicHost.equals(that.publicHost) : that.publicHost != null) {
             return false;
         }
         if (clusterKey != null ? !clusterKey.equals(that.clusterKey) : that.clusterKey != null) {
@@ -172,7 +180,8 @@ public class InstanceDescriptor {
 
     @Override
     public int hashCode() {
-        int result = clusterKey != null ? clusterKey.hashCode() : 0;
+        int result = publicHost != null ? publicHost.hashCode() : 0;
+        result = 31 * result + (clusterKey != null ? clusterKey.hashCode() : 0);
         result = 31 * result + (clusterName != null ? clusterName.hashCode() : 0);
         result = 31 * result + (serviceKey != null ? serviceKey.hashCode() : 0);
         result = 31 * result + (serviceName != null ? serviceName.hashCode() : 0);
