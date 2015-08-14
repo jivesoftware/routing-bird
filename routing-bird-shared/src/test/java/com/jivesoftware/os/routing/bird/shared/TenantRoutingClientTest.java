@@ -39,7 +39,7 @@ public class TenantRoutingClientTest {
     @Mock
     private ClientConnectionsFactory<TestClient, IOException> clientConnectionsFactory;
     private String tenantId = "testTenant";
-    private TestClient[] testClients = new TestClient[] { new TestClient() };
+    private TestClient[] testClients = new TestClient[]{new TestClient()};
     private NextClientStrategy strategy;
 
     @BeforeMethod
@@ -55,7 +55,7 @@ public class TenantRoutingClientTest {
     }
 
     private void initDescriptorsPool(long timestamp) {
-        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
+        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
         ConnectionDescriptor descriptor = new ConnectionDescriptor(instanceDescriptor, new HostPort("localhost", 7777), Collections.emptyMap());
         ConnectionDescriptors connectionDescriptors = new ConnectionDescriptors(timestamp, Arrays.asList(descriptor));
         strategy = new TestStrategy();
@@ -84,6 +84,7 @@ public class TenantRoutingClientTest {
     }
 
     private static class TestStrategy implements NextClientStrategy {
+
         @Override
         public int[] getClients(ConnectionDescriptor[] connectionDescriptors) {
             return IntStream.range(0, connectionDescriptors.length).toArray();

@@ -31,7 +31,7 @@ public class ConnectionDescriptorTest {
         Map<String, String> properties = new HashMap<>();
         properties.put("a", "b");
 
-        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
+        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
         ConnectionDescriptor a = new ConnectionDescriptor(instanceDescriptor, new HostPort("host", 1), properties);
         Assert.assertEquals(a.getHostPort().getHost(), "host");
         Assert.assertEquals(a.getHostPort().getPort(), 1);
