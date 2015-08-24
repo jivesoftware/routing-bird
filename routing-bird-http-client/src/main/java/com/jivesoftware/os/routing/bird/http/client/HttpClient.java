@@ -15,6 +15,7 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
+import java.io.OutputStream;
 import java.util.Map;
 
 public interface HttpClient {
@@ -28,5 +29,16 @@ public interface HttpClient {
     HttpResponse postJson(String path, String postJsonBody, Map<String, String> headers) throws HttpClientException;
 
     HttpStreamResponse streamingPost(String path, String postJsonBody, Map<String, String> headers) throws HttpClientException;
+
+    HttpStreamResponse streamingPostStreamableRequest(String path, StreamableRequest streamableRequest, Map<String, String> headers) throws
+        HttpClientException;
+
+    HttpResponse postStreamableRequest(String path, StreamableRequest streamableRequest, Map<String, String> headers) throws HttpClientException;
+
+    public static interface StreamableRequest {
+
+        void writeRequest(OutputStream out) throws Exception;
+
+    }
 
 }

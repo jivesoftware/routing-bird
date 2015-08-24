@@ -20,8 +20,11 @@ import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -31,6 +34,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicHeader;
 
 class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
@@ -155,6 +159,91 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
             throw new HttpClientException("Error executing POST request to: "
                 + clientToString() + " path: " + path + " JSON body of length: " + postBytes.length, e);
         }
+    }
+
+    @Override
+    public HttpStreamResponse streamingPostStreamableRequest(String path, StreamableRequest streamable, Map<String, String> headers) throws HttpClientException {
+        try {
+            HttpPost post = new HttpPost(path);
+
+            setRequestHeaders(headers, post);
+            post.setEntity(new StreamableEntity(streamable));
+            post.setHeader(CONTENT_TYPE_HEADER_NAME, APPLICATION_OCTET_STREAM_TYPE);
+            return executeStream(post);
+        } catch (Exception e) {
+            throw new HttpClientException("Error executing POST request to: "
+                + clientToString() + " path: " + path + " streamable: " + streamable, e);
+        }
+    }
+
+    @Override
+    public HttpResponse postStreamableRequest(String path, StreamableRequest streamable, Map<String, String> headers) throws HttpClientException {
+        try {
+            HttpPost post = new HttpPost(path);
+
+            setRequestHeaders(headers, post);
+            post.setEntity(new StreamableEntity(streamable));
+            post.setHeader(CONTENT_TYPE_HEADER_NAME, APPLICATION_OCTET_STREAM_TYPE);
+            return execute(post);
+        } catch (Exception e) {
+            throw new HttpClientException("Error executing POST request to: "
+                + clientToString() + " path: " + path + " streamable: " + streamable, e);
+        }
+    }
+
+
+    static class StreamableEntity implements HttpEntity {
+
+        private final StreamableRequest streamable;
+
+        public StreamableEntity(StreamableRequest streamable) {
+            this.streamable = streamable;
+        }
+
+        @Override
+        public boolean isRepeatable() {
+            return true;
+        }
+
+        @Override
+        public boolean isChunked() {
+            return true;
+        }
+
+        @Override
+        public long getContentLength() {
+            return -1;
+        }
+
+        @Override
+        public Header getContentType() {
+            return new BasicHeader(CONTENT_TYPE_HEADER_NAME, APPLICATION_OCTET_STREAM_TYPE);
+        }
+
+        @Override
+        public Header getContentEncoding() {
+            return null;
+        }
+
+        @Override
+        public InputStream getContent() throws IOException, UnsupportedOperationException {
+            throw new UnsupportedOperationException("Not supported");
+        }
+
+        @Override
+        public void writeTo(OutputStream outstream) throws IOException {
+            streamable.writeRequest(outstream);
+        }
+
+        @Override
+        public boolean isStreaming() {
+            return true;
+        }
+
+        @Override
+        public void consumeContent() throws IOException {
+        }
+
     }
 
     @Override
