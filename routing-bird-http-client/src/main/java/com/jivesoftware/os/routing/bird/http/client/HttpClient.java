@@ -15,6 +15,7 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 
@@ -37,7 +38,7 @@ public interface HttpClient {
 
     public static interface StreamableRequest {
 
-        void writeRequest(OutputStream out) throws Exception;
+        void writeRequest(OutputStream out) throws IOException;
 
     }
 
