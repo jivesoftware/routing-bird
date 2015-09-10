@@ -22,8 +22,8 @@ import com.jivesoftware.os.mlogger.core.LoggerSummary;
 import com.jivesoftware.os.mlogger.core.TenantMetricStream;
 import com.jivesoftware.os.routing.bird.endpoints.logging.metric.LoggerMetrics.MetricsStream;
 import com.jivesoftware.os.routing.bird.shared.ResponseHelper;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import javax.ws.rs.DefaultValue;
@@ -140,7 +140,7 @@ public class LogMetricRestfulEndpoints {
 
     static class Metrics {
 
-        public List<KeyAndMetric> metrics = new LinkedList<>();
+        public List<KeyAndMetric> metrics = new ArrayList<>();
 
         public Metrics() {
         }

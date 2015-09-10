@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -750,7 +749,7 @@ public class RestfulBaseEndpoints {
 
         String classpath = System.getProperty("java.class.path");
 
-        List<String> allReleaseNotes = new LinkedList<>();
+        List<String> allReleaseNotes = new ArrayList<>();
         for (String source : classpath.split(":")) {
             if (source.endsWith(".jar")) {
                 LocateStringResource jar = new LocateStringResource(source, "release-notes.json");
@@ -783,7 +782,7 @@ public class RestfulBaseEndpoints {
 
         String classpath = System.getProperty("java.class.path");
 
-        List<String> allReleaseNotes = new LinkedList<>();
+        List<String> allReleaseNotes = new ArrayList<>();
         for (String source : classpath.split(":")) {
             String[] segments = source.split("/");
             String jarFile = segments[segments.length - 1];

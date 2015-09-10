@@ -24,7 +24,7 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -48,7 +48,7 @@ public class JVMMetrics {
         threadBean = ManagementFactory.getThreadMXBean();
         memoryBean = ManagementFactory.getMemoryMXBean();
         runtimeBean = ManagementFactory.getRuntimeMXBean();
-        stats = new LinkedList<JVMStat>();
+        stats = new ArrayList<>();
 
         add(new JVMStat("jvm>startTime:millis") {
 

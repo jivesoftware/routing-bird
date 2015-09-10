@@ -18,8 +18,8 @@ package com.jivesoftware.os.routing.bird.endpoints.logging.level;
 import com.google.inject.Singleton;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -85,7 +85,7 @@ public class LogLevelRestEndpoints {
     public JsonLogLevels getLogLevels(String tenantId) {
         log.info("listing logging levels");
 
-        List<JsonLogLevel> logLevels = new LinkedList<>();
+        List<JsonLogLevel> logLevels = new ArrayList<>();
 
         Logger rootLogger = LogManager.getRootLogger();
         if (rootLogger instanceof org.apache.logging.log4j.core.Logger) {
