@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.jivesoftware.os.routing.bird.inheritance.poms</groupId>
         <artifactId>global-build-management</artifactId>
-        <version>0.28-SNAPSHOT</version>
+        <version>0.28</version>
         <relativePath>../../inheritance-poms/global-build-management/pom.xml</relativePath>
     </parent>
     <groupId>com.jivesoftware.os.routing.bird.hello</groupId>
@@ -19,7 +19,7 @@
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-server</artifactId>
-            <version>0.28-SNAPSHOT</version>
+            <version>0.28</version>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
@@ -29,22 +29,22 @@
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird.hello</groupId>
             <artifactId>hello-routing-bird-service</artifactId>
-            <version>0.28-SNAPSHOT</version>
+            <version>0.28</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>deployable</artifactId>
-            <version>0.28-SNAPSHOT</version>
+            <version>0.28</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-shared</artifactId>
-            <version>0.28-SNAPSHOT</version>
+            <version>0.28</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-http-client</artifactId>
-            <version>0.28-SNAPSHOT</version>
+            <version>0.28</version>
         </dependency>
     </dependencies>
 </project>
