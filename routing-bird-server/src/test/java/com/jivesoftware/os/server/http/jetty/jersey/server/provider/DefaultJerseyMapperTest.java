@@ -39,8 +39,8 @@ public class DefaultJerseyMapperTest {
     @DataProvider
     public Object[][] values() {
         return new Object[][] {
-            { new Types(true, (byte) 1, (short) 2, (char) 3, 4, 5L, 6.0f, 7.0, "abc") },
-            { new Types(false, (byte) 8, (short) 9, (char) 10, 11, 12L, 13.0f, 14.0, "def") },
+            { new Types(true, (byte) 1, (short) 2, (char) 3, 4, Long.MAX_VALUE - 5L, 6.0f, 7.0, "abc") },
+            { new Types(false, (byte) 8, (short) 9, (char) 10, 11, Long.MAX_VALUE - 12L, 13.0f, 14.0, "def") },
         };
     }
 

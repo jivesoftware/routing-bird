@@ -76,6 +76,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         } catch (Exception e) {
             String trimmedMethodBody = (jsonBody.length() > JSON_POST_LOG_LENGTH_LIMIT)
                 ? jsonBody.substring(0, JSON_POST_LOG_LENGTH_LIMIT) : jsonBody;
+            requestBase.reset();
             throw new HttpClientException("Error executing " + requestBase.getMethod() + " request to: "
                 + clientToString() + " path: " + requestBase.getURI().getPath() + " JSON body: " + trimmedMethodBody, e);
         }
