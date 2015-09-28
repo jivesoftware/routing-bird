@@ -43,7 +43,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.datatype</groupId>
                 <artifactId>jackson-datatype-guava</artifactId>
-                <version>${jackson-ringCacheId}</version>
+                <version>${jackson-version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.jaxrs</groupId>
