@@ -17,8 +17,8 @@ package com.jivesoftware.os.routing.bird.hello.routing.bird.service.endpoints;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
-import com.jivesoftware.os.routing.bird.shared.ResponseHelper;
 import com.jivesoftware.os.routing.bird.hello.routing.bird.service.HelloRoutingBirdService;
+import com.jivesoftware.os.routing.bird.shared.ResponseHelper;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -44,8 +44,8 @@ public class HelloRoutingBirdServiceRestEndpoints {
     @GET
     @Path("/echo")
     public Response echo(@QueryParam("tenantId") @DefaultValue("defaultTenantId") String tenantId,
-            @QueryParam("message") @DefaultValue("echo") String message,
-            @QueryParam("echos") @DefaultValue("3") int echos) {
+        @QueryParam("message") @DefaultValue("echo") String message,
+        @QueryParam("echos") @DefaultValue("3") int echos) {
         try {
             String echo = service.echo(tenantId, message, echos);
             return Response.ok("Echo: " + echo + " " + System.identityHashCode(Runtime.getRuntime()), MediaType.TEXT_PLAIN).build();

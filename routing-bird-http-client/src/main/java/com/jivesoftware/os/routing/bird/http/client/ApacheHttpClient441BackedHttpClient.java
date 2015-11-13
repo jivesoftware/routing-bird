@@ -163,7 +163,9 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     }
 
     @Override
-    public HttpStreamResponse streamingPostStreamableRequest(String path, StreamableRequest streamable, Map<String, String> headers) throws HttpClientException {
+    public HttpStreamResponse streamingPostStreamableRequest(String path,
+        StreamableRequest streamable,
+        Map<String, String> headers) throws HttpClientException {
         try {
             HttpPost post = new HttpPost(path);
 

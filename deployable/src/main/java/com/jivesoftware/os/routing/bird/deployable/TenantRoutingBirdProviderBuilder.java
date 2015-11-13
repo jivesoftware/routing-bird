@@ -49,14 +49,14 @@ public class TenantRoutingBirdProviderBuilder {
 
         HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder().build();
         final HttpClient httpClient = new HttpClientFactoryProvider()
-                .createHttpClientFactory(Arrays.<HttpClientConfiguration>asList(httpClientConfig))
-                .createClient(routesHost, routesPort);
+            .createHttpClientFactory(Arrays.<HttpClientConfiguration>asList(httpClientConfig))
+            .createClient(routesHost, routesPort);
 
         final ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         ConnectionDescriptorsProvider connectionsProvider = (connectionsRequest) -> {
             LOG.info("Requesting connections:" + connectionsRequest);
-            
+
             String postEntity;
             try {
                 postEntity = mapper.writeValueAsString(connectionsRequest);
