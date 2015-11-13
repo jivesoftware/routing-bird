@@ -92,8 +92,9 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
                         familyStats.getKey(),
                         fs.attempts.get(),
                         fs.success.get(),
-                        0,
+                        fs.failure.get(),
                         fs.successPerSecond(time),
+                        fs.failurePerSecond(time),
                         latencyStats));
                 }
             }
@@ -125,9 +126,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
         @Override
         public void attempt(String family) {
             long currentTimeMillis = System.currentTimeMillis();
-            FamilyStats stats = familyStats.computeIfAbsent(family, (String t) -> {
-                return new FamilyStats(sampleWindow);
-            });
+            FamilyStats stats = familyStats.computeIfAbsent(family, t -> new FamilyStats(sampleWindow));
             stats.attempt(currentTimeMillis);
         }
 
@@ -138,9 +137,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
             lastMarkedAsDeadTimestamp = -1;
             connectivityErrors = 0;
             fatalError.set(null);
-            FamilyStats stats = familyStats.computeIfAbsent(family, (String t) -> {
-                return new FamilyStats(sampleWindow);
-            });
+            FamilyStats stats = familyStats.computeIfAbsent(family, t -> new FamilyStats(sampleWindow));
             stats.success(currentTimeMillis, latency);
             timestamp = currentTimeMillis;
         }
@@ -153,15 +150,21 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
         }
 
         @Override
-        public void connectivityError() {
+        public void connectivityError(String family) {
+            long currentTimeMillis = System.currentTimeMillis();
             connectivityErrors++;
-            timestamp = System.currentTimeMillis();
+            FamilyStats stats = familyStats.computeIfAbsent(family, t -> new FamilyStats(sampleWindow));
+            stats.failure(currentTimeMillis);
+            timestamp = currentTimeMillis;
         }
 
         @Override
-        public void fatalError(Exception x) {
+        public void fatalError(String family, Exception x) {
+            long currentTimeMillis = System.currentTimeMillis();
             fatalError.set(x);
-            timestamp = System.currentTimeMillis();
+            FamilyStats stats = familyStats.computeIfAbsent(family, t -> new FamilyStats(sampleWindow));
+            stats.failure(currentTimeMillis);
+            timestamp = currentTimeMillis;
         }
 
         @Override
@@ -177,10 +180,14 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
 
         final AtomicLong attempts = new AtomicLong(0);
         final AtomicLong success = new AtomicLong(0);
+        final AtomicLong failure = new AtomicLong(0);
         final DescriptiveStatistics ds;
         long successes;
+        long failures;
         long lastSuccessSecond;
+        long lastFailureSecond;
         long successPerSecond;
+        long failurePerSecond;
 
         FamilyStats(int window) {
             ds = new DescriptiveStatistics(window);
@@ -202,6 +209,17 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
             ds.addValue(latency);
         }
 
+        public void failure(long timestamp) {
+            long second = timestamp / 1000;
+            if (lastFailureSecond < second) {
+                lastFailureSecond = second;
+                failurePerSecond = failures;
+                failures = 0;
+            }
+            failures++;
+            failure.incrementAndGet();
+        }
+
         public long successPerSecond(long time) {
             long second = time / 1000;
             if (lastSuccessSecond < second) {
@@ -214,6 +232,20 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
                 lastSuccessSecond = successes;
             }
             return successPerSecond;
+        }
+
+        public long failurePerSecond(long time) {
+            long second = time / 1000;
+            if (lastFailureSecond < second) {
+                if (second - lastFailureSecond > 1) {
+                    failurePerSecond = 0;
+                } else {
+                    failurePerSecond = failures;
+                }
+                failures = 0;
+                lastFailureSecond = failures;
+            }
+            return failurePerSecond;
         }
     }
 

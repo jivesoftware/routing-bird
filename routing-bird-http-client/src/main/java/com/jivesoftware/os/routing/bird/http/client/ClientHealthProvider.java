@@ -18,9 +18,9 @@ public interface ClientHealthProvider {
 
         void markedDead();
 
-        void connectivityError();
+        void connectivityError(String family);
 
-        void fatalError(Exception x);
+        void fatalError(String family, Exception x);
 
         void stillDead();
 

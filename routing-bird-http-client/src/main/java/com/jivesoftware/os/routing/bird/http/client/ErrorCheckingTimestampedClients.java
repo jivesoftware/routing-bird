@@ -89,11 +89,14 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
                             clientsDeathTimestamp[clientIndex].set(now + checkDeadEveryNMillis);
                             clientHealths[clientIndex].markedDead();
                         }
-                        clientHealths[clientIndex].connectivityError();
+                        clientHealths[clientIndex].connectivityError(family);
                     } else {
-                        clientHealths[clientIndex].fatalError(e);
+                        clientHealths[clientIndex].fatalError(family, e);
                         throw e;
                     }
+                } catch (Exception e) {
+                    clientHealths[clientIndex].fatalError(family, e);
+                    throw e;
                 } finally {
                     strategy.usedClientAtIndex(clientIndex);
                 }

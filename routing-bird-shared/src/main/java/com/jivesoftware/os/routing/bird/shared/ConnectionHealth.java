@@ -1,7 +1,6 @@
 package com.jivesoftware.os.routing.bird.shared;
 
 /**
- *
  * @author jonathan.colt
  */
 public class ConnectionHealth {
@@ -14,15 +13,26 @@ public class ConnectionHealth {
     public String family;
     public long attempt;
     public long success;
-    public long attemptPerSecond;
+    public long failure;
     public long successPerSecond;
+    public long failurePerSecond;
     public ConnectionHealthLatencyStats latencyStats;
 
     public ConnectionHealth() {
     }
 
-    public ConnectionHealth(ConnectionDescriptor connectionDescriptor, long timestampMillis, long connectivityErrors, long firstMarkedAsDeadTimestampMillis,
-        long lastMarkedAsDeadTimestampMillis, String fatalError, String family, long attempt, long success, long attemptPerSecond, long successPerSecond,
+    public ConnectionHealth(ConnectionDescriptor connectionDescriptor,
+        long timestampMillis,
+        long connectivityErrors,
+        long firstMarkedAsDeadTimestampMillis,
+        long lastMarkedAsDeadTimestampMillis,
+        String fatalError,
+        String family,
+        long attempt,
+        long success,
+        long failure,
+        long successPerSecond,
+        long failurePerSecond,
         ConnectionHealthLatencyStats deliverableLatencyStats) {
         this.connectionDescriptor = connectionDescriptor;
         this.timestampMillis = timestampMillis;
@@ -33,8 +43,9 @@ public class ConnectionHealth {
         this.family = family;
         this.attempt = attempt;
         this.success = success;
-        this.attemptPerSecond = attemptPerSecond;
+        this.failure = failure;
         this.successPerSecond = successPerSecond;
+        this.failurePerSecond = failurePerSecond;
         this.latencyStats = deliverableLatencyStats;
     }
 
