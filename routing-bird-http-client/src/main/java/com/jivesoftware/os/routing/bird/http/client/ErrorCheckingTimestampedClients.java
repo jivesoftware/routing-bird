@@ -106,14 +106,12 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Now:").append(now).append(" ");
         for (int i = 0; i < connectionDescriptors.length; i++) {
             long deathTimestamp = clientsDeathTimestamp[i].get();
-            sb.append("Client:").append(connectionDescriptors[i])
-                .append(" health:").append(clientHealths[i])
+            sb.append("Client[").append(i).append("]:").append(connectionDescriptors[i].getHostPort())
+                .append(" isDead:").append((deathTimestamp != 0 && now < deathTimestamp))
                 .append(" errors:").append(clientsErrors[i])
-                .append(" deathTimestamp:").append(deathTimestamp)
-                .append(" isDead:").append((deathTimestamp != 0 && now - deathTimestamp <= checkDeadEveryNMillis));
+                .append(" deathTimestamp:").append(deathTimestamp);
         }
 
         throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(clientIndexes));
