@@ -108,7 +108,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
         try {
             return execute(get);
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new HttpClientException("Error executing GET request to: " + clientToString()
                 + " path: " + path, e);
         }

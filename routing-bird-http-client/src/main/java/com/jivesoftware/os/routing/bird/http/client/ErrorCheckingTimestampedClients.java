@@ -104,7 +104,19 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
                 clientHealths[clientIndex].stillDead();
             }
         }
-        throw new HttpClientException("No clients are available");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Now:").append(now).append(" ");
+        for (int i = 0; i < connectionDescriptors.length; i++) {
+            long deathTimestamp = clientsDeathTimestamp[i].get();
+            sb.append("Client:").append(connectionDescriptors[i])
+                .append(" health:").append(clientHealths[i])
+                .append(" errors:").append(clientsErrors[i])
+                .append(" deathTimestamp:").append(deathTimestamp)
+                .append(" isDead:").append((deathTimestamp != 0 && now - deathTimestamp <= checkDeadEveryNMillis));
+        }
+
+        throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(clientIndexes));
     }
 
     @Override
