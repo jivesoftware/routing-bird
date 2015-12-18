@@ -69,12 +69,12 @@ public class TimerHealthChecker implements HealthChecker<Timer> {
         StringBuilder sb = new StringBuilder();
         sb.append(" samples:").append(timer.getSampleCount());
         sb.append(" mean:").append(timer.getMean());
-        sb.append(" variance:").append(timer.getVariance());
         sb.append(" 50th:").append(timer.get50ThPercentile());
         sb.append(" 75th:").append(timer.get75ThPercentile());
         sb.append(" 90th:").append(timer.get90ThPercentile());
         sb.append(" 95th:").append(timer.get95ThPercentile());
         sb.append(" 99th:").append(timer.get99ThPercentile());
+        sb.append(" max:").append(timer.getMax());
         return sb.toString();
     }
 

@@ -85,7 +85,10 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
                     }
                 } catch (HttpClientException e) {
                     if (e.getCause() instanceof IOException) {
-                        if (clientsErrors[clientIndex].incrementAndGet() > deadAfterNErrors) {
+                        int errorCount = clientsErrors[clientIndex].incrementAndGet();
+                        if (errorCount > deadAfterNErrors) {
+                            LOG.warn("client:{} has had {} errors and will be marked as dead for {} millis.",
+                                clients[clientIndex], errorCount, checkDeadEveryNMillis);
                             clientsDeathTimestamp[clientIndex].set(now + checkDeadEveryNMillis);
                             clientHealths[clientIndex].markedDead();
                         }
@@ -106,6 +109,7 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
         }
 
         StringBuilder sb = new StringBuilder();
+        sb.append(strategy.getClass().getSimpleName()).append(" ").append(strategy);
         for (int i = 0; i < connectionDescriptors.length; i++) {
             long deathTimestamp = clientsDeathTimestamp[i].get();
             sb.append("Client[").append(i).append("]:").append(connectionDescriptors[i].getHostPort())

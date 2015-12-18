@@ -50,12 +50,19 @@ public class ConnectionDescriptorSelectiveStrategy implements NextClientStrategy
             }
         }
         lastDescriptorsReference.set(new DescriptorsReference(connectionDescriptors, indexes));
-
         return indexes;
     }
 
     @Override
     public void usedClientAtIndex(int index) {
+    }
+
+    @Override
+    public String toString() {
+        return "ConnectionDescriptorSelectiveStrategy{"
+            + "orderHostPorts=" + Arrays.toString(orderHostPorts)
+            + ", lastDescriptorsReference=" + lastDescriptorsReference
+            + '}';
     }
 
     private static class DescriptorsReference {
