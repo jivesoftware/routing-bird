@@ -239,7 +239,17 @@ public class Deployable {
 
                 @Override
                 public String getStatus() {
-                    return "oom:" + oomed.get() + " unhandled:" + unhandled;
+                    StringBuilder sb = new StringBuilder();
+                    if (oomed.get()) {
+                        sb.append("These service has experienced an OOM.");
+                    }
+                    if (!unhandled.isEmpty()) {
+                        sb.append("This service has unhandled exceptions:").append(unhandled);
+                    }
+                    if (sb.length() == 0) {
+                        sb.append("healthy");
+                    }
+                    return sb.toString();
                 }
 
                 @Override
