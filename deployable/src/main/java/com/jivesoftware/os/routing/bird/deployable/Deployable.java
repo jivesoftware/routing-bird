@@ -39,7 +39,8 @@ import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
 import com.jivesoftware.os.routing.bird.shared.TenantRoutingProvider;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Date;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.glassfish.hk2.api.ServiceHandle;
@@ -74,7 +75,6 @@ public class Deployable {
     }
 
     private void init(ConnectionDescriptorsProvider connectionsDescriptorProvider) {
-        initializeMemoryExceptionsHandler(Thread.currentThread());
 
         if (connectionsDescriptorProvider == null) {
 
@@ -101,37 +101,6 @@ public class Deployable {
             applicationName,
             instanceConfig.getMainMaxThreads(),
             instanceConfig.getMainMaxQueuedRequests());
-    }
-
-    public static void initializeMemoryExceptionsHandler(final Thread mainThread) {
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-
-            @Override
-            public void uncaughtException(Thread t, Throwable e) {
-                if (e instanceof OutOfMemoryError) {
-                    killServiceOnOOM(e);
-                } else {
-                    handleUncaughtException(t, e, t == mainThread);
-                }
-            }
-        });
-    }
-
-    private static void killServiceOnOOM(Throwable e) {
-        System.out.println("killed the service! becaue of:");
-        e.printStackTrace();
-        System.exit(1);
-    }
-
-    private static void handleUncaughtException(Thread t, Throwable e, boolean exit) {
-        System.err.print(new Date().toString());
-        System.err.print(" Exception in thread \"");
-        System.err.print(t.getName());
-        System.err.print("\" ");
-        e.printStackTrace();
-        if (exit) {
-            System.exit(1);
-        }
     }
 
     /**
@@ -234,6 +203,64 @@ public class Deployable {
         restfulServer.addResource(resource);
     }
 
+    private void initializeMemoryExceptionsHandler(OOMHealthCheck oomhc) {
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                if (e instanceof OutOfMemoryError) {
+                    oomhc.oomed.set(true);
+                } else {
+                    LOG.error("UncaughtException", e);
+                    oomhc.unhandled.add(t.getName() + " throwable:" + e + " cause:" + e.getCause());
+                }
+            }
+        });
+    }
+
+    private class OOMHealthCheck implements HealthCheck {
+
+        private final AtomicBoolean oomed = new AtomicBoolean(false);
+        private final List<String> unhandled = new CopyOnWriteArrayList<>();
+
+        @Override
+        public HealthCheckResponse checkHealth() throws Exception {
+            return new HealthCheckResponse() {
+
+                @Override
+                public String getName() {
+                    return "out>of>memory";
+                }
+
+                @Override
+                public double getHealth() {
+                    return oomed.get() ? 0d : (unhandled.size() > 0) ? 0.1d : 1d;
+                }
+
+                @Override
+                public String getStatus() {
+                    return "oom:" + oomed.get() + " unhandled:" + unhandled;
+                }
+
+                @Override
+                public String getDescription() {
+                    return "Service OOM";
+                }
+
+                @Override
+                public String getResolution() {
+                    return "Fix reason for OOM! Restart service";
+                }
+
+                @Override
+                public long getTimestamp() {
+                    return System.currentTimeMillis();
+                }
+            };
+        }
+
+    }
+
     private class LoggerSummaryHealthCheck implements HealthCheck {
 
         private final AtomicLong lastErrorCount = new AtomicLong();
@@ -309,8 +336,12 @@ public class Deployable {
     }
 
     public void addErrorHealthChecks() {
+        OOMHealthCheck oomHealthCheck = new OOMHealthCheck();
+        initializeMemoryExceptionsHandler(oomHealthCheck);
+
         restfulManageServer.addHealthCheck(new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE),
-            new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS));
+            new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS),
+            oomHealthCheck);
     }
 
     public RestfulServer buildServer() throws Exception {
