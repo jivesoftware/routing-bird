@@ -39,6 +39,7 @@ import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
 import com.jivesoftware.os.routing.bird.shared.TenantRoutingProvider;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.glassfish.hk2.api.ServiceHandle;
@@ -73,6 +74,8 @@ public class Deployable {
     }
 
     private void init(ConnectionDescriptorsProvider connectionsDescriptorProvider) {
+        initializeMemoryExceptionsHandler(Thread.currentThread());
+
         if (connectionsDescriptorProvider == null) {
 
             TenantRoutingBirdProviderBuilder tenantRoutingBirdBuilder = new TenantRoutingBirdProviderBuilder(instanceConfig.getRoutesHost(),
@@ -98,6 +101,37 @@ public class Deployable {
             applicationName,
             instanceConfig.getMainMaxThreads(),
             instanceConfig.getMainMaxQueuedRequests());
+    }
+
+    public static void initializeMemoryExceptionsHandler(final Thread mainThread) {
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                if (e instanceof OutOfMemoryError) {
+                    killServiceOnOOM(e);
+                } else {
+                    handleUncaughtException(t, e, t == mainThread);
+                }
+            }
+        });
+    }
+
+    private static void killServiceOnOOM(Throwable e) {
+        System.out.println("killed the service! becaue of:");
+        e.printStackTrace();
+        System.exit(1);
+    }
+
+    private static void handleUncaughtException(Thread t, Throwable e, boolean exit) {
+        System.err.print(new Date().toString());
+        System.err.print(" Exception in thread \"");
+        System.err.print(t.getName());
+        System.err.print("\" ");
+        e.printStackTrace();
+        if (exit) {
+            System.exit(1);
+        }
     }
 
     /**
