@@ -21,6 +21,12 @@ import org.merlin.config.defaults.IntDefault;
 
 public interface InstanceConfig extends Config {
 
+    @Default("defaultDatacenter")
+    String getDatacenter();
+
+    @Default("defaultRack")
+    String getRack();
+
     @Default("localhost")
     String getHost();
 

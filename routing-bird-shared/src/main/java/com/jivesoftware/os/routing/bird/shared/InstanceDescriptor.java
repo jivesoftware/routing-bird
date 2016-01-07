@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class InstanceDescriptor {
 
+    public final String datacenter;
+    public final String rack;
     public final String publicHost;
     public final String clusterKey;
     public final String clusterName;
@@ -40,8 +42,10 @@ public class InstanceDescriptor {
     public final boolean enabled;
 
     @JsonCreator
-    public InstanceDescriptor(@JsonProperty(value = "publicHost") String publicHost,
-        @JsonProperty(value = "clusterKey") String clusterKey,
+    public InstanceDescriptor(@JsonProperty("datacenter") String datacenter,
+        @JsonProperty("rack") String rack,
+        @JsonProperty("publicHost") String publicHost,
+        @JsonProperty("clusterKey") String clusterKey,
         @JsonProperty("clusterName") String clusterName,
         @JsonProperty("serviceKey") String serviceKey,
         @JsonProperty("serviceName") String serviceName,
@@ -54,6 +58,8 @@ public class InstanceDescriptor {
         @JsonProperty("restartTimestampGMTMillis") long restartTimestampGMTMillis,
         @JsonProperty("enabled") boolean enabled) {
 
+        this.datacenter = datacenter;
+        this.rack = rack;
         this.publicHost = publicHost;
         this.clusterKey = clusterKey;
         this.clusterName = clusterName.replaceAll("[^a-zA-Z0-9-_\\.]", "_");
@@ -110,7 +116,9 @@ public class InstanceDescriptor {
     @Override
     public String toString() {
         return "InstanceDescriptor{"
-            + "publicHost=" + publicHost
+            + "datacenter=" + datacenter
+            + ", rack=" + rack
+            + ", publicHost=" + publicHost
             + ", clusterKey=" + clusterKey
             + ", clusterName=" + clusterName
             + ", serviceKey=" + serviceKey
@@ -142,6 +150,12 @@ public class InstanceDescriptor {
             return false;
         }
         if (enabled != that.enabled) {
+            return false;
+        }
+        if (datacenter != null ? !datacenter.equals(that.datacenter) : that.datacenter != null) {
+            return false;
+        }
+        if (rack != null ? !rack.equals(that.rack) : that.rack != null) {
             return false;
         }
         if (publicHost != null ? !publicHost.equals(that.publicHost) : that.publicHost != null) {
@@ -180,7 +194,9 @@ public class InstanceDescriptor {
 
     @Override
     public int hashCode() {
-        int result = publicHost != null ? publicHost.hashCode() : 0;
+        int result = datacenter != null ? datacenter.hashCode() : 0;
+        result = 31 * result + (rack != null ? rack.hashCode() : 0);
+        result = 31 * result + (publicHost != null ? publicHost.hashCode() : 0);
         result = 31 * result + (clusterKey != null ? clusterKey.hashCode() : 0);
         result = 31 * result + (clusterName != null ? clusterName.hashCode() : 0);
         result = 31 * result + (serviceKey != null ? serviceKey.hashCode() : 0);

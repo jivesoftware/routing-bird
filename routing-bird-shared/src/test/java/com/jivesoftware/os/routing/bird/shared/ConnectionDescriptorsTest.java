@@ -32,8 +32,8 @@ public class ConnectionDescriptorsTest {
         Map<String, String> properties = new HashMap<>();
         properties.put("a", "b");
 
-        InstanceDescriptor instanceDescriptor1 = new InstanceDescriptor("ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
-        InstanceDescriptor instanceDescriptor2 = new InstanceDescriptor("ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 2, "vn", "r", 0, true);
+        InstanceDescriptor instanceDescriptor1 = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
+        InstanceDescriptor instanceDescriptor2 = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 2, "vn", "r", 0, true);
 
         ConnectionDescriptor cd1 = new ConnectionDescriptor(instanceDescriptor1, new HostPort("host1", 1), properties);
         ConnectionDescriptor cd2 = new ConnectionDescriptor(instanceDescriptor2, new HostPort("host2", 2), properties);

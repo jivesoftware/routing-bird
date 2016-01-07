@@ -42,7 +42,7 @@ public class TenantsServiceConnectionDescriptorsProviderTest {
         MockitoAnnotations.initMocks(this);
         ConnectionDescriptorsRequest connectionDescriptorsRequest = new ConnectionDescriptorsRequest(tenantId, instanceId, serviceId, port);
 
-        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
+        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
         descriptor = new ConnectionDescriptor(instanceDescriptor, new HostPort("localhost", 7776), Collections.EMPTY_MAP);
 
         Mockito.when(connectionDescriptorsProvider.requestConnections(Mockito.eq(connectionDescriptorsRequest))).
