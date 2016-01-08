@@ -27,9 +27,11 @@ import java.util.Map;
 public class SickThreadsHealthCheck implements HealthCheck {
 
     private final SickThreads sickThreads;
+    private final double sickHealth;
 
-    public SickThreadsHealthCheck(SickThreads sickThreads) {
+    public SickThreadsHealthCheck(SickThreads sickThreads, double sickHealth) {
         this.sickThreads = sickThreads;
+        this.sickHealth = sickHealth;
     }
 
     @Override
@@ -47,7 +49,7 @@ public class SickThreadsHealthCheck implements HealthCheck {
 
                 @Override
                 public double getHealth() {
-                    return 0;
+                    return sickHealth;
                 }
 
                 @Override
