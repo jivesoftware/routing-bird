@@ -18,6 +18,7 @@ package com.jivesoftware.os.routing.bird.health.checkers;
 import com.jivesoftware.os.routing.bird.health.HealthCheck;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponse;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponseImpl;
+import com.jivesoftware.os.routing.bird.health.api.SickHealthCheckConfig;
 import java.util.Map;
 
 /**
@@ -26,30 +27,30 @@ import java.util.Map;
  */
 public class SickThreadsHealthCheck implements HealthCheck {
 
+    private final SickHealthCheckConfig config;
     private final SickThreads sickThreads;
-    private final double sickHealth;
 
-    public SickThreadsHealthCheck(SickThreads sickThreads, double sickHealth) {
+    public SickThreadsHealthCheck(SickHealthCheckConfig config, SickThreads sickThreads) {
+        this.config = config;
         this.sickThreads = sickThreads;
-        this.sickHealth = sickHealth;
     }
 
     @Override
     public HealthCheckResponse checkHealth() throws Exception {
         Map<Thread, Throwable> sickThread = sickThreads.getSickThread();
         if (sickThread.isEmpty()) {
-            return new HealthCheckResponseImpl("sick>threads", 1.0, "Healthy", "No sick threads", "", System.currentTimeMillis());
+            return new HealthCheckResponseImpl(config.getName(), 1.0, "Healthy", config.getDescription(), "", System.currentTimeMillis());
         } else {
             return new HealthCheckResponse() {
 
                 @Override
                 public String getName() {
-                    return "sick>thread";
+                    return config.getName();
                 }
 
                 @Override
                 public double getHealth() {
-                    return sickHealth;
+                    return config.getSickHealth();
                 }
 
                 @Override
