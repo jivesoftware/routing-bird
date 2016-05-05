@@ -17,11 +17,11 @@ public class TimerHealthChecker implements HealthChecker<Timer> {
 
     static public HealthFactory.HealthCheckerConstructor<Timer, TimerHealthCheckConfig> FACTORY =
         new HealthFactory.HealthCheckerConstructor<Timer, TimerHealthCheckConfig>() {
-            @Override
-            public HealthChecker<Timer> construct(TimerHealthCheckConfig config) {
-                return new TimerHealthChecker(config);
-            }
-        };
+        @Override
+        public HealthChecker<Timer> construct(TimerHealthCheckConfig config) {
+            return new TimerHealthChecker(config);
+        }
+    };
 
     private final TimerHealthCheckConfig config;
     private final AtomicReference<Callable<HealthCheckResponse>> lastTimer = new AtomicReference<>();
@@ -45,7 +45,7 @@ public class TimerHealthChecker implements HealthChecker<Timer> {
                 health = Math.min(health, HealthCheckUtil.zeroToOne(config.get90ThPecentileMax(), 0, timer.get90ThPercentile()));
                 health = Math.min(health, HealthCheckUtil.zeroToOne(config.get95ThPecentileMax(), 0, timer.get95ThPercentile()));
                 health = Math.min(health, HealthCheckUtil.zeroToOne(config.get99ThPecentileMax(), 0, timer.get99ThPercentile()));
-                return new HealthCheckResponseImpl(config.getName(), health, healthString(timer), description, resolution, time);
+                return new HealthCheckResponseImpl(config.getName(), Math.max(health, 0f), healthString(timer), description, resolution, time);
             }
         });
     }
