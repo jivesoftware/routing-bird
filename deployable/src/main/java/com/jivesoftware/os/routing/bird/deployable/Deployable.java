@@ -346,12 +346,17 @@ public class Deployable {
 
     }
 
-    public void addErrorHealthChecks(int maxErrorsPerMinute, double healthWhenErrorsExceeded) {
+    public void addErrorHealthChecks(ErrorHealthCheckConfig config) {
         OOMHealthCheck oomHealthCheck = new OOMHealthCheck();
         initializeMemoryExceptionsHandler(oomHealthCheck);
 
-        restfulManageServer.addHealthCheck(new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE, maxErrorsPerMinute, healthWhenErrorsExceeded),
-            new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS, maxErrorsPerMinute, healthWhenErrorsExceeded),
+        restfulManageServer.addHealthCheck(
+            new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE,
+                config.getInternalMaxErrorsPerMinute(),
+                config.getInternalHealthWhenErrorsExceeded()),
+            new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS,
+                config.getExternalMaxErrorsPerMinute(),
+                config.getExternalHealthWhenErrorsExceeded()),
             oomHealthCheck);
     }
 
