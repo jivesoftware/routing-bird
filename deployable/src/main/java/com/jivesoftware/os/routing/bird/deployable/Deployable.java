@@ -29,6 +29,7 @@ import com.jivesoftware.os.routing.bird.endpoints.configuration.MainPropertiesEn
 import com.jivesoftware.os.routing.bird.health.HealthCheck;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponse;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponseImpl;
+import com.jivesoftware.os.routing.bird.health.api.ScheduledHealthCheck;
 import com.jivesoftware.os.routing.bird.http.server.endpoints.TenantRoutingRestEndpoints;
 import com.jivesoftware.os.routing.bird.server.InitializeRestfulServer;
 import com.jivesoftware.os.routing.bird.server.JerseyEndpoints;
@@ -41,6 +42,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.glassfish.hk2.api.ServiceHandle;
@@ -271,20 +273,45 @@ public class Deployable {
 
     }
 
-    private class LoggerSummaryHealthCheck implements HealthCheck {
+    private class LoggerSummaryHealthCheck implements ScheduledHealthCheck {
 
         private final AtomicLong lastErrorCount = new AtomicLong();
         private final AtomicLong lastCheckTimestamp = new AtomicLong();
         private final AtomicLong lastErrorDelta = new AtomicLong();
         private final LoggerSummary loggerSummary;
 
+        private final String name;
         private final int maxErrorsPerMinute;
         private final double healthWhenErrorsExceeded;
 
-        public LoggerSummaryHealthCheck(LoggerSummary loggerSummary, int maxErrorsPerMinute, double healthWhenErrorsExceeded) {
+        private double health;
+        
+        public LoggerSummaryHealthCheck(LoggerSummary loggerSummary, String name, int maxErrorsPerMinute, double healthWhenErrorsExceeded) {
+            this.name = name;
             this.loggerSummary = loggerSummary;
             this.maxErrorsPerMinute = maxErrorsPerMinute;
             this.healthWhenErrorsExceeded = healthWhenErrorsExceeded;
+        }
+
+        @Override
+        public void run() {
+            long errors = loggerSummary.errors;
+            long delta = errors - lastErrorCount.getAndSet(errors);
+            lastErrorDelta.set(delta);
+            long now = System.currentTimeMillis();
+            long elapse = now - lastCheckTimestamp.getAndSet(now);
+            if (elapse > 0 && delta > 0) {
+                double errorRatePerMilli = delta / (double) elapse;
+                double errorsRatePerMinute = errorRatePerMilli * getCheckIntervalInMillis();
+                health = Math.max(1d - (errorsRatePerMinute / maxErrorsPerMinute) * (1d - healthWhenErrorsExceeded), healthWhenErrorsExceeded);
+            } else {
+                health = 1d;
+            }
+        }
+
+        @Override
+        public long getCheckIntervalInMillis() {
+            return TimeUnit.MINUTES.toMillis(1);
         }
 
         @Override
@@ -293,22 +320,12 @@ public class Deployable {
 
                 @Override
                 public String getName() {
-                    return "logged>errors";
+                    return name + ">logged>errors";
                 }
 
                 @Override
                 public double getHealth() {
-                    long errors = loggerSummary.errors;
-                    long delta = errors - lastErrorCount.getAndSet(errors);
-                    lastErrorDelta.set(delta);
-                    long now = System.currentTimeMillis();
-                    long elapse = now - lastCheckTimestamp.getAndSet(now);
-                    if (elapse > 0 && delta > 0) {
-                        double errorRatePerMilli = delta / (double) elapse;
-                        double errorsRatePerMinute = errorRatePerMilli * (60 * 1000);
-                        return Math.max(1d - (errorsRatePerMinute / maxErrorsPerMinute) * (1d - healthWhenErrorsExceeded), healthWhenErrorsExceeded);
-                    }
-                    return 1d;
+                    return health;
                 }
 
                 @Override
@@ -339,7 +356,7 @@ public class Deployable {
 
                 @Override
                 public long getTimestamp() {
-                    return System.currentTimeMillis();
+                    return lastCheckTimestamp.get();
                 }
             };
         }
@@ -352,9 +369,11 @@ public class Deployable {
 
         restfulManageServer.addHealthCheck(
             new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE,
+                "internal",
                 config.getInternalMaxErrorsPerMinute(),
                 config.getInternalHealthWhenErrorsExceeded()),
             new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS,
+                "external",
                 config.getExternalMaxErrorsPerMinute(),
                 config.getExternalHealthWhenErrorsExceeded()),
             oomHealthCheck);
