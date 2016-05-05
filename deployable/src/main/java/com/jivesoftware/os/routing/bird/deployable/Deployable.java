@@ -278,8 +278,13 @@ public class Deployable {
         private final AtomicLong lastErrorDelta = new AtomicLong();
         private final LoggerSummary loggerSummary;
 
-        public LoggerSummaryHealthCheck(LoggerSummary loggerSummary) {
+        private final int maxErrorsPerMinute;
+        private final double healthWhenErrorsExceeded;
+
+        public LoggerSummaryHealthCheck(LoggerSummary loggerSummary, int maxErrorsPerMinute, double healthWhenErrorsExceeded) {
             this.loggerSummary = loggerSummary;
+            this.maxErrorsPerMinute = maxErrorsPerMinute;
+            this.healthWhenErrorsExceeded = healthWhenErrorsExceeded;
         }
 
         @Override
@@ -299,13 +304,9 @@ public class Deployable {
                     long now = System.currentTimeMillis();
                     long elapse = now - lastCheckTimestamp.getAndSet(now);
                     if (elapse > 0 && delta > 0) {
-                        double errorRatePerMilli = (double) delta / (double) elapse;
+                        double errorRatePerMilli = delta / (double) elapse;
                         double errorsRatePerMinute = errorRatePerMilli * (60 * 1000);
-                        if (errorsRatePerMinute < 10) {
-                            return (1d - Math.log10(errorsRatePerMinute));
-                        } else {
-                            return Double.MIN_VALUE;
-                        }
+                        return Math.max(1d - (errorsRatePerMinute / maxErrorsPerMinute) * (1d - healthWhenErrorsExceeded), healthWhenErrorsExceeded);
                     }
                     return 1d;
                 }
@@ -345,12 +346,12 @@ public class Deployable {
 
     }
 
-    public void addErrorHealthChecks() {
+    public void addErrorHealthChecks(int maxErrorsPerMinute, double healthWhenErrorsExceeded) {
         OOMHealthCheck oomHealthCheck = new OOMHealthCheck();
         initializeMemoryExceptionsHandler(oomHealthCheck);
 
-        restfulManageServer.addHealthCheck(new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE),
-            new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS),
+        restfulManageServer.addHealthCheck(new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE, maxErrorsPerMinute, healthWhenErrorsExceeded),
+            new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS, maxErrorsPerMinute, healthWhenErrorsExceeded),
             oomHealthCheck);
     }
 
