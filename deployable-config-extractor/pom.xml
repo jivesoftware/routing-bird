@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.jivesoftware.os.routing.bird.inheritance.poms</groupId>
         <artifactId>global-build-management</artifactId>
-        <version>0.47</version>
+        <version>0.48-SNAPSHOT</version>
         <relativePath>../inheritance-poms/global-build-management/pom.xml</relativePath>
     </parent>
     <groupId>com.jivesoftware.os.routing.bird</groupId>
@@ -34,22 +34,22 @@
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>merlin-config</artifactId>
-            <version>0.47</version>
+            <version>0.48-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>deployable-config-shared</artifactId>
-            <version>0.47</version>
+            <version>0.48-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-health</artifactId>
-            <version>0.47</version>
+            <version>0.48-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-http-client</artifactId>
-            <version>0.47</version>
+            <version>0.48-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>
