@@ -118,7 +118,6 @@ public class RestfulBaseEndpoints {
     @GET
     @Path("/ui")
     public Response ui(@Context UriInfo uriInfo) {
-        LOG.info("ui");
         try {
             final HtmlCanvas canvas = new HtmlCanvas();
             canvas.html();
@@ -314,7 +313,6 @@ public class RestfulBaseEndpoints {
     @GET
     @Path("/forceGC")
     public Response forceGC() {
-        LOG.info("forced GC");
         Runtime.getRuntime().gc();
         return Response.ok("Forced GC", MediaType.TEXT_PLAIN).build();
     }
@@ -372,7 +370,6 @@ public class RestfulBaseEndpoints {
     @GET
     @Path("/errors")
     public Response executeErrors(@QueryParam("callback") @DefaultValue("") String callback) {
-        LOG.info("Logged errors:" + LoggerSummary.INSTANCE.errors);
         if (callback.length() > 0) {
             return ResponseHelper.INSTANCE.jsonpResponse(callback, Long.toString(LoggerSummary.INSTANCE.errors));
         }
@@ -382,7 +379,6 @@ public class RestfulBaseEndpoints {
     @GET
     @Path("/resetErrors")
     public Response resetErrors() {
-        LOG.info("Logged errors counter has been reset.");
         LoggerSummary.INSTANCE.errors = 0;
         LoggerSummary.INSTANCE.lastNErrors.clear("");
         LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS.errors = 0;

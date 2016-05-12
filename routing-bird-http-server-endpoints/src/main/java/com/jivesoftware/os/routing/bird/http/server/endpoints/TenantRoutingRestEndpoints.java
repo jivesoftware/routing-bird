@@ -41,9 +41,9 @@ public class TenantRoutingRestEndpoints {
     @Path("/report")
     public Response report() {
         try {
-            LOG.info("get report");
+            LOG.debug("get report");
             TenantsRoutingReport routingReport = routingProvider.getRoutingReport();
-            LOG.info("got report");
+            LOG.debug("got report");
             return ResponseHelper.INSTANCE.jsonResponse(routingReport);
         } catch (Exception x) {
             LOG.error("Encountered the following error getting a routing report.", x);
@@ -55,9 +55,9 @@ public class TenantRoutingRestEndpoints {
     @Path("/invalidateAll")
     public Response invalidateAll() {
         try {
-            LOG.info("invalidating all");
+            LOG.debug("invalidating all");
             routingProvider.invalidateAll();
-            LOG.info("invalidated all");
+            LOG.debug("invalidated all");
             return ResponseHelper.INSTANCE.jsonResponse("InvalidatedAll");
         } catch (Exception x) {
             LOG.error("Encountered the following error invalidating all.", x);
@@ -68,19 +68,19 @@ public class TenantRoutingRestEndpoints {
     @GET
     @Path("/invalidate")
     public Response invalidate(
-            @QueryParam("connectToServiceId") String connectToServiceId,
-            @QueryParam("portName") String portName,
-            @QueryParam("tenantId") String tenantId) {
+        @QueryParam("connectToServiceId") String connectToServiceId,
+        @QueryParam("portName") String portName,
+        @QueryParam("tenantId") String tenantId) {
         try {
-            LOG.info("invalidating connectToServiceId:" + connectToServiceId + " portName:" + portName + " tenantId:" + tenantId);
+            LOG.debug("invalidating connectToServiceId:" + connectToServiceId + " portName:" + portName + " tenantId:" + tenantId);
             routingProvider.invalidateTenant(connectToServiceId, portName, tenantId);
-            LOG.info("invalidated connectToServiceId:" + connectToServiceId + " portName:" + portName + " tenantId:" + tenantId);
+            LOG.debug("invalidated connectToServiceId:{} portName:{} tenantId:{}", connectToServiceId, portName, tenantId);
             return ResponseHelper.INSTANCE.jsonResponse("Invalidated connectToServiceId:" + connectToServiceId + " for tenantId:" + tenantId);
         } catch (Exception x) {
-            LOG.error("Encountered the following error invalidating connectToServiceId:" + connectToServiceId
-                    + " portName:" + portName + " tenantId:" + tenantId, x);
+            LOG.error("Encountered the following error iinvalidated connectToServiceId:{} portName:{} tenantId:{}", new Object[]{connectToServiceId, portName,
+                tenantId}, x);
             return ResponseHelper.INSTANCE.errorResponse("Encountered the following error invalidating connectToServiceId:" + connectToServiceId
-                    + " portName:" + portName + " tenantId:" + tenantId, x);
+                + " portName:" + portName + " tenantId:" + tenantId, x);
         }
     }
 }

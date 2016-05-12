@@ -77,7 +77,7 @@ public class DirectBufferHealthChecker extends MinMaxHealthChecker implements Sc
                 config.setMax(maxDirectMemorySize * 9 / 10);
             }
         }
-        LOG.info("Max is {}", config.getMax());
+        LOG.debug("Max is {}", config.getMax());
         return config;
     }
 

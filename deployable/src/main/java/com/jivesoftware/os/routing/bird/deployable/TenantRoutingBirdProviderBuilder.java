@@ -55,7 +55,7 @@ public class TenantRoutingBirdProviderBuilder {
         final ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         ConnectionDescriptorsProvider connectionsProvider = (connectionsRequest) -> {
-            LOG.info("Requesting connections:" + connectionsRequest);
+            LOG.debug("Requesting connections:{}", connectionsRequest);
 
             String postEntity;
             try {
@@ -80,7 +80,7 @@ public class TenantRoutingBirdProviderBuilder {
                 byte[] responseBody = response.getResponseBody();
                 try {
                     ConnectionDescriptorsResponse connectionDescriptorsResponse = mapper.readValue(responseBody, ConnectionDescriptorsResponse.class);
-                    LOG.info("Request:" + connectionsRequest + "\nConnectionDescriptors:" + connectionDescriptorsResponse);
+                    LOG.debug("Request:{}ConnectionDescriptors:{}", connectionsRequest, connectionDescriptorsResponse);
                     return connectionDescriptorsResponse;
                 } catch (IOException x) {
                     LOG.error("Failed to deserialize response:" + new String(responseBody) + " " + x.getMessage());

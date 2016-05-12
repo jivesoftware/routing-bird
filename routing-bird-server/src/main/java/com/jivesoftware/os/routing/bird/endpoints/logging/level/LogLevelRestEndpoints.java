@@ -83,8 +83,7 @@ public class LogLevelRestEndpoints {
     @Path("/getLevels")
     @Produces("application/json")
     public JsonLogLevels getLogLevels(String tenantId) {
-        log.info("listing logging levels");
-
+        
         List<JsonLogLevel> logLevels = new ArrayList<>();
 
         Logger rootLogger = LogManager.getRootLogger();

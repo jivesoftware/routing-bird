@@ -43,7 +43,7 @@ public class InMemoryConnectionsDescriptorsProvider implements ConnectionDescrip
 
     public void set(String tenantId, String instanceId, String connectToServiceNamed, String portName, ConnectionDescriptor connectionDescriptor) {
         String key = key(tenantId, instanceId, connectToServiceNamed, portName);
-        LOG.info("Setting routing override for " + key + " to be " + connectionDescriptor);
+        LOG.debug("Setting routing override for {} to be {}", key, connectionDescriptor);
         routings.put(key, connectionDescriptor);
     }
 
@@ -53,7 +53,8 @@ public class InMemoryConnectionsDescriptorsProvider implements ConnectionDescrip
 
     public void clear(String tenantId, String instanceId, String connectToServiceNamed, String portName) {
         String key = key(tenantId, instanceId, connectToServiceNamed, portName);
-        LOG.info("Clearing routing override for " + key);
+        LOG.debug("Clearing routing override for {}", key
+        );
         routings.remove(key);
     }
 
@@ -72,13 +73,13 @@ public class InMemoryConnectionsDescriptorsProvider implements ConnectionDescrip
         List<ConnectionDescriptor> connectionDescriptors = new ArrayList<>();
         String releaseGroup;
         if (connectionDescriptor == null) {
-            LOG.info("current there is NOT a manual override for " + key);
+            LOG.debug("current there is NOT a manual override for {}", key);
             releaseGroup = "default";
             if (defaultConnectionDescriptor != null) {
                 connectionDescriptors.addAll(defaultConnectionDescriptor);
             }
         } else {
-            LOG.info("overriding routing for" + connectionsRequest + " to be " + connectionDescriptor);
+            LOG.debug("overriding routing for {} to be {}", connectionsRequest, connectionDescriptor);
             releaseGroup = "overridden";
             connectionDescriptors.add(connectionDescriptor);
         }
