@@ -17,14 +17,17 @@ package com.jivesoftware.os.routing.bird.shared;
 
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class TenantRoutingProvider<T> {
 
     private final ConcurrentHashMap<String, TenantsServiceConnectionDescriptorProvider<T>> serviceConnectionDescriptorsProvider = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService connectionsRefresher;
     private final String instanceId;
     private final ConnectionDescriptorsProvider connectionsDescriptorProvider;
 
-    public TenantRoutingProvider(String instanceId, ConnectionDescriptorsProvider connectionsDescriptorProvider) {
+    public TenantRoutingProvider(ScheduledExecutorService connectionsRefresher, String instanceId, ConnectionDescriptorsProvider connectionsDescriptorProvider) {
+        this.connectionsRefresher = connectionsRefresher;
         this.instanceId = instanceId;
         this.connectionsDescriptorProvider = connectionsDescriptorProvider;
     }
@@ -54,7 +57,7 @@ public class TenantRoutingProvider<T> {
         return report;
     }
 
-    public TenantsServiceConnectionDescriptorProvider getConnections(String connectToServiceNamed, String portName) {
+    public TenantsServiceConnectionDescriptorProvider getConnections(String connectToServiceNamed, String portName, long refreshConnectionsAfterNMillis) {
         if (connectToServiceNamed == null) {
             return null;
         }
@@ -66,11 +69,12 @@ public class TenantRoutingProvider<T> {
         if (got != null) {
             return got;
         }
-        got = new TenantsServiceConnectionDescriptorProvider<>(instanceId, connectionsDescriptorProvider, connectToServiceNamed, portName);
-        TenantsServiceConnectionDescriptorProvider<T> had = serviceConnectionDescriptorsProvider.putIfAbsent(key(connectToServiceNamed, portName), got);
-        if (had != null) {
-            got = had;
-        }
-        return got;
+        return serviceConnectionDescriptorsProvider.computeIfAbsent(key(connectToServiceNamed, portName), (String t) -> {
+            TenantsServiceConnectionDescriptorProvider tenantsServiceConnectionDescriptorProvider = new TenantsServiceConnectionDescriptorProvider<>(
+                connectionsRefresher, instanceId, connectionsDescriptorProvider, connectToServiceNamed, portName,
+                refreshConnectionsAfterNMillis);
+            tenantsServiceConnectionDescriptorProvider.start();
+            return tenantsServiceConnectionDescriptorProvider;
+        });
     }
 }

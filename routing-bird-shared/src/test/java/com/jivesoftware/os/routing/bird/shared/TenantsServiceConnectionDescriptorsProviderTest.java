@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -53,7 +54,12 @@ public class TenantsServiceConnectionDescriptorsProviderTest {
     @Test
     public void testGetConnections() {
         TenantsServiceConnectionDescriptorProvider<String> tenantsServiceConnectionPoolProvider = new TenantsServiceConnectionDescriptorProvider<>(
-            instanceId, connectionDescriptorsProvider, serviceId, port);
+            Executors.newScheduledThreadPool(1),
+            instanceId,
+            connectionDescriptorsProvider,
+            serviceId,
+            port,
+            60_000);
         tenantsServiceConnectionPoolProvider.getConnections(tenantId);
         ConnectionDescriptors connections = tenantsServiceConnectionPoolProvider.getConnections(tenantId);
 
@@ -83,7 +89,12 @@ public class TenantsServiceConnectionDescriptorsProviderTest {
     @Test
     public void testRoutingReport() {
         TenantsServiceConnectionDescriptorProvider<String> tenantsServiceConnectionPoolProvider = new TenantsServiceConnectionDescriptorProvider<>(
-            instanceId, connectionDescriptorsProvider, serviceId, port);
+            Executors.newScheduledThreadPool(1),
+            instanceId,
+            connectionDescriptorsProvider,
+            serviceId,
+            port,
+            60_000);
         tenantsServiceConnectionPoolProvider.getConnections(tenantId);
         ConnectionDescriptors connections = tenantsServiceConnectionPoolProvider.getConnections(tenantId);
 

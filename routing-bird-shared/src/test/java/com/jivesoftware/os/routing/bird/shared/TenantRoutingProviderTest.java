@@ -18,6 +18,7 @@ package com.jivesoftware.os.routing.bird.shared;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.Executors;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -31,7 +32,7 @@ public class TenantRoutingProviderTest {
     @BeforeMethod
     public void setUp() {
         connectionDescriptorsProvider = Mockito.mock(ConnectionDescriptorsProvider.class);
-        provider = new TenantRoutingProvider("1234", connectionDescriptorsProvider);
+        provider = new TenantRoutingProvider(Executors.newScheduledThreadPool(1), "1234", connectionDescriptorsProvider);
     }
 
     @Test
@@ -45,16 +46,16 @@ public class TenantRoutingProviderTest {
         ConnectionDescriptorsResponse response = new ConnectionDescriptorsResponse(0, null, "releaseGroupA", connections);
         Mockito.when(connectionDescriptorsProvider.requestConnections(Mockito.eq(request))).thenReturn(response);
 
-        TenantsServiceConnectionDescriptorProvider descriptorProvider = provider.getConnections("invalid", null);
+        TenantsServiceConnectionDescriptorProvider descriptorProvider = provider.getConnections("invalid", null, 60_000);
         Assert.assertNull(descriptorProvider);
 
-        descriptorProvider = provider.getConnections(null, "invalid");
+        descriptorProvider = provider.getConnections(null, "invalid", 60_000);
         Assert.assertNull(descriptorProvider);
 
-        descriptorProvider = provider.getConnections(null, null);
+        descriptorProvider = provider.getConnections(null, null, 60_000);
         Assert.assertNull(descriptorProvider);
 
-        descriptorProvider = provider.getConnections("serviceA", "port1");
+        descriptorProvider = provider.getConnections("serviceA", "port1", 60_000);
         Assert.assertNotNull(descriptorProvider);
         ConnectionDescriptors connectionDescriptors = descriptorProvider.getConnections("invalid");
         Assert.assertTrue(connectionDescriptors.getConnectionDescriptors().isEmpty());
@@ -74,7 +75,7 @@ public class TenantRoutingProviderTest {
         ConnectionDescriptorsResponse response = new ConnectionDescriptorsResponse(0, null, "releaseGroupA", null);
         Mockito.when(connectionDescriptorsProvider.requestConnections(Mockito.eq(request))).thenReturn(response);
 
-        TenantsServiceConnectionDescriptorProvider connections = provider.getConnections("serviceA", "port1");
+        TenantsServiceConnectionDescriptorProvider connections = provider.getConnections("serviceA", "port1", 60_000);
         routingReport = provider.getRoutingReport();
         Assert.assertTrue(routingReport.serviceReport.size() == 1);
 

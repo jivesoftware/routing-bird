@@ -17,6 +17,7 @@ package com.jivesoftware.os.routing.bird.deployable;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.jivesoftware.os.mlogger.core.LoggerSummary;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
@@ -42,6 +43,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,6 +64,8 @@ public class Deployable {
     private InitializeRestfulServer restfulServer;
     private JerseyEndpoints jerseyEndpoints;
     private final AtomicBoolean serverStarted = new AtomicBoolean(false);
+    private final ScheduledExecutorService connectionRefresh = Executors.newScheduledThreadPool(1, new ThreadFactoryBuilder().setNameFormat(
+        "connectionRefresh-%d").build());
 
     public Deployable(String[] args) throws IOException {
         this.mainProperties = new MainProperties(args);
@@ -85,7 +90,7 @@ public class Deployable {
             connectionsDescriptorProvider = tenantRoutingBirdBuilder.build();
         }
 
-        tenantRoutingProvider = new TenantRoutingProvider(instanceConfig.getInstanceKey(), connectionsDescriptorProvider);
+        tenantRoutingProvider = new TenantRoutingProvider(connectionRefresh, instanceConfig.getInstanceKey(), connectionsDescriptorProvider);
 
         String applicationName = "manage " + instanceConfig.getServiceName() + " " + instanceConfig.getClusterName();
         restfulManageServer = new RestfulManageServer(instanceConfig.getManagePort(),
@@ -285,7 +290,7 @@ public class Deployable {
         private final double healthWhenErrorsExceeded;
 
         private double health;
-        
+
         public LoggerSummaryHealthCheck(LoggerSummary loggerSummary, String name, int maxErrorsPerMinute, double healthWhenErrorsExceeded) {
             this.name = name;
             this.loggerSummary = loggerSummary;
