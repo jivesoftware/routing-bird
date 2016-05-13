@@ -96,7 +96,7 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
         ConnectionDescriptorsResponse connectionsResponse = connectionsProvider.requestConnections(connectionDescriptorsRequest);
 
         String releaseGroup;
-        ConnectionDescriptors connections;
+        ConnectionDescriptors connections = null;
         if (connectionsResponse == null) {
             releaseGroup = "unknown";
             connections = new ConnectionDescriptors(System.currentTimeMillis(), Collections.<ConnectionDescriptor>emptyList());
@@ -109,17 +109,20 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
             List<ConnectionDescriptor> latest = connectionsResponse.getConnections();
             ConnectionDescriptors current = releaseGroupToConnectionDescriptors.get(releaseGroup);
             if (current != null) {
+                tenantToReleaseGroup.put(tenantId, releaseGroup);
                 if (latest.size() == current.getConnectionDescriptors().size()) {
                     Set<ConnectionDescriptor> currentAsSet = new HashSet<>(current.getConnectionDescriptors());
                     for (ConnectionDescriptor connectionDescriptor : latest) {
                         currentAsSet.remove(connectionDescriptor);
                     }
                     if (currentAsSet.isEmpty()) {
-                        return current;
+                        connections = current;
                     }
                 }
             }
-            connections = new ConnectionDescriptors(System.currentTimeMillis(), latest);
+            if (connections == null) {
+                connections = new ConnectionDescriptors(System.currentTimeMillis(), latest);
+            }
         }
         releaseGroupToConnectionDescriptors.put(releaseGroup, connections);
         tenantToReleaseGroup.put(tenantId, releaseGroup);
