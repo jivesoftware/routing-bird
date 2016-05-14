@@ -51,7 +51,7 @@ public class TenantRoutingHttpClientInitializer<T> {
 
             }
 
-            return new ErrorCheckingTimestampedClients<>(System.currentTimeMillis(), connections, httpClients, clientHealths, deadAfterNErrors,
+            return new ErrorCheckingTimestampedClients<>(connectionDescriptors.getTimestamp(), connections, httpClients, clientHealths, deadAfterNErrors,
                 checkDeadEveryNMillis); //TODO config
         };
 
