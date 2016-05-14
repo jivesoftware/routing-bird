@@ -210,7 +210,7 @@ public class Deployable {
         restfulServer.addResource(resource);
     }
 
-    private void initializeMemoryExceptionsHandler(OOMHealthCheck oomhc) {
+    private void initializeMemoryExceptionsHandler(OOMHealthCheck oomhc, UncaughtExceptionHealthCheck uehc) {
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
 
             @Override
@@ -219,16 +219,64 @@ public class Deployable {
                     oomhc.oomed.set(true);
                 } else {
                     LOG.error("UncaughtException", e);
-                    oomhc.unhandled.add(t.getName() + " throwable:" + e + " cause:" + e.getCause());
+                    uehc.unhandled.add(t.getName() + " throwable:" + e + " cause:" + e.getCause());
                 }
             }
         });
     }
 
+    private class UncaughtExceptionHealthCheck implements HealthCheck {
+
+        private final List<String> unhandled = new CopyOnWriteArrayList<>();
+
+        @Override
+        public HealthCheckResponse checkHealth() throws Exception {
+            return new HealthCheckResponse() {
+
+                @Override
+                public String getName() {
+                    return "uncaught>exception";
+                }
+
+                @Override
+                public double getHealth() {
+                    return (unhandled.size() > 0) ? 0.1d : 1d;
+                }
+
+                @Override
+                public String getStatus() {
+                    StringBuilder sb = new StringBuilder();
+                    if (!unhandled.isEmpty()) {
+                        sb.append("This service has unhandled exceptions:").append(unhandled);
+                    }
+                    if (sb.length() == 0) {
+                        sb.append("healthy");
+                    }
+                    return sb.toString();
+                }
+
+                @Override
+                public String getDescription() {
+                    return "Uncaught exception";
+                }
+
+                @Override
+                public String getResolution() {
+                    return "Catch you exceptions please! Restart service";
+                }
+
+                @Override
+                public long getTimestamp() {
+                    return System.currentTimeMillis();
+                }
+            };
+        }
+
+    }
+
     private class OOMHealthCheck implements HealthCheck {
 
         private final AtomicBoolean oomed = new AtomicBoolean(false);
-        private final List<String> unhandled = new CopyOnWriteArrayList<>();
 
         @Override
         public HealthCheckResponse checkHealth() throws Exception {
@@ -241,7 +289,7 @@ public class Deployable {
 
                 @Override
                 public double getHealth() {
-                    return oomed.get() ? 0d : (unhandled.size() > 0) ? 0.1d : 1d;
+                    return oomed.get() ? 0d : 1d;
                 }
 
                 @Override
@@ -249,9 +297,6 @@ public class Deployable {
                     StringBuilder sb = new StringBuilder();
                     if (oomed.get()) {
                         sb.append("These service has experienced an OOM.");
-                    }
-                    if (!unhandled.isEmpty()) {
-                        sb.append("This service has unhandled exceptions:").append(unhandled);
                     }
                     if (sb.length() == 0) {
                         sb.append("healthy");
@@ -286,15 +331,14 @@ public class Deployable {
         private final LoggerSummary loggerSummary;
 
         private final String name;
-        private final int maxErrorsPerMinute;
+        private final long unhealthyForNMillisEveryError;
         private final double healthWhenErrorsExceeded;
+        private long healthClearAfterThisTimestmap;
 
-        private double health;
-
-        public LoggerSummaryHealthCheck(LoggerSummary loggerSummary, String name, int maxErrorsPerMinute, double healthWhenErrorsExceeded) {
+        public LoggerSummaryHealthCheck(LoggerSummary loggerSummary, String name, long unhealthyForNMillisEveryError, double healthWhenErrorsExceeded) {
             this.name = name;
             this.loggerSummary = loggerSummary;
-            this.maxErrorsPerMinute = maxErrorsPerMinute;
+            this.unhealthyForNMillisEveryError = unhealthyForNMillisEveryError;
             this.healthWhenErrorsExceeded = healthWhenErrorsExceeded;
         }
 
@@ -303,20 +347,16 @@ public class Deployable {
             long errors = loggerSummary.errors;
             long delta = errors - lastErrorCount.getAndSet(errors);
             lastErrorDelta.set(delta);
-            long now = System.currentTimeMillis();
-            long elapse = now - lastCheckTimestamp.getAndSet(now);
-            if (elapse > 0 && delta > 0) {
-                double errorRatePerMilli = delta / (double) elapse;
-                double errorsRatePerMinute = errorRatePerMilli * getCheckIntervalInMillis();
-                health = Math.max(1d - (errorsRatePerMinute / maxErrorsPerMinute) * (1d - healthWhenErrorsExceeded), healthWhenErrorsExceeded);
-            } else {
-                health = 1d;
+            if (delta > 0) {
+                healthClearAfterThisTimestmap = System.currentTimeMillis() + unhealthyForNMillisEveryError;
+            } else if (delta < 0) { // means errors were manually reset
+                healthClearAfterThisTimestmap = 0;
             }
         }
 
         @Override
         public long getCheckIntervalInMillis() {
-            return TimeUnit.MINUTES.toMillis(1);
+            return TimeUnit.SECONDS.toMillis(2);
         }
 
         @Override
@@ -330,7 +370,11 @@ public class Deployable {
 
                 @Override
                 public double getHealth() {
-                    return health;
+                    long elapse = healthClearAfterThisTimestmap - System.currentTimeMillis();
+                    if (elapse <= 0) {
+                        return 1d;
+                    }
+                    return ((elapse / healthClearAfterThisTimestmap) * (1d - healthWhenErrorsExceeded)) + healthWhenErrorsExceeded;
                 }
 
                 @Override
@@ -370,16 +414,17 @@ public class Deployable {
 
     public void addErrorHealthChecks(ErrorHealthCheckConfig config) {
         OOMHealthCheck oomHealthCheck = new OOMHealthCheck();
-        initializeMemoryExceptionsHandler(oomHealthCheck);
+        UncaughtExceptionHealthCheck uehc = new UncaughtExceptionHealthCheck();
+        initializeMemoryExceptionsHandler(oomHealthCheck, uehc);
 
         restfulManageServer.addHealthCheck(
             new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE,
                 "internal",
-                config.getInternalMaxErrorsPerMinute(),
+                config.getInternalUnhealthyForNMillisEveryError(),
                 config.getInternalHealthWhenErrorsExceeded()),
             new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS,
                 "external",
-                config.getExternalMaxErrorsPerMinute(),
+                config.getUnhealthyForNMillisEveryError(),
                 config.getExternalHealthWhenErrorsExceeded()),
             oomHealthCheck);
     }
