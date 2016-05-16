@@ -352,6 +352,7 @@ public class Deployable {
             } else if (delta < 0) { // means errors were manually reset
                 healthClearAfterThisTimestmap = 0;
             }
+            lastCheckTimestamp.set(System.currentTimeMillis());
         }
 
         @Override
@@ -424,7 +425,7 @@ public class Deployable {
                 config.getInternalHealthWhenErrorsExceeded()),
             new LoggerSummaryHealthCheck(LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS,
                 "external",
-                config.getUnhealthyForNMillisEveryError(),
+                config.getExternalUnhealthyForNMillisEveryError(),
                 config.getExternalHealthWhenErrorsExceeded()),
             oomHealthCheck);
     }

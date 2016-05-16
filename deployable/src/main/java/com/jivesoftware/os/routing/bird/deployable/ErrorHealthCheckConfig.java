@@ -10,14 +10,14 @@ import org.merlin.config.defaults.IntDefault;
  */
 public interface ErrorHealthCheckConfig extends HealthCheckConfig {
 
-    @IntDefault(1)
+    @IntDefault(60_000)
     int getInternalUnhealthyForNMillisEveryError();
 
     @DoubleDefault(0.20)
     double getInternalHealthWhenErrorsExceeded();
 
     @IntDefault(60_000)
-    int getUnhealthyForNMillisEveryError();
+    int getExternalUnhealthyForNMillisEveryError();
 
     @DoubleDefault(0.20)
     double getExternalHealthWhenErrorsExceeded();
