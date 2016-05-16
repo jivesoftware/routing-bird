@@ -87,7 +87,7 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
                     if (e.getCause() instanceof IOException) {
                         int errorCount = clientsErrors[clientIndex].incrementAndGet();
                         if (errorCount > deadAfterNErrors) {
-                            LOG.warn("client:{} has had {} errors and will be marked as dead for {} millis.",
+                            LOG.warn("Client:{} has had {} errors and will be marked as dead for {} millis.",
                                 clients[clientIndex], errorCount, checkDeadEveryNMillis);
                             clientsDeathTimestamp[clientIndex].set(now + checkDeadEveryNMillis);
                             clientHealths[clientIndex].markedDead();
@@ -112,10 +112,11 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
         sb.append(strategy.getClass().getSimpleName()).append(" ").append(strategy);
         for (int i = 0; i < connectionDescriptors.length; i++) {
             long deathTimestamp = clientsDeathTimestamp[i].get();
-            sb.append("Client[").append(i).append("]:").append(connectionDescriptors[i].getHostPort())
-                .append(" isDead:").append((deathTimestamp != 0 && now < deathTimestamp))
-                .append(" errors:").append(clientsErrors[i])
-                .append(" deathTimestamp:").append(deathTimestamp);
+            sb.append(", client[").append(i).append("]={").append(connectionDescriptors[i].getHostPort())
+                .append(", isDead:").append((deathTimestamp != 0 && now < deathTimestamp))
+                .append(", errors:").append(clientsErrors[i])
+                .append(", deathTimestamp:").append(deathTimestamp)
+                .append('}');
         }
 
         throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(clientIndexes));
