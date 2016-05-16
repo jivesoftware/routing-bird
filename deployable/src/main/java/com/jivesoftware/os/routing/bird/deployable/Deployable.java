@@ -374,7 +374,7 @@ public class Deployable {
                     if (elapse <= 0) {
                         return 1d;
                     }
-                    return ((elapse / healthClearAfterThisTimestmap) * (1d - healthWhenErrorsExceeded)) + healthWhenErrorsExceeded;
+                    return ((elapse / (double) healthClearAfterThisTimestmap) * (1d - healthWhenErrorsExceeded)) + healthWhenErrorsExceeded;
                 }
 
                 @Override
