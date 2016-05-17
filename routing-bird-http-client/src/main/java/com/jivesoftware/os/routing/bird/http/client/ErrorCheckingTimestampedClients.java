@@ -88,7 +88,7 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
                         int errorCount = clientsErrors[clientIndex].incrementAndGet();
                         if (errorCount > deadAfterNErrors) {
                             LOG.warn("Client:{} has had {} errors and will be marked as dead for {} millis.",
-                                clients[clientIndex], errorCount, checkDeadEveryNMillis);
+                                new Object[] { clients[clientIndex], errorCount, checkDeadEveryNMillis }, e);
                             clientsDeathTimestamp[clientIndex].set(now + checkDeadEveryNMillis);
                             clientHealths[clientIndex].markedDead();
                         }
