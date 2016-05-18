@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.jivesoftware.os.routing.bird.inheritance.poms</groupId>
         <artifactId>global-build-management</artifactId>
-        <version>0.55-SNAPSHOT</version>
+        <version>0.55</version>
         <relativePath>../inheritance-poms/global-build-management/pom.xml</relativePath>
     </parent>
     <groupId>com.jivesoftware.os.routing.bird</groupId>
@@ -17,12 +17,12 @@
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-shared</artifactId>
-            <version>0.55-SNAPSHOT</version>
+            <version>0.55</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-health</artifactId>
-            <version>0.55-SNAPSHOT</version>
+            <version>0.55</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
