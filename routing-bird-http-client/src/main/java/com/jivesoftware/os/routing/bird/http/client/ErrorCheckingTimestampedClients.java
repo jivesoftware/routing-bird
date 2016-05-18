@@ -66,6 +66,7 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
     public <R> R call(NextClientStrategy strategy, String family, ClientCall<C, R, HttpClientException> httpCall) throws HttpClientException {
         long now = System.currentTimeMillis();
         int[] clientIndexes = strategy.getClients(connectionDescriptors);
+        Exception lastException = null;
         for (int clientIndex : clientIndexes) {
             if (clientIndex < 0) {
                 continue;
@@ -85,6 +86,7 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
                     }
                 } catch (HttpClientException e) {
                     if (e.getCause() instanceof IOException) {
+                        lastException = e;
                         int errorCount = clientsErrors[clientIndex].incrementAndGet();
                         if (errorCount > deadAfterNErrors) {
                             LOG.warn("Client:{} has had {} errors and will be marked as dead for {} millis.",
@@ -119,7 +121,7 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
                 .append('}');
         }
 
-        throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(clientIndexes));
+        throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(clientIndexes), lastException);
     }
 
     @Override
