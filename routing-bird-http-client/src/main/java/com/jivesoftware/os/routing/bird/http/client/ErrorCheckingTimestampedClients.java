@@ -24,9 +24,12 @@ import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
 import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
 import com.jivesoftware.os.routing.bird.shared.TimestampedClients;
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import jdk.jfr.events.ThrowablesEvent;
 
 public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C, HttpClientException> {
 
@@ -85,6 +88,14 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
                         return clientResponse.response;
                     }
                 } catch (HttpClientException e) {
+                    Throwable cause = e;
+                    for (int i = 0; i < 10 && cause != null; i++) {
+                        if (cause instanceof InterruptedException || cause instanceof InterruptedIOException || cause instanceof ClosedByInterruptException) {
+                            LOG.debug("Client:{} was interrupted for strategy:{} family:{}", new Object[] { clients[clientIndex], strategy, family }, e);
+                            throw e;
+                        }
+                        cause = cause.getCause();
+                    }
                     if (e.getCause() instanceof IOException) {
                         lastException = e;
                         int errorCount = clientsErrors[clientIndex].incrementAndGet();
