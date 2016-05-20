@@ -47,7 +47,7 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
         String connectToServiceNamed,
         String portName,
         long refreshConnectionsAfterNMillis) {
-        
+
         this.connectionsRefresher = connectionsRefresher;
         this.instanceId = instanceId;
         this.connectionsProvider = connectionsProvider;
@@ -72,6 +72,10 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
         return report;
     }
 
+    public String getRoutingGroup(T tenantId) {
+        return tenantId == null ? "unknown" : tenantToReleaseGroup.getOrDefault(tenantId, "unknown");
+    }
+
     public ConnectionDescriptors getConnections(T tenantId) {
         if (tenantId == null) {
             return new ConnectionDescriptors(System.currentTimeMillis(), Collections.<ConnectionDescriptor>emptyList());
@@ -94,6 +98,15 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
             tenantId.toString(), instanceId, connectToServiceNamed, portName);
 
         ConnectionDescriptorsResponse connectionsResponse = connectionsProvider.requestConnections(connectionDescriptorsRequest);
+        if (connectionsResponse == null) {
+            String releaseGroup = tenantToReleaseGroup.get(tenantId);
+            if (releaseGroup != null) {
+                ConnectionDescriptors connectionDescriptors = releaseGroupToConnectionDescriptors.get(releaseGroup);
+                if (connectionDescriptors != null) {
+                    return connectionDescriptors;
+                }
+            }
+        }
 
         String releaseGroup;
         ConnectionDescriptors connections = null;
@@ -132,17 +145,25 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
     public void start() {
 
         connectionsRefresher.scheduleWithFixedDelay(() -> {
-            for (Map.Entry<T, AtomicBoolean> entry : activeTenants.entrySet()) {
-                try {
-                    if (entry.getValue().compareAndSet(true, false)) {
-                        refreshConnections(entry.getKey());
+            try {
+                for (Map.Entry<T, AtomicBoolean> entry : activeTenants.entrySet()) {
+                    try {
+                        if (entry.getValue().compareAndSet(true, false)) {
+                            refreshConnections(entry.getKey());
+                        }
+                    } catch (Exception x) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Error refreshing connections.", x);
+                        } else {
+                            LOG.warn("failure refreshing connections.");
+                        }
                     }
-                } catch (Exception x) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Error refreshing connections.", x);
-                    } else {
-                        LOG.warn("failure refreshing connections.");
-                    }
+                }
+            } catch (Exception x) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Connections refresher swallowed.", x);
+                } else {
+                    LOG.warn("Connections refresher swallowed unexpected exception:{} message:{}", x.getClass().getName(), x.getMessage());
                 }
             }
         }, refreshConnectionsAfterNMillis, refreshConnectionsAfterNMillis, TimeUnit.MILLISECONDS);

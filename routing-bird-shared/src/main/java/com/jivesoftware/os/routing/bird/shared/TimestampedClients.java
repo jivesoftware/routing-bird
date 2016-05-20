@@ -9,5 +9,7 @@ public interface TimestampedClients<C, E extends Throwable> {
 
     long getTimestamp();
 
+    String getRoutingGroup();
+
     C[] getClients();
 }

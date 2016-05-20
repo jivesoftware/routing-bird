@@ -30,7 +30,7 @@ public class TenantRoutingHttpClientInitializer<T> {
         ClientHealthProvider clientHealthProvider, int deadAfterNErrors,
         long checkDeadEveryNMillis) {
 
-        ClientConnectionsFactory<HttpClient, HttpClientException> clientConnectionsFactory = connectionDescriptors -> {
+        ClientConnectionsFactory<HttpClient, HttpClientException> clientConnectionsFactory = (routingGroup, connectionDescriptors) -> {
             List<ConnectionDescriptor> descriptors = connectionDescriptors.getConnectionDescriptors();
             ConnectionDescriptor[] connections = descriptors.toArray(new ConnectionDescriptor[descriptors.size()]);
             HttpClient[] httpClients = new HttpClient[descriptors.size()];
@@ -51,7 +51,13 @@ public class TenantRoutingHttpClientInitializer<T> {
 
             }
 
-            return new ErrorCheckingTimestampedClients<>(connectionDescriptors.getTimestamp(), connections, httpClients, clientHealths, deadAfterNErrors,
+            return new ErrorCheckingTimestampedClients<>(
+                routingGroup,
+                connectionDescriptors.getTimestamp(),
+                connections,
+                httpClients,
+                clientHealths,
+                deadAfterNErrors,
                 checkDeadEveryNMillis); //TODO config
         };
 

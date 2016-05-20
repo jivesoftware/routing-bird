@@ -35,6 +35,7 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
+    private final String routingGroup;
     private final long timestamp;
     private final ConnectionDescriptor[] connectionDescriptors;
     private final C[] clients;
@@ -44,12 +45,15 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
     private final AtomicInteger[] clientsErrors;
     private final AtomicLong[] clientsDeathTimestamp;
 
-    public ErrorCheckingTimestampedClients(long timestamp,
+    public ErrorCheckingTimestampedClients(String routingGroup,
+        long timestamp,
         ConnectionDescriptor[] connectionDescriptors,
         C[] clients,
         ClientHealth[] clientHealths,
         int deadAfterNErrors,
         long checkDeadEveryNMillis) {
+
+        this.routingGroup = routingGroup;
         this.timestamp = timestamp;
         this.connectionDescriptors = connectionDescriptors;
         this.clients = clients;
@@ -133,6 +137,11 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
         }
 
         throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(clientIndexes), lastException);
+    }
+
+    @Override
+    public String getRoutingGroup() {
+        return routingGroup;
     }
 
     @Override

@@ -40,9 +40,13 @@ public class TenantRoutingClient<T, C, E extends Throwable> {
         if (tenant == null) {
             throw new IllegalArgumentException("tenant cannot be null.");
         }
+        String routingGroup = connectionPoolProvider.getRoutingGroup(tenant);
         ConnectionDescriptors connections = connectionPoolProvider.getConnections(tenant);
         TimestampedClients<C, E> timestampedClients = tenantsHttpClient.get(tenant);
-        if (timestampedClients == null || timestampedClients.getTimestamp() < connections.getTimestamp()) {
+        if (timestampedClients == null
+            || !timestampedClients.getRoutingGroup().equals(routingGroup)
+            || timestampedClients.getTimestamp() < connections.getTimestamp()) {
+            
             if (timestampedClients != null) {
                 try {
                     clientsCloser.closeClients(timestampedClients.getClients());
@@ -50,7 +54,7 @@ public class TenantRoutingClient<T, C, E extends Throwable> {
                     LOG.warn("Failed while trying to close clients:" + Arrays.toString(timestampedClients.getClients()), x);
                 }
             }
-            timestampedClients = clientConnectionsFactory.createClients(connections);
+            timestampedClients = clientConnectionsFactory.createClients(routingGroup, connections);
             if (timestampedClients == null) {
                 throw new IllegalStateException("clientConnectionsFactory:" + clientConnectionsFactory + " should not return a null client but did!");
             }

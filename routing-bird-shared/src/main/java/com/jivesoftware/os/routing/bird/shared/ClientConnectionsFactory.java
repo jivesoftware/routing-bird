@@ -17,5 +17,5 @@ package com.jivesoftware.os.routing.bird.shared;
 
 public interface ClientConnectionsFactory<C, E extends Throwable> {
 
-    TimestampedClients<C, E> createClients(ConnectionDescriptors connections);
+    TimestampedClients<C, E> createClients(String routingGroup, ConnectionDescriptors connections);
 }

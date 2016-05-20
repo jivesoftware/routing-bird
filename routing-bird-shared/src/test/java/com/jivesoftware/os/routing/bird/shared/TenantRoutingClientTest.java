@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.IntStream;
+import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -60,7 +61,7 @@ public class TenantRoutingClientTest {
         ConnectionDescriptors connectionDescriptors = new ConnectionDescriptors(timestamp, Arrays.asList(descriptor));
         strategy = new TestStrategy();
         Mockito.when(tenantsServiceConnectionDescriptorProvider.getConnections(tenantId)).thenReturn(connectionDescriptors);
-        Mockito.when(clientConnectionsFactory.createClients(connectionDescriptors)).thenReturn(new TestTimestampedClients(testClients));
+        Mockito.when(clientConnectionsFactory.createClients(Matchers.anyString(), Matchers.same(connectionDescriptors))).thenReturn(new TestTimestampedClients(testClients));
     }
 
     @Test
@@ -111,6 +112,11 @@ public class TenantRoutingClientTest {
         @Override
         public long getTimestamp() {
             return 0;
+        }
+
+        @Override
+        public String getRoutingGroup() {
+            return "routingGroup";
         }
 
         @Override
