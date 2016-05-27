@@ -70,8 +70,8 @@ public class TenantRoutingBirdProviderBuilder {
             try {
                 response = httpClient.postJson(routesPath, postEntity, null);
             } catch (HttpClientException e) {
-                LOG.error("Error posting query request to server.  The entity posted "
-                    + "was \"" + postEntity + "\" and the endpoint posted to was \"" + routesPath + "\". " + e.getMessage());
+                LOG.error("Error posting query request to server.  The entity posted was {} and the endpoint posted to was {}",
+                    new Object[] { postEntity, routesPath }, e);
                 return null;
             }
 
@@ -80,7 +80,7 @@ public class TenantRoutingBirdProviderBuilder {
                 byte[] responseBody = response.getResponseBody();
                 try {
                     ConnectionDescriptorsResponse connectionDescriptorsResponse = mapper.readValue(responseBody, ConnectionDescriptorsResponse.class);
-                    LOG.debug("Request:{}ConnectionDescriptors:{}", connectionsRequest, connectionDescriptorsResponse);
+                    LOG.debug("Request:{} ConnectionDescriptors:{}", connectionsRequest, connectionDescriptorsResponse);
                     return connectionDescriptorsResponse;
                 } catch (IOException x) {
                     LOG.error("Failed to deserialize response:" + new String(responseBody) + " " + x.getMessage());
