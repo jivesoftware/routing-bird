@@ -53,7 +53,7 @@ import org.merlin.config.Config;
 
 public class Deployable {
 
-    private final MetricLogger LOG = MetricLoggerFactory.getLogger();
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final MainProperties mainProperties;
     private final ConfigBinder configBinder;
     private final InstanceConfig instanceConfig;
@@ -375,7 +375,7 @@ public class Deployable {
                     if (elapse <= 0) {
                         return 1d;
                     }
-                    return ((elapse / (double) healthClearAfterThisTimestmap) * (1d - healthWhenErrorsExceeded)) + healthWhenErrorsExceeded;
+                    return ((elapse / (double) unhealthyForNMillisEveryError) * (1d - healthWhenErrorsExceeded)) + healthWhenErrorsExceeded;
                 }
 
                 @Override
