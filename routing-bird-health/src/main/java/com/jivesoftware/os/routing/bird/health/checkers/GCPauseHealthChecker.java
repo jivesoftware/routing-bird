@@ -5,6 +5,8 @@ import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponse;
 import com.jivesoftware.os.routing.bird.health.api.HealthCheckConfig;
 import com.jivesoftware.os.routing.bird.health.api.ScheduledHealthCheck;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.concurrent.TimeUnit;
 import org.merlin.config.defaults.LongDefault;
 import org.merlin.config.defaults.StringDefault;
@@ -83,10 +85,13 @@ public class GCPauseHealthChecker implements ScheduledHealthCheck {
 
             @Override
             public String getStatus() {
+                NumberFormat formatter = new DecimalFormat("#0.000");
                 StringBuilder sb = new StringBuilder();
                 for (int i = 1; i < secondsHisto.length; i++) {
                     double d = secondsHisto[i];
-                    sb.append(i + "s=" + d + ", ");
+                    if (d > 0) {
+                        sb.append(i + "s=" + formatter.format(d) + ", ");
+                    }
                 }
                 sb.append("60+sec=" + secondsHisto[0]);
                 return sb.toString();
