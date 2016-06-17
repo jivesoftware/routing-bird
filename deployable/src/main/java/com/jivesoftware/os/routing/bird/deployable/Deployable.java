@@ -375,7 +375,7 @@ public class Deployable {
                     if (elapse <= 0) {
                         return 1d;
                     }
-                    return ((elapse / (double) unhealthyForNMillisEveryError) * (1d - healthWhenErrorsExceeded)) + healthWhenErrorsExceeded;
+                    return ((1d - ((double) elapse / (double) unhealthyForNMillisEveryError)) * (1d - healthWhenErrorsExceeded)) + healthWhenErrorsExceeded;
                 }
 
                 @Override
