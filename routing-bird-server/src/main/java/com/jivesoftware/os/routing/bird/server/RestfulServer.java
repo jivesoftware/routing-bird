@@ -56,8 +56,20 @@ public class RestfulServer {
         server.addConnector(makeConnector(port));
     }
 
+    public int getThreads() {
+        return queuedThreadPool.getThreads();
+    }
+
     public int getIdleThreads() {
         return queuedThreadPool.getIdleThreads();
+    }
+
+    public int getBusyThreads() {
+        return queuedThreadPool.getBusyThreads();
+    }
+
+    public int getMaxThreads() {
+        return queuedThreadPool.getMaxThreads();
     }
 
     public boolean isLowOnThreads() {

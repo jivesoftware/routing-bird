@@ -173,8 +173,12 @@ public class Deployable {
                 healthCheck.setHealthy("'" + applicationName + "' service is initialized.");
                 banneredOneLiner("'" + applicationName + "' service started. Elapse:" + (System.currentTimeMillis() - time));
                 server.addHealthCheck((HealthCheck) () -> {
-                    String status = "Currently this service on port:"
-                        + instanceConfig.getManagePort() + " has " + server.getIdleThreads() + " idle thread/s.";
+                    String status = "Service on port:" + instanceConfig.getManagePort() + " has" +
+                        " current:" + server.getThreads() +
+                        " idle:" + server.getIdleThreads() +
+                        " busy:" + server.getBusyThreads() +
+                        " max:" + server.getMaxThreads() +
+                        " threads";
                     String description = "How many free thread are available to handle http request.";
                     String resolution = "Increase the number or threads or add more services.";
                     return new HealthCheckResponseImpl("manage>http>threadPool",
@@ -441,8 +445,12 @@ public class Deployable {
                 healthCheck.setHealthy("'" + applicationName + "' service is initialized.");
                 startedUpBanner();
                 restfulManageServer.addHealthCheck((HealthCheck) () -> {
-                    String status = "Currently this service on port:"
-                        + instanceConfig.getMainPort() + " has " + server.getIdleThreads() + " idle thread/s.";
+                    String status = "Service on port:" + instanceConfig.getMainPort() + " has" +
+                        " current:" + server.getThreads() +
+                        " idle:" + server.getIdleThreads() +
+                        " busy:" + server.getBusyThreads() +
+                        " max:" + server.getMaxThreads() +
+                        " threads";
                     String description = "How many free thread are available to handle http request.";
                     String resolution = "Increase the number or threads or add more services.";
                     return new HealthCheckResponseImpl("main>http>threadPool",

@@ -46,8 +46,20 @@ public class RestfulManageServer {
 
     }
 
+    public int getThreads() {
+        return server.getThreads();
+    }
+
     public int getIdleThreads() {
         return server.getIdleThreads();
+    }
+
+    public int getBusyThreads() {
+        return server.getBusyThreads();
+    }
+
+    public int getMaxThreads() {
+        return server.getMaxThreads();
     }
 
     public boolean isLowOnThreads() {
