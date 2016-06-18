@@ -76,7 +76,6 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         } catch (Exception e) {
             String trimmedMethodBody = (jsonBody.length() > JSON_POST_LOG_LENGTH_LIMIT)
                 ? jsonBody.substring(0, JSON_POST_LOG_LENGTH_LIMIT) : jsonBody;
-            requestBase.reset();
             throw new HttpClientException("Error executing " + requestBase.getMethod() + " request to: "
                 + clientToString() + " path: " + requestBase.getURI().getPath() + " JSON body: " + trimmedMethodBody, e);
         }
@@ -88,16 +87,13 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
         org.apache.http.HttpResponse response = client.execute(requestBase);
         StatusLine statusLine = response.getStatusLine();
-        checkStreamStatus(statusLine);
-        return new HttpStreamResponse(statusLine.getStatusCode(), statusLine.getReasonPhrase(), response.getEntity().getContent(), requestBase);
-    }
-
-    private void checkStreamStatus(StatusLine statusLine) throws HttpClientException {
         int status = statusLine.getStatusCode();
         LOG.debug("Got status: {} {}", status, statusLine.getReasonPhrase());
         if (status < 200 || status >= 300) {
+            requestBase.reset();
             throw new HttpClientException("Bad status : " + statusLine);
         }
+        return new HttpStreamResponse(statusLine.getStatusCode(), statusLine.getReasonPhrase(), response.getEntity().getContent(), requestBase);
     }
 
     @Override
@@ -194,7 +190,6 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         }
     }
 
-
     static class StreamableEntity implements HttpEntity {
 
         private final StreamableRequest streamable;
@@ -278,11 +273,10 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
             responseBody = outputStream.toByteArray();
             statusLine = response.getStatusLine();
-
             return new HttpResponse(statusLine.getStatusCode(), statusLine.getReasonPhrase(), responseBody);
 
         } finally {
-            requestBase.releaseConnection();
+            requestBase.reset();
             if (LOG.isInfoEnabled()) {
                 long elapsedTime = LOG.stopTimer(TIMER_NAME);
                 StringBuilder httpInfo = new StringBuilder();
