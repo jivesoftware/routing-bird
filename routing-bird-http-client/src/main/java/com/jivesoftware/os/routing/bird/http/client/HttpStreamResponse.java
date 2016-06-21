@@ -47,6 +47,11 @@ public class HttpStreamResponse {
         return statusReasonPhrase;
     }
 
+    public void abort() {
+        requestBase.reset();
+        activeCount.decrementAndGet();
+    }
+
     public void close() {
         HttpClientUtils.closeQuietly(closeableHttpResponse);
         requestBase.reset();
