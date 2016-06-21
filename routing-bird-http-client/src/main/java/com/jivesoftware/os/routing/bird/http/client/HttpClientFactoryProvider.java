@@ -15,11 +15,19 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
 import org.apache.http.config.SocketConfig;
+import org.apache.http.conn.ConnectionRequest;
+import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.routing.HttpRoutePlanner;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -32,6 +40,12 @@ import org.apache.http.protocol.HttpContext;
 public class HttpClientFactoryProvider {
 
     public HttpClientFactory createHttpClientFactory(final Collection<HttpClientConfiguration> configurations) {
+        return createHttpClientFactory(configurations, -1, -1);
+    }
+
+    public HttpClientFactory createHttpClientFactory(final Collection<HttpClientConfiguration> configurations,
+        long debugClientCount,
+        long debugClientCountInterval) {
 
         final HttpClientConfig httpClientConfig = locateConfig(configurations, HttpClientConfig.class, HttpClientConfig.newBuilder().build());
         final PoolingHttpClientConnectionManager clientConnectionManager = new PoolingHttpClientConnectionManager();
@@ -52,6 +66,9 @@ public class HttpClientFactoryProvider {
             .setSoTimeout(httpClientConfig.getSocketTimeoutInMillis() > 0 ? httpClientConfig.getSocketTimeoutInMillis() : 0)
             .build());
 
+        LeakDetectingHttpClientConnectionManager leakDetectingHttpClientConnectionManager = new LeakDetectingHttpClientConnectionManager(
+            clientConnectionManager, debugClientCount, debugClientCountInterval);
+
         return new HttpClientFactory() {
             @Override
             public HttpClient createClient(final String host, final int port) {
@@ -67,7 +84,7 @@ public class HttpClientFactoryProvider {
                     }
                 };
                 CloseableHttpClient client = HttpClients.custom()
-                    .setConnectionManager(clientConnectionManager)
+                    .setConnectionManager(leakDetectingHttpClientConnectionManager)
                     .setRoutePlanner(rp)
                     .build();
 
@@ -84,6 +101,82 @@ public class HttpClientFactoryProvider {
             }
         }
         return defaultConfiguration;
+    }
+
+    public static class LeakDetectingHttpClientConnectionManager implements HttpClientConnectionManager {
+
+        private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
+
+        private final HttpClientConnectionManager delegate;
+        private final long debugClientCount;
+        private final long debugClientCountInterval;
+
+        private final AtomicLong activeCount = new AtomicLong(0);
+        private volatile long lastDebugClientTime = 0;
+
+        public LeakDetectingHttpClientConnectionManager(HttpClientConnectionManager delegate,
+            long debugClientCount,
+            long debugClientCountInterval) {
+            this.delegate = delegate;
+            this.debugClientCount = debugClientCount;
+            this.debugClientCountInterval = debugClientCountInterval;
+        }
+
+        private void debug() {
+            long ctm = System.currentTimeMillis();
+            if (debugClientCountInterval >= 0) {
+                long count = activeCount.get();
+                if (count >= debugClientCount) {
+                    if (ctm - lastDebugClientTime >= debugClientCountInterval) {
+                        LOG.info("Active client count: {}", count);
+                        lastDebugClientTime = ctm;
+                    }
+                }
+            }
+        }
+
+        @Override
+        public ConnectionRequest requestConnection(HttpRoute route, Object state) {
+            activeCount.incrementAndGet();
+            debug();
+            return delegate.requestConnection(route, state);
+        }
+
+        @Override
+        public void releaseConnection(HttpClientConnection conn, Object newState, long validDuration, TimeUnit timeUnit) {
+            activeCount.decrementAndGet();
+            delegate.releaseConnection(conn, newState, validDuration, timeUnit);
+        }
+
+        @Override
+        public void connect(HttpClientConnection conn, HttpRoute route, int connectTimeout, HttpContext context) throws IOException {
+            delegate.connect(conn, route, connectTimeout, context);
+        }
+
+        @Override
+        public void upgrade(HttpClientConnection conn, HttpRoute route, HttpContext context) throws IOException {
+            delegate.upgrade(conn, route, context);
+        }
+
+        @Override
+        public void routeComplete(HttpClientConnection conn, HttpRoute route, HttpContext context) throws IOException {
+            delegate.routeComplete(conn, route, context);
+        }
+
+        @Override
+        public void closeIdleConnections(long idletime, TimeUnit tunit) {
+            delegate.closeIdleConnections(idletime, tunit);
+        }
+
+        @Override
+        public void closeExpiredConnections() {
+            delegate.closeExpiredConnections();
+        }
+
+        @Override
+        public void shutdown() {
+            delegate.shutdown();
+        }
     }
 
 }
