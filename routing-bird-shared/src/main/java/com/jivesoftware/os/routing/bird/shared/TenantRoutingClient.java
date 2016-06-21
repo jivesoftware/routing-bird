@@ -43,11 +43,12 @@ public class TenantRoutingClient<T, C, E extends Throwable> {
         String routingGroup = connectionPoolProvider.getRoutingGroup(tenant);
         ConnectionDescriptors connections = connectionPoolProvider.getConnections(tenant);
         TimestampedClients<C, E> timestampedClients = tenantsHttpClient.compute(tenant, (key, existing) -> {
-            if (existing == null
-                || !existing.getRoutingGroup().equals(routingGroup)
-                || existing.getTimestamp() < connections.getTimestamp()) {
-
-                LOG.info("Updating routes for tenant:{} family:{}", tenant, family);
+            String existingRoutingGroup = existing == null ? null : existing.getRoutingGroup();
+            long existingTimestamp =  existing == null ? -1 : existing.getTimestamp();
+            long timestamp = connections.getTimestamp();
+            if (existingRoutingGroup == null || !existingRoutingGroup.equals(routingGroup) || existingTimestamp < timestamp) {
+                LOG.info("Updating routes for tenant:{} family:{} routingGroup:{}->{} timestamp:{}->{}",
+                    tenant, family, existingRoutingGroup, routingGroup, existingTimestamp, timestamp);
                 if (existing != null) {
                     try {
                         clientsCloser.closeClients(existing.getClients());

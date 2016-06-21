@@ -18,6 +18,7 @@ package com.jivesoftware.os.routing.bird.http.client;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -52,18 +53,26 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     public static final String APPLICATION_OCTET_STREAM_TYPE = "application/octet-stream";
 
     private final CloseableHttpClient client;
+    private final Closeable onClose;
     private final Map<String, String> headersForEveryRequest;
     private final AtomicLong activeCount = new AtomicLong(0);
 
     public ApacheHttpClient441BackedHttpClient(CloseableHttpClient client,
+        Closeable onClose,
         Map<String, String> headersForEveryRequest) {
         this.client = client;
+        this.onClose = onClose;
         this.headersForEveryRequest = headersForEveryRequest;
     }
 
     @Override
     public void close() {
-        HttpClientUtils.closeQuietly(client);
+        try {
+            HttpClientUtils.closeQuietly(client);
+            onClose.close();
+        } catch (Throwable t) {
+            LOG.error("Failed to close client", t);
+        }
     }
 
     @Override

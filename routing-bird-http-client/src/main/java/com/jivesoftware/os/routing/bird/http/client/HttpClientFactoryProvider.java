@@ -88,7 +88,9 @@ public class HttpClientFactoryProvider {
                     .setRoutePlanner(rp)
                     .build();
 
-                return new ApacheHttpClient441BackedHttpClient(client, httpClientConfig.getCopyOfHeadersForEveryRequest());
+                return new ApacheHttpClient441BackedHttpClient(client,
+                    leakDetectingHttpClientConnectionManager::close,
+                    httpClientConfig.getCopyOfHeadersForEveryRequest());
             }
         };
     }
@@ -107,14 +109,14 @@ public class HttpClientFactoryProvider {
 
         private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
-        private final HttpClientConnectionManager delegate;
+        private final PoolingHttpClientConnectionManager delegate;
         private final long debugClientCount;
         private final long debugClientCountInterval;
 
         private final AtomicLong activeCount = new AtomicLong(0);
         private volatile long lastDebugClientTime = 0;
 
-        public LeakDetectingHttpClientConnectionManager(HttpClientConnectionManager delegate,
+        public LeakDetectingHttpClientConnectionManager(PoolingHttpClientConnectionManager delegate,
             long debugClientCount,
             long debugClientCountInterval) {
             this.delegate = delegate;
@@ -176,6 +178,10 @@ public class HttpClientFactoryProvider {
         @Override
         public void shutdown() {
             delegate.shutdown();
+        }
+
+        public void close() {
+            delegate.close();
         }
     }
 
