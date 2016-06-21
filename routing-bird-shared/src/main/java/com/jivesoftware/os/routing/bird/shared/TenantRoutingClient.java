@@ -42,24 +42,28 @@ public class TenantRoutingClient<T, C, E extends Throwable> {
         }
         String routingGroup = connectionPoolProvider.getRoutingGroup(tenant);
         ConnectionDescriptors connections = connectionPoolProvider.getConnections(tenant);
-        TimestampedClients<C, E> timestampedClients = tenantsHttpClient.get(tenant);
-        if (timestampedClients == null
-            || !timestampedClients.getRoutingGroup().equals(routingGroup)
-            || timestampedClients.getTimestamp() < connections.getTimestamp()) {
-            
-            if (timestampedClients != null) {
-                try {
-                    clientsCloser.closeClients(timestampedClients.getClients());
-                } catch (Exception x) {
-                    LOG.warn("Failed while trying to close clients:" + Arrays.toString(timestampedClients.getClients()), x);
+        TimestampedClients<C, E> timestampedClients = tenantsHttpClient.compute(tenant, (key, existing) -> {
+            if (existing == null
+                || !existing.getRoutingGroup().equals(routingGroup)
+                || existing.getTimestamp() < connections.getTimestamp()) {
+
+                LOG.info("Updating routes for tenant:{} family:{}", tenant, family);
+                if (existing != null) {
+                    try {
+                        clientsCloser.closeClients(existing.getClients());
+                    } catch (Exception x) {
+                        LOG.warn("Failed while trying to close clients:" + Arrays.toString(existing.getClients()), x);
+                    }
                 }
+                TimestampedClients<C, E> updated = clientConnectionsFactory.createClients(routingGroup, connections);
+                if (updated == null) {
+                    throw new IllegalStateException("clientConnectionsFactory:" + clientConnectionsFactory + " should not return a null client but did!");
+                }
+                return updated;
+            } else {
+                return existing;
             }
-            timestampedClients = clientConnectionsFactory.createClients(routingGroup, connections);
-            if (timestampedClients == null) {
-                throw new IllegalStateException("clientConnectionsFactory:" + clientConnectionsFactory + " should not return a null client but did!");
-            }
-            tenantsHttpClient.put(tenant, timestampedClients);
-        }
+        });
         return timestampedClients.call(strategy, family, call);
     }
 
