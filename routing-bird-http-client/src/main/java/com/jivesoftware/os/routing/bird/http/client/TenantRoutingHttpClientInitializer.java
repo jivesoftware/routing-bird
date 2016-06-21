@@ -27,8 +27,18 @@ import java.util.List;
 public class TenantRoutingHttpClientInitializer<T> {
 
     public TenantAwareHttpClient<T> initialize(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
-        ClientHealthProvider clientHealthProvider, int deadAfterNErrors,
+        ClientHealthProvider clientHealthProvider,
+        int deadAfterNErrors,
         long checkDeadEveryNMillis) {
+        return initialize(connectionPoolProvider, clientHealthProvider, deadAfterNErrors, checkDeadEveryNMillis, -1, -1);
+    }
+
+    public TenantAwareHttpClient<T> initialize(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
+        ClientHealthProvider clientHealthProvider,
+        int deadAfterNErrors,
+        long checkDeadEveryNMillis,
+        long debugClientCount,
+        long debugClientCountInterval) {
 
         ClientConnectionsFactory<HttpClient, HttpClientException> clientConnectionsFactory = (routingGroup, connectionDescriptors) -> {
             List<ConnectionDescriptor> descriptors = connectionDescriptors.getConnectionDescriptors();
@@ -44,7 +54,9 @@ public class TenantRoutingHttpClientInitializer<T> {
                     .setMaxConnections(32) // TODO expose to config
                     .setSocketTimeoutInMillis(600000) // TODO fix get this from connectionDescriptors.properties
                     .build());
-                HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config);
+                HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config,
+                    debugClientCount,
+                    debugClientCountInterval);
                 HttpClient httpClient = createHttpClientFactory.createClient(connection.getHostPort().getHost(), connection.getHostPort().getPort());
                 httpClients[i] = httpClient;
                 clientHealths[i] = clientHealthProvider.get(connection);
@@ -62,6 +74,9 @@ public class TenantRoutingHttpClientInitializer<T> {
         };
 
         ClientsCloser<HttpClient> clientsCloser = clients -> {
+            for (HttpClient client : clients) {
+                client.close();
+            }
         };
 
         TenantRoutingClient<T, HttpClient, HttpClientException> tenantRoutingClient = new TenantRoutingClient<>(connectionPoolProvider,

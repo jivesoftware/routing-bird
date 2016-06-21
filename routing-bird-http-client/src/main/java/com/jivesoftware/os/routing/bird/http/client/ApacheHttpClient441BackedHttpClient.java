@@ -27,16 +27,18 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.utils.HttpClientUtils;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicHeader;
-import org.apache.http.util.EntityUtils;
 
 class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
@@ -49,14 +51,19 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     public static final String APPLICATION_JSON_CONTENT_TYPE = "application/json";
     public static final String APPLICATION_OCTET_STREAM_TYPE = "application/octet-stream";
 
-    private final org.apache.http.client.HttpClient client;
+    private final CloseableHttpClient client;
     private final Map<String, String> headersForEveryRequest;
     private final AtomicLong activeCount = new AtomicLong(0);
 
-    public ApacheHttpClient441BackedHttpClient(org.apache.http.client.HttpClient client,
+    public ApacheHttpClient441BackedHttpClient(CloseableHttpClient client,
         Map<String, String> headersForEveryRequest) {
         this.client = client;
         this.headersForEveryRequest = headersForEveryRequest;
+    }
+
+    @Override
+    public void close() {
+        HttpClientUtils.closeQuietly(client);
     }
 
     @Override
@@ -89,19 +96,19 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         applyHeadersCommonToAllRequests(requestBase);
 
         activeCount.incrementAndGet();
-        org.apache.http.HttpResponse response = client.execute(requestBase);
+        CloseableHttpResponse response = client.execute(requestBase);
         StatusLine statusLine = response.getStatusLine();
         int status = statusLine.getStatusCode();
         LOG.debug("Got status: {} {}", status, statusLine.getReasonPhrase());
         if (status < 200 || status >= 300) {
             activeCount.decrementAndGet();
-            consume(response);
+            HttpClientUtils.closeQuietly(response);
             requestBase.reset();
             throw new HttpClientException("Bad status : " + statusLine);
         }
         return new HttpStreamResponse(statusLine.getStatusCode(),
             statusLine.getReasonPhrase(),
-            response.getEntity(),
+            response,
             response.getEntity().getContent(),
             requestBase,
             activeCount);
@@ -274,7 +281,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         }
 
         activeCount.incrementAndGet();
-        org.apache.http.HttpResponse response = null;
+        CloseableHttpResponse response = null;
         try {
             response = client.execute(requestBase);
 
@@ -289,7 +296,9 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
             return new HttpResponse(statusLine.getStatusCode(), statusLine.getReasonPhrase(), responseBody);
 
         } finally {
-            consume(response);
+            if (response != null) {
+                HttpClientUtils.closeQuietly(response);
+            }
             requestBase.reset();
             activeCount.decrementAndGet();
             if (LOG.isInfoEnabled()) {
@@ -303,16 +312,6 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
                 httpInfo.append(" in ").append(elapsedTime).append(" ms ").append(requestBase.getMethod()).append(" ")
                     .append(client).append(requestBase.getURI());
                 LOG.debug(httpInfo.toString());
-            }
-        }
-    }
-
-    private void consume(org.apache.http.HttpResponse response) {
-        if (response != null) {
-            try {
-                EntityUtils.consume(response.getEntity());
-            } catch (IOException e) {
-                LOG.error("Failed to consume response", e);
             }
         }
     }

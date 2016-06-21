@@ -36,6 +36,8 @@ public interface HttpClient {
 
     HttpResponse postStreamableRequest(String path, StreamableRequest streamableRequest, Map<String, String> headers) throws HttpClientException;
 
+    void close();
+
     public static interface StreamableRequest {
 
         void writeRequest(OutputStream out) throws IOException;
