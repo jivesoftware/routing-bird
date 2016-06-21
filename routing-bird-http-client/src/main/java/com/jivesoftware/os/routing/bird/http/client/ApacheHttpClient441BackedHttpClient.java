@@ -308,12 +308,13 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     }
 
     private void consume(org.apache.http.HttpResponse response) {
-        try {
-            EntityUtils.consume(response.getEntity());
-        } catch (IOException e) {
-            LOG.error("Failed to consume response", e);
+        if (response != null) {
+            try {
+                EntityUtils.consume(response.getEntity());
+            } catch (IOException e) {
+                LOG.error("Failed to consume response", e);
+            }
         }
-
     }
 
     private void setRequestHeaders(Map<String, String> headers, HttpRequestBase requestBase) {
