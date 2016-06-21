@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -35,6 +36,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.util.EntityUtils;
 
 class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
@@ -49,6 +51,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
     private final org.apache.http.client.HttpClient client;
     private final Map<String, String> headersForEveryRequest;
+    private final AtomicLong activeCount = new AtomicLong(0);
 
     public ApacheHttpClient441BackedHttpClient(org.apache.http.client.HttpClient client,
         Map<String, String> headersForEveryRequest) {
@@ -85,15 +88,23 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
         applyHeadersCommonToAllRequests(requestBase);
 
+        activeCount.incrementAndGet();
         org.apache.http.HttpResponse response = client.execute(requestBase);
         StatusLine statusLine = response.getStatusLine();
         int status = statusLine.getStatusCode();
         LOG.debug("Got status: {} {}", status, statusLine.getReasonPhrase());
         if (status < 200 || status >= 300) {
+            activeCount.decrementAndGet();
+            consume(response);
             requestBase.reset();
             throw new HttpClientException("Bad status : " + statusLine);
         }
-        return new HttpStreamResponse(statusLine.getStatusCode(), statusLine.getReasonPhrase(), response.getEntity().getContent(), requestBase);
+        return new HttpStreamResponse(statusLine.getStatusCode(),
+            statusLine.getReasonPhrase(),
+            response.getEntity(),
+            response.getEntity().getContent(),
+            requestBase,
+            activeCount);
     }
 
     @Override
@@ -261,9 +272,11 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         if (LOG.isInfoEnabled()) {
             LOG.startTimer(TIMER_NAME);
         }
-        try {
 
-            org.apache.http.HttpResponse response = client.execute(requestBase);
+        activeCount.incrementAndGet();
+        org.apache.http.HttpResponse response = null;
+        try {
+            response = client.execute(requestBase);
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             InputStream responseBodyAsStream = response.getEntity().getContent();
@@ -276,7 +289,9 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
             return new HttpResponse(statusLine.getStatusCode(), statusLine.getReasonPhrase(), responseBody);
 
         } finally {
+            consume(response);
             requestBase.reset();
+            activeCount.decrementAndGet();
             if (LOG.isInfoEnabled()) {
                 long elapsedTime = LOG.stopTimer(TIMER_NAME);
                 StringBuilder httpInfo = new StringBuilder();
@@ -290,6 +305,15 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
                 LOG.debug(httpInfo.toString());
             }
         }
+    }
+
+    private void consume(org.apache.http.HttpResponse response) {
+        try {
+            EntityUtils.consume(response.getEntity());
+        } catch (IOException e) {
+            LOG.error("Failed to consume response", e);
+        }
+
     }
 
     private void setRequestHeaders(Map<String, String> headers, HttpRequestBase requestBase) {
