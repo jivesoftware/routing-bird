@@ -26,12 +26,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.http.HttpClientConnection;
-import org.apache.http.HttpConnectionMetrics;
-import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.conn.ConnectionRequest;
@@ -124,7 +121,7 @@ public class HttpClientFactoryProvider {
         private final long debugClientCountInterval;
 
         private final long leakDetectorId = LEAK_DETECTOR_IDS.incrementAndGet();
-        private final AtomicLong connectionIds = new AtomicLong(0);
+        //private final AtomicLong connectionIds = new AtomicLong(0);
         private final AtomicLong activeCount = new AtomicLong(0);
         private final Map<Long, String> leased = new ConcurrentHashMap<>();
         private volatile long lastDebugClientTime = 0;
@@ -160,12 +157,12 @@ public class HttpClientFactoryProvider {
                     activeCount.incrementAndGet();
                     debug();
                     HttpClientConnection httpClientConnection = connectionRequest.get(timeout, tunit);
-                    long connectionId = connectionIds.incrementAndGet();
+                    long connectionId = System.identityHashCode(httpClientConnection);
                     if (debugClientCountInterval >= 0) {
                         String stackTrace = threadName + ": " + ExceptionUtils.getStackTrace(new Throwable());
                         leased.put(connectionId, stackTrace);
                     }
-                    return new LeakDetectingHttpClientConnection(httpClientConnection, connectionId);
+                    return httpClientConnection;
                 }
 
                 @Override
@@ -178,17 +175,11 @@ public class HttpClientFactoryProvider {
         @Override
         public void releaseConnection(HttpClientConnection conn, Object newState, long validDuration, TimeUnit timeUnit) {
             activeCount.decrementAndGet();
-            if (conn instanceof LeakDetectingHttpClientConnection) {
-                LeakDetectingHttpClientConnection leakDetectingHttpClientConnection = (LeakDetectingHttpClientConnection) conn;
-                if (debugClientCountInterval >= 0) {
-                    long connectionId = leakDetectingHttpClientConnection.getId();
-                    leased.remove(connectionId);
-                }
-                delegate.releaseConnection(leakDetectingHttpClientConnection.getDelegate(), newState, validDuration, timeUnit);
-            } else {
-                LOG.warn("Released connection was not a leak detector");
-                delegate.releaseConnection(conn, newState, validDuration, timeUnit);
+            if (debugClientCountInterval >= 0) {
+                long connectionId = System.identityHashCode(conn);
+                leased.remove(connectionId);
             }
+            delegate.releaseConnection(conn, newState, validDuration, timeUnit);
         }
 
         @Override
@@ -226,7 +217,7 @@ public class HttpClientFactoryProvider {
         }
     }
 
-    public static class LeakDetectingHttpClientConnection implements HttpClientConnection {
+    /*public static class LeakDetectingHttpClientConnection implements HttpClientConnection {
 
         private final HttpClientConnection delegate;
         private final long id;
@@ -308,5 +299,5 @@ public class HttpClientFactoryProvider {
         public HttpConnectionMetrics getMetrics() {
             return delegate.getMetrics();
         }
-    }
+    }*/
 }
