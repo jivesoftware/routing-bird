@@ -25,7 +25,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.http.*;
+import org.apache.http.HttpClientConnection;
+import org.apache.http.HttpConnectionMetrics;
+import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.HttpException;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
@@ -173,15 +178,17 @@ public class HttpClientFactoryProvider {
         @Override
         public void releaseConnection(HttpClientConnection conn, Object newState, long validDuration, TimeUnit timeUnit) {
             activeCount.decrementAndGet();
-            if (debugClientCountInterval >= 0) {
-                if (conn instanceof LeakDetectingHttpClientConnection) {
-                    long connectionId = ((LeakDetectingHttpClientConnection) conn).getId();
+            if (conn instanceof LeakDetectingHttpClientConnection) {
+                LeakDetectingHttpClientConnection leakDetectingHttpClientConnection = (LeakDetectingHttpClientConnection) conn;
+                if (debugClientCountInterval >= 0) {
+                    long connectionId = leakDetectingHttpClientConnection.getId();
                     leased.remove(connectionId);
-                } else {
-                    LOG.warn("Released connection was not a leak detector");
                 }
+                delegate.releaseConnection(leakDetectingHttpClientConnection.getDelegate(), newState, validDuration, timeUnit);
+            } else {
+                LOG.warn("Released connection was not a leak detector");
+                delegate.releaseConnection(conn, newState, validDuration, timeUnit);
             }
-            delegate.releaseConnection(conn, newState, validDuration, timeUnit);
         }
 
         @Override
@@ -227,6 +234,10 @@ public class HttpClientFactoryProvider {
         public LeakDetectingHttpClientConnection(HttpClientConnection delegate, long id) {
             this.delegate = delegate;
             this.id = id;
+        }
+
+        public HttpClientConnection getDelegate() {
+            return delegate;
         }
 
         public long getId() {
