@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.jivesoftware.os.routing.bird.inheritance.poms</groupId>
         <artifactId>global-build-management</artifactId>
-        <version>0.71</version>
+        <version>0.72-SNAPSHOT</version>
         <relativePath>../inheritance-poms/global-build-management/pom.xml</relativePath>
     </parent>
     <groupId>com.jivesoftware.os.routing.bird</groupId>
@@ -17,12 +17,12 @@
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-health</artifactId>
-            <version>0.71</version>
+            <version>0.72-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>merlin-config</artifactId>
-            <version>0.71</version>
+            <version>0.72-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -31,32 +31,32 @@
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-server</artifactId>
-            <version>0.71</version>
+            <version>0.72-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-shared</artifactId>
-            <version>0.71</version>
+            <version>0.72-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-http-server-endpoints</artifactId>
-            <version>0.71</version>
+            <version>0.72-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>deployable-config-extractor</artifactId>
-            <version>0.71</version>
+            <version>0.72-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>deployable-reporter-service</artifactId>
-            <version>0.71</version>
+            <version>0.72-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-http-client</artifactId>
-            <version>0.71</version>
+            <version>0.72-SNAPSHOT</version>
         </dependency>
 
         <dependency>
