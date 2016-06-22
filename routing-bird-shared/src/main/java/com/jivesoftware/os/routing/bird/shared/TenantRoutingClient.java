@@ -40,8 +40,8 @@ public class TenantRoutingClient<T, C, E extends Throwable> {
         if (tenant == null) {
             throw new IllegalArgumentException("tenant cannot be null.");
         }
-        String routingGroup = connectionPoolProvider.getRoutingGroup(tenant);
         ConnectionDescriptors connections = connectionPoolProvider.getConnections(tenant);
+        String routingGroup = connectionPoolProvider.getRoutingGroup(tenant);
         TimestampedClients<C, E> timestampedClients = tenantsHttpClient.compute(tenant, (key, existing) -> {
             String existingRoutingGroup = existing == null ? null : existing.getRoutingGroup();
             long existingTimestamp =  existing == null ? -1 : existing.getTimestamp();

@@ -113,10 +113,14 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
         if (connectionsResponse == null) {
             releaseGroup = "unknown";
             connections = new ConnectionDescriptors(System.currentTimeMillis(), Collections.<ConnectionDescriptor>emptyList());
+            releaseGroupToConnectionDescriptors.put(releaseGroup, connections);
+            tenantToReleaseGroup.putIfAbsent(tenantId, releaseGroup);
         } else if (connectionsResponse.getReturnCode() < 0) {
             releaseGroup = "unknown";
             LOG.warn(Arrays.deepToString(connectionsResponse.getMessages().toArray()));
             connections = new ConnectionDescriptors(System.currentTimeMillis(), Collections.<ConnectionDescriptor>emptyList());
+            releaseGroupToConnectionDescriptors.put(releaseGroup, connections);
+            tenantToReleaseGroup.put(tenantId, releaseGroup);
         } else {
             releaseGroup = connectionsResponse.getReleaseGroup();
             List<ConnectionDescriptor> latest = connectionsResponse.getConnections();
@@ -136,9 +140,9 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
             if (connections == null) {
                 connections = new ConnectionDescriptors(System.currentTimeMillis(), latest);
             }
+            releaseGroupToConnectionDescriptors.put(releaseGroup, connections);
+            tenantToReleaseGroup.put(tenantId, releaseGroup);
         }
-        releaseGroupToConnectionDescriptors.put(releaseGroup, connections);
-        tenantToReleaseGroup.put(tenantId, releaseGroup);
         return connections;
     }
 
