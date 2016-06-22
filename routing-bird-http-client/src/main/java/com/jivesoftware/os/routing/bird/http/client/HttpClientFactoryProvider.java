@@ -19,13 +19,16 @@ import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.http.HttpClientConnection;
-import org.apache.http.HttpException;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.http.*;
+import org.apache.http.HttpResponse;
 import org.apache.http.config.SocketConfig;
+import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.conn.ConnectionRequest;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.routing.HttpRoute;
@@ -109,11 +112,16 @@ public class HttpClientFactoryProvider {
 
         private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
+        private static final AtomicLong LEAK_DETECTOR_IDS = new AtomicLong(0);
+
         private final PoolingHttpClientConnectionManager delegate;
         private final long debugClientCount;
         private final long debugClientCountInterval;
 
+        private final long leakDetectorId = LEAK_DETECTOR_IDS.incrementAndGet();
+        private final AtomicLong connectionIds = new AtomicLong(0);
         private final AtomicLong activeCount = new AtomicLong(0);
+        private final Map<Long, String> leased = new ConcurrentHashMap<>();
         private volatile long lastDebugClientTime = 0;
 
         public LeakDetectingHttpClientConnectionManager(PoolingHttpClientConnectionManager delegate,
@@ -130,7 +138,7 @@ public class HttpClientFactoryProvider {
                 long count = activeCount.get();
                 if (count >= debugClientCount) {
                     if (ctm - lastDebugClientTime >= debugClientCountInterval) {
-                        LOG.info("Active client count: {}", count);
+                        LOG.info("Manager {} active client count: {} leased: {}", leakDetectorId, count, leased);
                         lastDebugClientTime = ctm;
                     }
                 }
@@ -139,14 +147,40 @@ public class HttpClientFactoryProvider {
 
         @Override
         public ConnectionRequest requestConnection(HttpRoute route, Object state) {
-            activeCount.incrementAndGet();
-            debug();
-            return delegate.requestConnection(route, state);
+            ConnectionRequest connectionRequest = delegate.requestConnection(route, state);
+            String threadName = Thread.currentThread().getName();
+            return new ConnectionRequest() {
+                @Override
+                public HttpClientConnection get(long timeout, TimeUnit tunit) throws InterruptedException, ExecutionException, ConnectionPoolTimeoutException {
+                    activeCount.incrementAndGet();
+                    debug();
+                    HttpClientConnection httpClientConnection = connectionRequest.get(timeout, tunit);
+                    long connectionId = connectionIds.incrementAndGet();
+                    if (debugClientCountInterval >= 0) {
+                        String stackTrace = threadName + ": " + ExceptionUtils.getStackTrace(new Throwable());
+                        leased.put(connectionId, stackTrace);
+                    }
+                    return new LeakDetectingHttpClientConnection(httpClientConnection, connectionId);
+                }
+
+                @Override
+                public boolean cancel() {
+                    return connectionRequest.cancel();
+                }
+            };
         }
 
         @Override
         public void releaseConnection(HttpClientConnection conn, Object newState, long validDuration, TimeUnit timeUnit) {
             activeCount.decrementAndGet();
+            if (debugClientCountInterval >= 0) {
+                if (conn instanceof LeakDetectingHttpClientConnection) {
+                    long connectionId = ((LeakDetectingHttpClientConnection) conn).getId();
+                    leased.remove(connectionId);
+                } else {
+                    LOG.warn("Released connection was not a leak detector");
+                }
+            }
             delegate.releaseConnection(conn, newState, validDuration, timeUnit);
         }
 
@@ -185,4 +219,83 @@ public class HttpClientFactoryProvider {
         }
     }
 
+    public static class LeakDetectingHttpClientConnection implements HttpClientConnection {
+
+        private final HttpClientConnection delegate;
+        private final long id;
+
+        public LeakDetectingHttpClientConnection(HttpClientConnection delegate, long id) {
+            this.delegate = delegate;
+            this.id = id;
+        }
+
+        public long getId() {
+            return id;
+        }
+
+        @Override
+        public boolean isResponseAvailable(int timeout) throws IOException {
+            return delegate.isResponseAvailable(timeout);
+        }
+
+        @Override
+        public void sendRequestHeader(HttpRequest request) throws HttpException, IOException {
+            delegate.sendRequestHeader(request);
+        }
+
+        @Override
+        public void sendRequestEntity(HttpEntityEnclosingRequest request) throws HttpException, IOException {
+            delegate.sendRequestEntity(request);
+        }
+
+        @Override
+        public HttpResponse receiveResponseHeader() throws HttpException, IOException {
+            return delegate.receiveResponseHeader();
+        }
+
+        @Override
+        public void receiveResponseEntity(HttpResponse response) throws HttpException, IOException {
+            delegate.receiveResponseEntity(response);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            delegate.flush();
+        }
+
+        @Override
+        public void close() throws IOException {
+            delegate.close();
+        }
+
+        @Override
+        public boolean isOpen() {
+            return delegate.isOpen();
+        }
+
+        @Override
+        public boolean isStale() {
+            return delegate.isStale();
+        }
+
+        @Override
+        public void setSocketTimeout(int timeout) {
+            delegate.setSocketTimeout(timeout);
+        }
+
+        @Override
+        public int getSocketTimeout() {
+            return delegate.getSocketTimeout();
+        }
+
+        @Override
+        public void shutdown() throws IOException {
+            delegate.shutdown();
+        }
+
+        @Override
+        public HttpConnectionMetrics getMetrics() {
+            return delegate.getMetrics();
+        }
+    }
 }
