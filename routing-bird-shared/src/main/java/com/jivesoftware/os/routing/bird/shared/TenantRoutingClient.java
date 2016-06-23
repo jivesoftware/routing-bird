@@ -47,8 +47,12 @@ public class TenantRoutingClient<T, C, E extends Throwable> {
             long existingTimestamp =  existing == null ? -1 : existing.getTimestamp();
             long timestamp = connections.getTimestamp();
             if (existingRoutingGroup == null || !existingRoutingGroup.equals(routingGroup) || existingTimestamp < timestamp) {
-                LOG.info("Updating routes for tenant:{} family:{} routingGroup:{}->{} timestamp:{}->{}",
-                    tenant, family, existingRoutingGroup, routingGroup, existingTimestamp, timestamp);
+                LOG.info("Updating routes for service:{} tenant:{} family:{} routingGroup:{}->{} timestamp:{}->{} identity:{}",
+                    connectionPoolProvider.getConnectToServiceNamed(),
+                    tenant, family,
+                    existingRoutingGroup, routingGroup,
+                    existingTimestamp, timestamp,
+                    System.identityHashCode(TenantRoutingClient.this));
                 if (existing != null) {
                     try {
                         clientsCloser.closeClients(existing.getClients());

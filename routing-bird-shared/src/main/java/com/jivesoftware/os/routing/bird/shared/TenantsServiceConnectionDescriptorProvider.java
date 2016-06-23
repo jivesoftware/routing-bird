@@ -56,6 +56,10 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
         this.refreshConnectionsAfterNMillis = refreshConnectionsAfterNMillis;
     }
 
+    public String getConnectToServiceNamed() {
+        return connectToServiceNamed;
+    }
+
     void invalidateAll() {
         tenantToReleaseGroup.clear();
         releaseGroupToConnectionDescriptors.clear();
