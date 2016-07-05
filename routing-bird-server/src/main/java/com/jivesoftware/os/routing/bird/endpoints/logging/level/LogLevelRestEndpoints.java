@@ -71,6 +71,9 @@ public class LogLevelRestEndpoints {
             level = Level.toLevel(loggerLevel);
         }
 
+        log.info("Set metricLogger={} to level={}", loggerName, level);
+        MetricLoggerFactory.setLogLevel(loggerName, false, level);
+
         org.apache.logging.log4j.spi.LoggerContext context = LogManager.getContext(false);
         if (context instanceof LoggerContext) {
             LoggerContext ctx = (LoggerContext) context;
@@ -114,7 +117,7 @@ public class LogLevelRestEndpoints {
                 addToLogLevels(logger, logLevels);
             }
         } else {
-            log.warn("Cannot get log level because root lagger isn't an instance of org.apache.logging.log4j.core.Logger");
+            log.warn("Cannot get log level because root logger isn't an instance of org.apache.logging.log4j.core.Logger");
         }
         addToLogLevels(rootLogger, logLevels);
         return new JsonLogLevels(tenantId, logLevels);
