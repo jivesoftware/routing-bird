@@ -34,6 +34,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 
 @Singleton
 @Path("/logging")
@@ -64,17 +66,33 @@ public class LogLevelRestEndpoints {
     }
 
     private void changeLogLevel(String loggerName, String loggerLevel) {
+        Level level = null;
+        if (!loggerLevel.equals("null")) {
+            level = Level.toLevel(loggerLevel);
+        }
+
+        org.apache.logging.log4j.spi.LoggerContext context = LogManager.getContext(false);
+        if (context instanceof LoggerContext) {
+            LoggerContext ctx = (LoggerContext) context;
+            Configuration config = ctx.getConfiguration();
+            LoggerConfig loggerConfig = config.getLoggerConfig(loggerName);
+            if (loggerConfig.getName().equals(loggerName)) {
+                loggerConfig.setLevel(level);
+                ctx.updateLoggers();
+                log.info("Set loggerConfig={} to level={}", loggerConfig.getName(), level);
+            } else {
+                log.warn("Cannot set log level because there is no logger config with the name '{}'", loggerName);
+            }
+        } else {
+            log.warn("Cannot get logger config because logger context isn't an instance of org.apache.logging.log4j.core.LoggerContext");
+        }
 
         Logger logger = LogManager.getLogger(loggerName);
         if (logger instanceof org.apache.logging.log4j.core.Logger) {
-            Level level = null;
-            if (!loggerLevel.equals("null")) {
-                level = Level.toLevel(loggerLevel);
-            }
             ((org.apache.logging.log4j.core.Logger) logger).setLevel(level);
-            log.info("set logger=" + logger.getName() + " to level=" + level);
+            log.info("Set logger={} to level={}", logger.getName(), level);
         } else {
-            log.warn("Cannot get log level because root lagger isn't an instance of org.apache.logging.log4j.core.Logger");
+            log.warn("Cannot get log level because root logger isn't an instance of org.apache.logging.log4j.core.Logger");
         }
     }
 
@@ -83,7 +101,7 @@ public class LogLevelRestEndpoints {
     @Path("/getLevels")
     @Produces("application/json")
     public JsonLogLevels getLogLevels(String tenantId) {
-        
+
         List<JsonLogLevel> logLevels = new ArrayList<>();
 
         Logger rootLogger = LogManager.getRootLogger();
