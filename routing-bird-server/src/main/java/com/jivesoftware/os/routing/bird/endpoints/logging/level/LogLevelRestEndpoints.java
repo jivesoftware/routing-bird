@@ -76,13 +76,15 @@ public class LogLevelRestEndpoints {
             LoggerContext ctx = (LoggerContext) context;
             Configuration config = ctx.getConfiguration();
             LoggerConfig loggerConfig = config.getLoggerConfig(loggerName);
-            if (loggerConfig.getName().equals(loggerName)) {
-                loggerConfig.setLevel(level);
-                ctx.updateLoggers();
-                log.info("Set loggerConfig={} to level={}", loggerConfig.getName(), level);
-            } else {
-                log.warn("Cannot set log level because there is no logger config with the name '{}'", loggerName);
+            if (!loggerConfig.getName().equals(loggerName)) {
+                log.warn("Creating new logger config for '{}' because nearest config was '{}'", loggerName, loggerConfig.getName());
+                loggerConfig = new LoggerConfig(loggerName, level, true);
+                config.addLogger(loggerName, loggerConfig);
             }
+
+            log.info("Set loggerConfig={} to level={}", loggerConfig.getName(), level);
+            loggerConfig.setLevel(level);
+            ctx.updateLoggers();
         } else {
             log.warn("Cannot get logger config because logger context isn't an instance of org.apache.logging.log4j.core.LoggerContext");
         }
