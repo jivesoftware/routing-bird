@@ -17,6 +17,7 @@ package com.jivesoftware.os.routing.bird.http.client;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -53,26 +54,35 @@ public class HttpClientFactoryProvider {
         long debugClientCountInterval) {
 
         final HttpClientConfig httpClientConfig = locateConfig(configurations, HttpClientConfig.class, HttpClientConfig.newBuilder().build());
-        final PoolingHttpClientConnectionManager clientConnectionManager = new PoolingHttpClientConnectionManager();
+        final PoolingHttpClientConnectionManager poolingHttpClientConnectionManager = new PoolingHttpClientConnectionManager();
 
         if (httpClientConfig.getMaxConnections() > 0) {
-            clientConnectionManager.setMaxTotal(httpClientConfig.getMaxConnections());
+            poolingHttpClientConnectionManager.setMaxTotal(httpClientConfig.getMaxConnections());
         } else {
-            clientConnectionManager.setMaxTotal(Integer.MAX_VALUE);
+            poolingHttpClientConnectionManager.setMaxTotal(Integer.MAX_VALUE);
         }
 
         if (httpClientConfig.getMaxConnectionsPerHost() > 0) {
-            clientConnectionManager.setDefaultMaxPerRoute(httpClientConfig.getMaxConnectionsPerHost());
+            poolingHttpClientConnectionManager.setDefaultMaxPerRoute(httpClientConfig.getMaxConnectionsPerHost());
         } else {
-            clientConnectionManager.setDefaultMaxPerRoute(Integer.MAX_VALUE);
+            poolingHttpClientConnectionManager.setDefaultMaxPerRoute(Integer.MAX_VALUE);
         }
 
-        clientConnectionManager.setDefaultSocketConfig(SocketConfig.custom()
+        poolingHttpClientConnectionManager.setDefaultSocketConfig(SocketConfig.custom()
             .setSoTimeout(httpClientConfig.getSocketTimeoutInMillis() > 0 ? httpClientConfig.getSocketTimeoutInMillis() : 0)
             .build());
 
-        LeakDetectingHttpClientConnectionManager leakDetectingHttpClientConnectionManager = new LeakDetectingHttpClientConnectionManager(
-            clientConnectionManager, debugClientCount, debugClientCountInterval);
+        Closeable closeable;
+        HttpClientConnectionManager clientConnectionManager;
+        if (debugClientCountInterval >= 0) {
+            LeakDetectingHttpClientConnectionManager leakDetectingHttpClientConnectionManager = new LeakDetectingHttpClientConnectionManager(
+                poolingHttpClientConnectionManager, debugClientCount, debugClientCountInterval);
+            clientConnectionManager = leakDetectingHttpClientConnectionManager;
+            closeable = leakDetectingHttpClientConnectionManager::close;
+        } else {
+            clientConnectionManager = poolingHttpClientConnectionManager;
+            closeable = poolingHttpClientConnectionManager;
+        }
 
         return new HttpClientFactory() {
             @Override
@@ -89,12 +99,12 @@ public class HttpClientFactoryProvider {
                     }
                 };
                 CloseableHttpClient client = HttpClients.custom()
-                    .setConnectionManager(leakDetectingHttpClientConnectionManager)
+                    .setConnectionManager(clientConnectionManager)
                     .setRoutePlanner(rp)
                     .build();
 
                 return new ApacheHttpClient441BackedHttpClient(client,
-                    leakDetectingHttpClientConnectionManager::close,
+                    closeable,
                     httpClientConfig.getCopyOfHeadersForEveryRequest());
             }
         };
@@ -216,88 +226,4 @@ public class HttpClientFactoryProvider {
             delegate.close();
         }
     }
-
-    /*public static class LeakDetectingHttpClientConnection implements HttpClientConnection {
-
-        private final HttpClientConnection delegate;
-        private final long id;
-
-        public LeakDetectingHttpClientConnection(HttpClientConnection delegate, long id) {
-            this.delegate = delegate;
-            this.id = id;
-        }
-
-        public HttpClientConnection getDelegate() {
-            return delegate;
-        }
-
-        public long getId() {
-            return id;
-        }
-
-        @Override
-        public boolean isResponseAvailable(int timeout) throws IOException {
-            return delegate.isResponseAvailable(timeout);
-        }
-
-        @Override
-        public void sendRequestHeader(HttpRequest request) throws HttpException, IOException {
-            delegate.sendRequestHeader(request);
-        }
-
-        @Override
-        public void sendRequestEntity(HttpEntityEnclosingRequest request) throws HttpException, IOException {
-            delegate.sendRequestEntity(request);
-        }
-
-        @Override
-        public HttpResponse receiveResponseHeader() throws HttpException, IOException {
-            return delegate.receiveResponseHeader();
-        }
-
-        @Override
-        public void receiveResponseEntity(HttpResponse response) throws HttpException, IOException {
-            delegate.receiveResponseEntity(response);
-        }
-
-        @Override
-        public void flush() throws IOException {
-            delegate.flush();
-        }
-
-        @Override
-        public void close() throws IOException {
-            delegate.close();
-        }
-
-        @Override
-        public boolean isOpen() {
-            return delegate.isOpen();
-        }
-
-        @Override
-        public boolean isStale() {
-            return delegate.isStale();
-        }
-
-        @Override
-        public void setSocketTimeout(int timeout) {
-            delegate.setSocketTimeout(timeout);
-        }
-
-        @Override
-        public int getSocketTimeout() {
-            return delegate.getSocketTimeout();
-        }
-
-        @Override
-        public void shutdown() throws IOException {
-            delegate.shutdown();
-        }
-
-        @Override
-        public HttpConnectionMetrics getMetrics() {
-            return delegate.getMetrics();
-        }
-    }*/
 }

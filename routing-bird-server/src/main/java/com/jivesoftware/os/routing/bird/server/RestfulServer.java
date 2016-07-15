@@ -18,15 +18,21 @@ package com.jivesoftware.os.routing.bird.server;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URISyntaxException;
+import java.security.KeyStore;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class RestfulServer {
@@ -54,6 +60,10 @@ public class RestfulServer {
         server.addEventListener(new MBeanContainer(ManagementFactory.getPlatformMBeanServer()));
         server.setHandler(handlers);
         server.addConnector(makeConnector(port));
+        int sslPort = -1; //TODO
+        if (sslPort > 0) {
+            server.addConnector(makeSslConnector(sslPort));
+        }
     }
 
     public int getThreads() {
@@ -78,6 +88,28 @@ public class RestfulServer {
 
     private Connector makeConnector(int port) {
         ServerConnector connector = new ServerConnector(server, ACCEPTORS, SELECTORS);
+        connector.setPort(port);
+        return connector;
+    }
+
+    private Connector makeSslConnector(int port) {
+        HttpConfiguration https = new HttpConfiguration();
+        https.addCustomizer(new SecureRequestCustomizer());
+
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath("/tmp/todo.ks");
+        sslContextFactory.setKeyStorePassword("todo");
+        sslContextFactory.setKeyManagerPassword("todo");
+        sslContextFactory.setTrustStorePath("/tmp/todo.ts");
+        sslContextFactory.setTrustStorePassword("todo");
+        sslContextFactory.setNeedClientAuth(true); //TODO mutual SSL, expose to configuration
+        //TODO cipher suites
+
+        ServerConnector connector = new ServerConnector(server,
+            ACCEPTORS,
+            SELECTORS,
+            new SslConnectionFactory(sslContextFactory, "http/1.1"),
+            new HttpConnectionFactory(https));
         connector.setPort(port);
         return connector;
     }
