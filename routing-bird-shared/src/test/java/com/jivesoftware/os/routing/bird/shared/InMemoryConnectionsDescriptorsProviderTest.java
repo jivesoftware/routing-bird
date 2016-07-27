@@ -31,8 +31,8 @@ public class InMemoryConnectionsDescriptorsProviderTest {
         got = connectionDescriptorsProvider.get("tenantId", "instanceId", "connectToServiceNamed", "portName");
         Assert.assertNull(got);
 
-        ConnectionDescriptorsRequest requestConnections = new ConnectionDescriptorsRequest("tenantId", "instanceId", "connectToServiceNamed", "portName");
-        ConnectionDescriptorsResponse response = connectionDescriptorsProvider.requestConnections(requestConnections);
+        ConnectionDescriptorsRequest requestConnections = new ConnectionDescriptorsRequest("tenantId", "instanceId", "connectToServiceNamed", "portName", null);
+        ConnectionDescriptorsResponse response = connectionDescriptorsProvider.requestConnections(requestConnections, null);
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.getConnections());
         Assert.assertTrue(response.getConnections().isEmpty());
@@ -44,7 +44,7 @@ public class InMemoryConnectionsDescriptorsProviderTest {
         got = connectionDescriptorsProvider.get("tenantId", "instanceId", "connectToServiceNamed", "portName");
         Assert.assertEquals(got, a);
 
-        response = connectionDescriptorsProvider.requestConnections(requestConnections);
+        response = connectionDescriptorsProvider.requestConnections(requestConnections, null);
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.getConnections());
         Assert.assertTrue(response.getConnections().size() == 1);

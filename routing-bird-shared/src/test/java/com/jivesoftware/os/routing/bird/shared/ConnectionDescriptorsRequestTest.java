@@ -27,7 +27,7 @@ public class ConnectionDescriptorsRequestTest {
     @Test
     public void testConstruction() throws IOException {
 
-        ConnectionDescriptorsRequest a = new ConnectionDescriptorsRequest("tenant", "instance", "to", "port");
+        ConnectionDescriptorsRequest a = new ConnectionDescriptorsRequest("tenant", "instance", "to", "port", null);
         Assert.assertEquals(a.getTenantId(), "tenant");
         Assert.assertEquals(a.getInstanceId(), "instance");
         Assert.assertEquals(a.getConnectToServiceNamed(), "to");

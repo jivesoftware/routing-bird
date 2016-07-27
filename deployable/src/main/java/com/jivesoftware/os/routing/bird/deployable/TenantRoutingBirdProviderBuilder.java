@@ -16,20 +16,23 @@
 package com.jivesoftware.os.routing.bird.deployable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.http.client.HttpClient;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientConfig;
-import com.jivesoftware.os.routing.bird.http.client.HttpClientConfiguration;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientException;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientFactoryProvider;
 import com.jivesoftware.os.routing.bird.http.client.HttpResponse;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TenantRoutingBirdProviderBuilder {
 
@@ -49,45 +52,60 @@ public class TenantRoutingBirdProviderBuilder {
 
         HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder().build();
         final HttpClient httpClient = new HttpClientFactoryProvider()
-            .createHttpClientFactory(Arrays.<HttpClientConfiguration>asList(httpClientConfig))
+            .createHttpClientFactory(Collections.singletonList(httpClientConfig))
             .createClient(routesHost, routesPort);
 
+        AtomicLong activeCount = new AtomicLong();
         final ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-        ConnectionDescriptorsProvider connectionsProvider = (connectionsRequest) -> {
-            LOG.debug("Requesting connections:{}", connectionsRequest);
-
-            String postEntity;
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ConnectionDescriptorsProvider connectionsProvider = (connectionsRequest, expectedReleaseGroup) -> {
+            activeCount.incrementAndGet();
             try {
-                postEntity = mapper.writeValueAsString(connectionsRequest);
-            } catch (JsonProcessingException e) {
-                LOG.error("Error serializing request parameters object to a string.  Object "
-                    + "was " + connectionsRequest + " " + e.getMessage());
-                return null;
-            }
+                LOG.debug("Requesting connections:{}", connectionsRequest);
 
-            HttpResponse response;
-            try {
-                response = httpClient.postJson(routesPath, postEntity, null);
-            } catch (HttpClientException e) {
-                LOG.error("Error posting query request to server.  The entity posted was {} and the endpoint posted to was {}",
-                    new Object[] { postEntity, routesPath }, e);
-                return null;
-            }
-
-            int statusCode = response.getStatusCode();
-            if (statusCode >= 200 && statusCode < 300) {
-                byte[] responseBody = response.getResponseBody();
+                String postEntity;
                 try {
-                    ConnectionDescriptorsResponse connectionDescriptorsResponse = mapper.readValue(responseBody, ConnectionDescriptorsResponse.class);
-                    LOG.debug("Request:{} ConnectionDescriptors:{}", connectionsRequest, connectionDescriptorsResponse);
-                    return connectionDescriptorsResponse;
-                } catch (IOException x) {
-                    LOG.error("Failed to deserialize response:" + new String(responseBody) + " " + x.getMessage());
+                    postEntity = mapper.writeValueAsString(connectionsRequest);
+                } catch (JsonProcessingException e) {
+                    LOG.error("Error serializing request parameters object to a string.  Object "
+                        + "was " + connectionsRequest + " " + e.getMessage());
                     return null;
                 }
+
+                HttpResponse response;
+                try {
+                    response = httpClient.postJson(routesPath, postEntity, null);
+                } catch (HttpClientException e) {
+                    LOG.error("Error posting query request to server.  The entity posted was {} and the endpoint posted to was {}",
+                        new Object[] { postEntity, routesPath }, e);
+                    return null;
+                }
+
+                int statusCode = response.getStatusCode();
+                if (statusCode >= 200 && statusCode < 300) {
+                    byte[] responseBody = response.getResponseBody();
+                    try {
+                        ConnectionDescriptorsResponse connectionDescriptorsResponse = mapper.readValue(responseBody, ConnectionDescriptorsResponse.class);
+                        if (!connectionsRequest.getRequestUuid().equals(connectionDescriptorsResponse.getRequestUuid())) {
+                            LOG.warn("Request UUIDs are misaligned, request:{} response:{}", connectionsRequest, connectionDescriptorsResponse);
+                        }
+                        if (expectedReleaseGroup != null && !expectedReleaseGroup.equals(connectionDescriptorsResponse.getReleaseGroup())) {
+                            String responseEntity = new String(responseBody, StandardCharsets.UTF_8);
+                            LOG.warn("Release group changed, active:{} request:{} requestEntity:{} responseEntity:{} response:{}",
+                                activeCount.get(), connectionsRequest, postEntity, responseEntity, connectionDescriptorsResponse);
+                        }
+                        LOG.debug("Request:{} ConnectionDescriptors:{}", connectionsRequest, connectionDescriptorsResponse);
+                        return connectionDescriptorsResponse;
+                    } catch (IOException x) {
+                        LOG.error("Failed to deserialize response:" + new String(responseBody) + " " + x.getMessage());
+                        return null;
+                    }
+                }
+                return null;
+            } finally {
+                activeCount.decrementAndGet();
             }
-            return null;
         };
         return connectionsProvider;
     }

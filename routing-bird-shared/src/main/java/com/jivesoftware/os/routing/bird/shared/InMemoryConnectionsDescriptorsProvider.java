@@ -63,7 +63,7 @@ public class InMemoryConnectionsDescriptorsProvider implements ConnectionDescrip
     }
 
     @Override
-    public ConnectionDescriptorsResponse requestConnections(ConnectionDescriptorsRequest connectionsRequest) {
+    public ConnectionDescriptorsResponse requestConnections(ConnectionDescriptorsRequest connectionsRequest, String expectedReleaseGroup) {
         String key = key(connectionsRequest.getTenantId(),
             connectionsRequest.getInstanceId(),
             connectionsRequest.getConnectToServiceNamed(),
@@ -84,7 +84,7 @@ public class InMemoryConnectionsDescriptorsProvider implements ConnectionDescrip
             connectionDescriptors.add(connectionDescriptor);
         }
         ConnectionDescriptorsResponse response = new ConnectionDescriptorsResponse(1, Arrays.asList("Success"),
-            releaseGroup, connectionDescriptors);
+            releaseGroup, connectionDescriptors, null);
         return response;
     }
 }

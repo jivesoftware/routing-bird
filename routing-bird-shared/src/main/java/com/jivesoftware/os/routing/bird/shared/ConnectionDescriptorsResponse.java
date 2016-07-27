@@ -26,16 +26,19 @@ public class ConnectionDescriptorsResponse {
     private final List<String> messages;
     private final String releaseGroup;
     private final List<ConnectionDescriptor> connections;
+    private final String requestUuid;
 
     @JsonCreator
     public ConnectionDescriptorsResponse(@JsonProperty("returnCode") int returnCode,
         @JsonProperty("messages") List<String> messages,
         @JsonProperty("releaseGroup") String releaseGroup,
-        @JsonProperty("connections") List<ConnectionDescriptor> connections) {
+        @JsonProperty("connections") List<ConnectionDescriptor> connections,
+        @JsonProperty("requestUuid") String requestUuid) {
         this.returnCode = returnCode;
         this.messages = messages;
         this.releaseGroup = releaseGroup;
         this.connections = connections;
+        this.requestUuid = requestUuid;
     }
 
     public int getReturnCode() {
@@ -54,14 +57,19 @@ public class ConnectionDescriptorsResponse {
         return connections;
     }
 
+    public String getRequestUuid() {
+        return requestUuid;
+    }
+
     @Override
     public String toString() {
-        return "ConnectionDescriptorsResponse{"
-            + "returnCode=" + returnCode
-            + ", messages=" + messages
-            + ", releaseGroup=" + releaseGroup
-            + ", connections=" + connections
-            + '}';
+        return "ConnectionDescriptorsResponse{" +
+            "returnCode=" + returnCode +
+            ", messages=" + messages +
+            ", releaseGroup='" + releaseGroup + '\'' +
+            ", connections=" + connections +
+            ", requestUuid='" + requestUuid + '\'' +
+            '}';
     }
 
     @Override

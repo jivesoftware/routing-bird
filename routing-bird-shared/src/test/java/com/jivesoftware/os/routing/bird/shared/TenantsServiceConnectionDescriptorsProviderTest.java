@@ -41,14 +41,14 @@ public class TenantsServiceConnectionDescriptorsProviderTest {
     @BeforeMethod
     public void setUpMethod() throws Exception {
         MockitoAnnotations.initMocks(this);
-        ConnectionDescriptorsRequest connectionDescriptorsRequest = new ConnectionDescriptorsRequest(tenantId, instanceId, serviceId, port);
+        ConnectionDescriptorsRequest connectionDescriptorsRequest = new ConnectionDescriptorsRequest(tenantId, instanceId, serviceId, port, null);
 
         InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
         descriptor = new ConnectionDescriptor(instanceDescriptor, new HostPort("localhost", 7776), Collections.EMPTY_MAP);
 
-        Mockito.when(connectionDescriptorsProvider.requestConnections(Mockito.eq(connectionDescriptorsRequest))).
+        Mockito.when(connectionDescriptorsProvider.requestConnections(Mockito.eq(connectionDescriptorsRequest), Mockito.any())).
             thenReturn(new ConnectionDescriptorsResponse(200, Collections.<String>emptyList(),
-                userId, Arrays.asList(descriptor)));
+                userId, Arrays.asList(descriptor), null));
     }
 
     @Test

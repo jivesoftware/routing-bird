@@ -17,5 +17,5 @@ package com.jivesoftware.os.routing.bird.shared;
 
 public interface ConnectionDescriptorsProvider {
 
-    ConnectionDescriptorsResponse requestConnections(ConnectionDescriptorsRequest connectionsRequest);
+    ConnectionDescriptorsResponse requestConnections(ConnectionDescriptorsRequest connectionsRequest, String expectedReleaseGroup);
 }

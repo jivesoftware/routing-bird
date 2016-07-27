@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -99,16 +100,14 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
 
     private ConnectionDescriptors refreshConnections(T tenantId) {
         ConnectionDescriptorsRequest connectionDescriptorsRequest = new ConnectionDescriptorsRequest(
-            tenantId.toString(), instanceId, connectToServiceNamed, portName);
+            tenantId.toString(), instanceId, connectToServiceNamed, portName, UUID.randomUUID().toString());
 
-        ConnectionDescriptorsResponse connectionsResponse = connectionsProvider.requestConnections(connectionDescriptorsRequest);
-        if (connectionsResponse == null) {
-            String releaseGroup = tenantToReleaseGroup.get(tenantId);
-            if (releaseGroup != null) {
-                ConnectionDescriptors connectionDescriptors = releaseGroupToConnectionDescriptors.get(releaseGroup);
-                if (connectionDescriptors != null) {
-                    return connectionDescriptors;
-                }
+        String existingReleaseGroup = tenantToReleaseGroup.get(tenantId);
+        ConnectionDescriptorsResponse connectionsResponse = connectionsProvider.requestConnections(connectionDescriptorsRequest, existingReleaseGroup);
+        if (connectionsResponse == null && existingReleaseGroup != null) {
+            ConnectionDescriptors connectionDescriptors = releaseGroupToConnectionDescriptors.get(existingReleaseGroup);
+            if (connectionDescriptors != null) {
+                return connectionDescriptors;
             }
         }
 

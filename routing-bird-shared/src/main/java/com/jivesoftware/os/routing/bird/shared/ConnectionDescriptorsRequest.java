@@ -25,6 +25,7 @@ public class ConnectionDescriptorsRequest {
     private final String instanceId;
     private final String connectToServiceNamed;
     private final String portName;
+    private final String requestUuid;
 
     /**
      *
@@ -37,11 +38,13 @@ public class ConnectionDescriptorsRequest {
     public ConnectionDescriptorsRequest(@JsonProperty("tenantId") String tenantId,
             @JsonProperty("instanceId") String instanceId,
             @JsonProperty("connectToServiceNamed") String connectToServiceNamed,
-            @JsonProperty("portName") String portName) {
+            @JsonProperty("portName") String portName,
+            @JsonProperty("requestUuid") String requestUuid) {
         this.tenantId = tenantId;
         this.instanceId = instanceId;
         this.connectToServiceNamed = connectToServiceNamed;
         this.portName = portName;
+        this.requestUuid = requestUuid;
     }
 
     public String getTenantId() {
@@ -60,10 +63,19 @@ public class ConnectionDescriptorsRequest {
         return portName;
     }
 
+    public String getRequestUuid() {
+        return requestUuid;
+    }
+
     @Override
     public String toString() {
-        return "ConnectionsRequest{" + "tenantId=" + tenantId
-                + ", instanceId=" + instanceId + ", connectToServiceNamed=" + connectToServiceNamed + ", portName=" + portName + '}';
+        return "ConnectionDescriptorsRequest{" +
+            "tenantId='" + tenantId + '\'' +
+            ", instanceId='" + instanceId + '\'' +
+            ", connectToServiceNamed='" + connectToServiceNamed + '\'' +
+            ", portName='" + portName + '\'' +
+            ", requestUuid='" + requestUuid + '\'' +
+            '}';
     }
 
     @Override

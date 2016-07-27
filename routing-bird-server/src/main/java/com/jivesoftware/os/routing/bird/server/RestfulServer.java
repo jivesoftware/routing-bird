@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URISyntaxException;
 import java.security.KeyStore;
+import javax.net.ssl.X509TrustManager;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -104,6 +105,7 @@ public class RestfulServer {
         sslContextFactory.setTrustStorePassword("todo");
         sslContextFactory.setNeedClientAuth(true); //TODO mutual SSL, expose to configuration
         //TODO cipher suites
+        X509TrustManager x509TrustManager;
 
         ServerConnector connector = new ServerConnector(server,
             ACCEPTORS,

@@ -38,13 +38,13 @@ public class TenantRoutingProviderTest {
     @Test
     public void testGetConnections() throws Exception {
 
-        ConnectionDescriptorsRequest request = new ConnectionDescriptorsRequest("tenant", "1234", "serviceA", "port1");
+        ConnectionDescriptorsRequest request = new ConnectionDescriptorsRequest("tenant", "1234", "serviceA", "port1", null);
 
         List<ConnectionDescriptor> connections = new ArrayList<>();
         InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
         connections.add(new ConnectionDescriptor(instanceDescriptor, new HostPort("a", 1), new HashMap<>()));
-        ConnectionDescriptorsResponse response = new ConnectionDescriptorsResponse(0, null, "releaseGroupA", connections);
-        Mockito.when(connectionDescriptorsProvider.requestConnections(Mockito.eq(request))).thenReturn(response);
+        ConnectionDescriptorsResponse response = new ConnectionDescriptorsResponse(0, null, "releaseGroupA", connections, null);
+        Mockito.when(connectionDescriptorsProvider.requestConnections(Mockito.eq(request), Mockito.any())).thenReturn(response);
 
         TenantsServiceConnectionDescriptorProvider descriptorProvider = provider.getConnections("invalid", null, 60_000);
         Assert.assertNull(descriptorProvider);
@@ -71,9 +71,9 @@ public class TenantRoutingProviderTest {
         TenantsRoutingReport routingReport = provider.getRoutingReport();
         Assert.assertTrue(routingReport.serviceReport.isEmpty());
 
-        ConnectionDescriptorsRequest request = new ConnectionDescriptorsRequest("tenant", "1234", "serviceA", "port1");
-        ConnectionDescriptorsResponse response = new ConnectionDescriptorsResponse(0, null, "releaseGroupA", null);
-        Mockito.when(connectionDescriptorsProvider.requestConnections(Mockito.eq(request))).thenReturn(response);
+        ConnectionDescriptorsRequest request = new ConnectionDescriptorsRequest("tenant", "1234", "serviceA", "port1", null);
+        ConnectionDescriptorsResponse response = new ConnectionDescriptorsResponse(0, null, "releaseGroupA", null, null);
+        Mockito.when(connectionDescriptorsProvider.requestConnections(Mockito.eq(request), Mockito.any())).thenReturn(response);
 
         TenantsServiceConnectionDescriptorProvider connections = provider.getConnections("serviceA", "port1", 60_000);
         routingReport = provider.getRoutingReport();
