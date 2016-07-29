@@ -24,14 +24,17 @@ public class ConnectionDescriptor {
     private final InstanceDescriptor instanceDescriptor;
     private final HostPort hostPort;
     private final Map<String, String> properties;
+    private final Map<String, String> monkeys;
 
     @JsonCreator
     public ConnectionDescriptor(@JsonProperty("instanceDescriptor") InstanceDescriptor instanceDescriptor,
         @JsonProperty("hostPort") HostPort hostPort,
-        @JsonProperty("properties") Map<String, String> properties) {
+        @JsonProperty("properties") Map<String, String> properties,
+        @JsonProperty("monkeys") Map<String, String> monkeys) {
         this.instanceDescriptor = instanceDescriptor;
         this.hostPort = hostPort;
         this.properties = properties;
+        this.monkeys = monkeys;
     }
 
     public InstanceDescriptor getInstanceDescriptor() {
@@ -46,12 +49,17 @@ public class ConnectionDescriptor {
         return properties;
     }
 
+    public Map<String,String> getMonkeys() {
+        return monkeys;
+    }
+
     @Override
     public String toString() {
         return "ConnectionDescriptor{"
             + "instanceDescriptor=" + instanceDescriptor
             + ", hostPort=" + hostPort
             + ", properties=" + properties
+            + ", monkeys=" + monkeys
             + '}';
     }
 
