@@ -20,8 +20,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -29,7 +27,6 @@ import org.testng.annotations.Test;
 
 public class TenantsServiceConnectionDescriptorsProviderTest {
 
-    @Mock
     private ConnectionDescriptorsProvider connectionDescriptorsProvider;
     private String tenantId = "testTenant";
     private String instanceId = "testInstance";
@@ -41,14 +38,21 @@ public class TenantsServiceConnectionDescriptorsProviderTest {
     @BeforeMethod
     public void setUpMethod() throws Exception {
         MockitoAnnotations.initMocks(this);
-        ConnectionDescriptorsRequest connectionDescriptorsRequest = new ConnectionDescriptorsRequest(tenantId, instanceId, serviceId, port, null);
-
+        
         InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
         descriptor = new ConnectionDescriptor(instanceDescriptor, new HostPort("localhost", 7776), Collections.EMPTY_MAP);
 
-        Mockito.when(connectionDescriptorsProvider.requestConnections(Mockito.eq(connectionDescriptorsRequest), Mockito.any())).
-            thenReturn(new ConnectionDescriptorsResponse(200, Collections.<String>emptyList(),
-                userId, Arrays.asList(descriptor), null));
+        connectionDescriptorsProvider = new ConnectionDescriptorsProvider() {
+            @Override
+            public ConnectionDescriptorsResponse requestConnections(ConnectionDescriptorsRequest connectionsRequest, String expectedReleaseGroup) {
+                if (connectionsRequest.getTenantId().equals(tenantId) && connectionsRequest.getInstanceId().equals(instanceId)) {
+                    return new ConnectionDescriptorsResponse(200, Collections.<String>emptyList(),
+                        userId, Arrays.asList(descriptor), null);
+                } else {
+                    return null;
+                }
+            }
+        };
     }
 
     @Test
@@ -68,7 +72,7 @@ public class TenantsServiceConnectionDescriptorsProviderTest {
 
         Assert.assertNotNull(descriptors);
         Assert.assertEquals(descriptors.size(), 1);
-        Assert.assertEquals(descriptors.get(0), descriptor);
+        Assert.assertEquals(descriptors.get(0).getHostPort(), descriptor.getHostPort());
 
         ConnectionDescriptors connections2 = tenantsServiceConnectionPoolProvider.getConnections(tenantId);
         Assert.assertSame(connections2, connections);
@@ -103,7 +107,7 @@ public class TenantsServiceConnectionDescriptorsProviderTest {
 
         Assert.assertNotNull(descriptors);
         Assert.assertEquals(descriptors.size(), 1);
-        Assert.assertEquals(descriptors.get(0), descriptor);
+        Assert.assertEquals(descriptors.get(0).getHostPort(), descriptor.getHostPort());
         TenantsRoutingServiceReport<String> routingReport = tenantsServiceConnectionPoolProvider.getRoutingReport();
         Assert.assertNotNull(routingReport);
 
