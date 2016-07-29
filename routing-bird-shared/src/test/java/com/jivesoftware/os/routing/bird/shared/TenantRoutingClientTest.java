@@ -57,7 +57,7 @@ public class TenantRoutingClientTest {
 
     private void initDescriptorsPool(long timestamp) {
         InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
-        ConnectionDescriptor descriptor = new ConnectionDescriptor(instanceDescriptor, new HostPort("localhost", 7777), Collections.emptyMap());
+        ConnectionDescriptor descriptor = new ConnectionDescriptor(instanceDescriptor, new HostPort("localhost", 7777), Collections.EMPTY_MAP, Collections.EMPTY_MAP);
         ConnectionDescriptors connectionDescriptors = new ConnectionDescriptors(timestamp, Arrays.asList(descriptor));
         strategy = new TestStrategy();
         Mockito.when(tenantsServiceConnectionDescriptorProvider.getConnections(tenantId)).thenReturn(connectionDescriptors);

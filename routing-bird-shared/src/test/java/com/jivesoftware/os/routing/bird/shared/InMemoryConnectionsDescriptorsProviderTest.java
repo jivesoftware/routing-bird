@@ -15,7 +15,7 @@
  */
 package com.jivesoftware.os.routing.bird.shared;
 
-import java.util.HashMap;
+import java.util.Collections;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -23,7 +23,6 @@ public class InMemoryConnectionsDescriptorsProviderTest {
 
     @Test
     public void testGetConnections() throws Exception {
-
         InMemoryConnectionsDescriptorsProvider connectionDescriptorsProvider = new InMemoryConnectionsDescriptorsProvider(null);
         ConnectionDescriptor got = connectionDescriptorsProvider.get(null, null, null, null);
         Assert.assertNull(got);
@@ -39,7 +38,7 @@ public class InMemoryConnectionsDescriptorsProviderTest {
         Assert.assertEquals(response.getReleaseGroup(), "default");
 
         InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
-        ConnectionDescriptor a = new ConnectionDescriptor(instanceDescriptor, new HostPort("a", 1), new HashMap<>());
+        ConnectionDescriptor a = new ConnectionDescriptor(instanceDescriptor, new HostPort("a", 1), Collections.EMPTY_MAP, Collections.EMPTY_MAP);
         connectionDescriptorsProvider.set("tenantId", "instanceId", "connectToServiceNamed", "portName", a);
         got = connectionDescriptorsProvider.get("tenantId", "instanceId", "connectToServiceNamed", "portName");
         Assert.assertEquals(got.getHostPort(), a.getHostPort());
@@ -60,7 +59,6 @@ public class InMemoryConnectionsDescriptorsProviderTest {
 
         got = connectionDescriptorsProvider.get("tenantId", "instanceId", "connectToServiceNamed", "portName");
         Assert.assertNull(got);
-
     }
 
 }

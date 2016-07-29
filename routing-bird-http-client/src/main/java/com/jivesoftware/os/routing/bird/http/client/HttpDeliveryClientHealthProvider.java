@@ -70,7 +70,6 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
             long time = System.currentTimeMillis();
             for (Health h : healths.values()) {
                 for (Map.Entry<String, FamilyStats> familyStats : h.familyStats.entrySet()) {
-
                     FamilyStats fs = familyStats.getValue();
 
                     ConnectionHealthLatencyStats latencyStats = new ConnectionHealthLatencyStats(fs.ds.getMean(),
@@ -101,15 +100,13 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
 
             httpRequestHelper.executeRequest(new InstanceConnectionHealth(instanceId, deliverableHealth), path, String.class, null);
         } catch (Exception x) {
-            LOG.warn("Failed tp delivery client health.", x);
+            LOG.warn("Failed to deliver client health.", x);
         }
-
     }
 
     static class Health implements ClientHealth {
 
         ConnectionDescriptor connectionDescriptor;
-        long lastDeliveryTimestamp = System.currentTimeMillis();
         long timestamp;
         long connectivityErrors = 0;
         long firstMarkedAsDeadTimestamp = -1;
@@ -256,4 +253,5 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
         HttpRequestHelper requestHelper = new HttpRequestHelper(httpClient, new ObjectMapper());
         return requestHelper;
     }
+
 }

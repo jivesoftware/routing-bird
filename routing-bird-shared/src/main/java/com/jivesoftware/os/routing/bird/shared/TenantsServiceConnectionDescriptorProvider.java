@@ -203,7 +203,6 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
     }
 
     public void start() {
-
         connectionsRefresher.scheduleWithFixedDelay(() -> {
             try {
                 for (Map.Entry<T, AtomicBoolean> entry : activeTenants.entrySet()) {
