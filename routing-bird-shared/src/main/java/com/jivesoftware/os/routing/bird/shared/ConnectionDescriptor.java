@@ -18,7 +18,6 @@ package com.jivesoftware.os.routing.bird.shared;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
-import java.util.Objects;
 
 public class ConnectionDescriptor {
 
@@ -58,32 +57,12 @@ public class ConnectionDescriptor {
 
     @Override
     public int hashCode() {
-        int hash = 3;
-        hash = 67 * hash + Objects.hashCode(this.instanceDescriptor);
-        hash = 67 * hash + Objects.hashCode(this.hostPort);
-        hash = 67 * hash + Objects.hashCode(this.properties);
-        return hash;
+        throw new UnsupportedOperationException("NOPE");
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final ConnectionDescriptor other = (ConnectionDescriptor) obj;
-        if (!Objects.equals(this.instanceDescriptor, other.instanceDescriptor)) {
-            return false;
-        }
-        if (!Objects.equals(this.hostPort, other.hostPort)) {
-            return false;
-        }
-        if (!Objects.equals(this.properties, other.properties)) {
-            return false;
-        }
-        return true;
+        throw new UnsupportedOperationException("NOPE");
     }
 
 }

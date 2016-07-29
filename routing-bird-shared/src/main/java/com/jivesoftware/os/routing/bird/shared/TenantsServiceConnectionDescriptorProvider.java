@@ -19,10 +19,10 @@ import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -131,11 +131,17 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
             if (current != null) {
                 tenantToReleaseGroup.put(tenantId, releaseGroup);
                 if (latest.size() == current.getConnectionDescriptors().size()) {
-                    Set<ConnectionDescriptor> currentAsSet = new HashSet<>(current.getConnectionDescriptors());
-                    for (ConnectionDescriptor connectionDescriptor : latest) {
-                        currentAsSet.remove(connectionDescriptor);
+                    Map<ConnectionDescriptorKey, ConnectionDescriptor> currentConnectionDescriptors = new HashMap<>();
+                    for (ConnectionDescriptor connectionDescriptor : current.getConnectionDescriptors()) {
+                        currentConnectionDescriptors.put(new ConnectionDescriptorKey(connectionDescriptor.getInstanceDescriptor(),
+                            connectionDescriptor.getHostPort(),
+                            connectionDescriptor.getProperties()),
+                            connectionDescriptor);
                     }
-                    if (currentAsSet.isEmpty()) {
+                    for (ConnectionDescriptor connectionDescriptor : latest) {
+                        currentConnectionDescriptors.remove(connectionDescriptor);
+                    }
+                    if (currentConnectionDescriptors.isEmpty()) {
                         connections = current;
                     }
                 }
@@ -147,6 +153,50 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
             tenantToReleaseGroup.put(tenantId, releaseGroup);
         }
         return connections;
+    }
+
+    public static class ConnectionDescriptorKey {
+
+        private final InstanceDescriptor instanceDescriptor;
+        private final HostPort hostPort;
+        private final Map<String, String> properties;
+
+        public ConnectionDescriptorKey(InstanceDescriptor instanceDescriptor, HostPort hostPort, Map<String, String> properties) {
+            this.instanceDescriptor = instanceDescriptor;
+            this.hostPort = hostPort;
+            this.properties = properties;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 5;
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            final ConnectionDescriptorKey other = (ConnectionDescriptorKey) obj;
+            if (!Objects.equals(this.instanceDescriptor, other.instanceDescriptor)) {
+                return false;
+            }
+            if (!Objects.equals(this.hostPort, other.hostPort)) {
+                return false;
+            }
+            if (!Objects.equals(this.properties, other.properties)) {
+                return false;
+            }
+            return true;
+        }
+
     }
 
     public void start() {

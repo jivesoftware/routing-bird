@@ -17,7 +17,6 @@ package com.jivesoftware.os.routing.bird.shared;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Objects;
 
 public class ConnectionDescriptorsRequest {
 
@@ -80,35 +79,11 @@ public class ConnectionDescriptorsRequest {
 
     @Override
     public int hashCode() {
-        int hash = 5;
-        hash = 73 * hash + Objects.hashCode(this.tenantId);
-        hash = 73 * hash + Objects.hashCode(this.instanceId);
-        hash = 73 * hash + Objects.hashCode(this.connectToServiceNamed);
-        hash = 73 * hash + Objects.hashCode(this.portName);
-        return hash;
+        throw new UnsupportedOperationException("NOPE");
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final ConnectionDescriptorsRequest other = (ConnectionDescriptorsRequest) obj;
-        if (!Objects.equals(this.tenantId, other.tenantId)) {
-            return false;
-        }
-        if (!Objects.equals(this.instanceId, other.instanceId)) {
-            return false;
-        }
-        if (!Objects.equals(this.connectToServiceNamed, other.connectToServiceNamed)) {
-            return false;
-        }
-        if (!Objects.equals(this.portName, other.portName)) {
-            return false;
-        }
-        return true;
+        throw new UnsupportedOperationException("NOPE");
     }
 }

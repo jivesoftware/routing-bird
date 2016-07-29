@@ -18,7 +18,6 @@ package com.jivesoftware.os.routing.bird.shared;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
-import java.util.Objects;
 
 public class ConnectionDescriptorsResponse {
 
@@ -74,36 +73,12 @@ public class ConnectionDescriptorsResponse {
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 29 * hash + this.returnCode;
-        hash = 29 * hash + Objects.hashCode(this.messages);
-        hash = 29 * hash + Objects.hashCode(this.releaseGroup);
-        hash = 29 * hash + Objects.hashCode(this.connections);
-        return hash;
+        throw new UnsupportedOperationException("NOPE");
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final ConnectionDescriptorsResponse other = (ConnectionDescriptorsResponse) obj;
-        if (this.returnCode != other.returnCode) {
-            return false;
-        }
-        if (!Objects.equals(this.messages, other.messages)) {
-            return false;
-        }
-        if (!Objects.equals(this.releaseGroup, other.releaseGroup)) {
-            return false;
-        }
-        if (!Objects.equals(this.connections, other.connections)) {
-            return false;
-        }
-        return true;
+        throw new UnsupportedOperationException("NOPE");
     }
 
 }
