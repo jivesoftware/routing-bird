@@ -120,7 +120,8 @@ public class TenantsServiceConnectionDescriptorsProviderTest {
         Map<String, ConnectionDescriptors> idtoPools = routingReport.userIdsConnectionDescriptors;
         Assert.assertNotNull(idtoPools);
         Assert.assertEquals(idtoPools.size(), 1);
-        idtoPools.get(userId);
-        Assert.assertEquals(idtoPools.get(userId), connections);
+        Assert.assertNotNull(idtoPools.get(userId));
+        Assert.assertTrue(idtoPools.get(userId).getTimestamp() == connections.getTimestamp());
+        Assert.assertTrue(idtoPools.get(userId).getConnectionDescriptors() == connections.getConnectionDescriptors());
     }
 }

@@ -141,8 +141,7 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
                     for (ConnectionDescriptor connectionDescriptor : latest) {
                         currentConnectionDescriptors.remove(new ConnectionDescriptorKey(connectionDescriptor.getInstanceDescriptor(),
                             connectionDescriptor.getHostPort(),
-                            connectionDescriptor.getProperties()),
-                            connectionDescriptor);
+                            connectionDescriptor.getProperties()));
                     }
                     if (currentConnectionDescriptors.isEmpty()) {
                         connections = current;
