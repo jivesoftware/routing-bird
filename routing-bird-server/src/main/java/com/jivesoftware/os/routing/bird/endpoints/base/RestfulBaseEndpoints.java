@@ -551,6 +551,18 @@ public class RestfulBaseEndpoints {
 
     }
 
+    @GET
+    @Path("/resetHealth")
+    public Response resetHealth() {
+        try {
+            healthCheckService.resetHealthChecks();
+            return Response.ok("Reset Health", MediaType.TEXT_PLAIN).build();
+        } catch (Exception x) {
+            LOG.warn("Failed to reset health.", x);
+            return ResponseHelper.INSTANCE.errorResponse("Failed to reset health checks.", x);
+        }
+    }
+
     class JettyStatus {
 
         public String state;

@@ -30,6 +30,7 @@ import com.jivesoftware.os.routing.bird.endpoints.configuration.MainPropertiesEn
 import com.jivesoftware.os.routing.bird.health.HealthCheck;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponse;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponseImpl;
+import com.jivesoftware.os.routing.bird.health.api.ResettableHealthCheck;
 import com.jivesoftware.os.routing.bird.health.api.ScheduledHealthCheck;
 import com.jivesoftware.os.routing.bird.http.server.endpoints.TenantRoutingRestEndpoints;
 import com.jivesoftware.os.routing.bird.server.InitializeRestfulServer;
@@ -160,6 +161,10 @@ public class Deployable {
 
     public void addHealthCheck(HealthCheck... healthCheck) {
         restfulManageServer.addHealthCheck(healthCheck);
+    }
+
+    public void removeHealthCheck(HealthCheck... healthCheck) {
+        restfulManageServer.removeHealthCheck(healthCheck);
     }
 
     public RestfulManageServer buildManageServer() throws Exception {
@@ -327,7 +332,7 @@ public class Deployable {
 
     }
 
-    private class LoggerSummaryHealthCheck implements ScheduledHealthCheck {
+    private class LoggerSummaryHealthCheck implements ScheduledHealthCheck, ResettableHealthCheck {
 
         private final AtomicLong lastErrorCount = new AtomicLong();
         private final AtomicLong lastCheckTimestamp = new AtomicLong();
@@ -357,6 +362,11 @@ public class Deployable {
                 healthClearAfterThisTimestmap = 0;
             }
             lastCheckTimestamp.set(System.currentTimeMillis());
+        }
+
+        @Override
+        public void reset() {
+            healthClearAfterThisTimestmap = 0;
         }
 
         @Override

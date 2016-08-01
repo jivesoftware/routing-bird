@@ -6,6 +6,7 @@ import com.jivesoftware.os.routing.bird.health.HealthCheckResponseImpl;
 import com.jivesoftware.os.routing.bird.health.api.HealthCheckUtil;
 import com.jivesoftware.os.routing.bird.health.api.HealthChecker;
 import com.jivesoftware.os.routing.bird.health.api.HealthFactory;
+import com.jivesoftware.os.routing.bird.health.api.ResettableHealthCheck;
 import com.jivesoftware.os.routing.bird.health.api.TimerHealthCheckConfig;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,18 +14,12 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * @author jonathan.colt
  */
-public class TimerHealthChecker implements HealthChecker<Timer> {
+public class TimerHealthChecker implements HealthChecker<Timer>, ResettableHealthCheck {
 
-    static public HealthFactory.HealthCheckerConstructor<Timer, TimerHealthCheckConfig> FACTORY =
-        new HealthFactory.HealthCheckerConstructor<Timer, TimerHealthCheckConfig>() {
-        @Override
-        public HealthChecker<Timer> construct(TimerHealthCheckConfig config) {
-            return new TimerHealthChecker(config);
-        }
-    };
+    public static final HealthFactory.HealthCheckerConstructor<Timer, TimerHealthCheckConfig> FACTORY = TimerHealthChecker::new;
 
     private final TimerHealthCheckConfig config;
-    private final AtomicReference<Callable<HealthCheckResponse>> lastTimer = new AtomicReference<>();
+    private final AtomicReference<TimerCallable> lastTimer = new AtomicReference<>();
 
     public TimerHealthChecker(TimerHealthCheckConfig config) {
         this.config = config;
@@ -32,22 +27,7 @@ public class TimerHealthChecker implements HealthChecker<Timer> {
 
     @Override
     public void check(final Timer timer, final String description, final String resolution) {
-        final long time = System.currentTimeMillis();
-        lastTimer.set(new Callable<HealthCheckResponse>() {
-
-            @Override
-            public HealthCheckResponse call() throws Exception {
-                double health = 1.0f;
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.getMeanMax(), 0, timer.getMean()));
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.getVarianceMax(), 0, Math.abs(timer.getVariance())));
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get50ThPecentileMax(), 0, timer.get50ThPercentile()));
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get75ThPecentileMax(), 0, timer.get75ThPercentile()));
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get90ThPecentileMax(), 0, timer.get90ThPercentile()));
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get95ThPecentileMax(), 0, timer.get95ThPercentile()));
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get99ThPecentileMax(), 0, timer.get99ThPercentile()));
-                return new HealthCheckResponseImpl(config.getName(), Math.max(health, 0f), healthString(timer), description, resolution, time);
-            }
-        });
+        lastTimer.set(new TimerCallable(timer, description, resolution, System.currentTimeMillis()));
     }
 
     @Override
@@ -65,6 +45,14 @@ public class TimerHealthChecker implements HealthChecker<Timer> {
         }
     }
 
+    @Override
+    public void reset() {
+        TimerCallable timerCallable = lastTimer.get();
+        if (timerCallable != null) {
+            timerCallable.timer.reset();
+        }
+    }
+
     private String healthString(Timer timer) {
         StringBuilder sb = new StringBuilder();
         sb.append(" samples:").append(timer.getSampleCount());
@@ -76,6 +64,34 @@ public class TimerHealthChecker implements HealthChecker<Timer> {
         sb.append(" 99th:").append(timer.get99ThPercentile());
         sb.append(" max:").append(timer.getMax());
         return sb.toString();
+    }
+
+    private class TimerCallable implements Callable<HealthCheckResponse> {
+
+        private final Timer timer;
+        private final String description;
+        private final String resolution;
+        private final long time;
+
+        private TimerCallable(Timer timer, String description, String resolution, long time) {
+            this.timer = timer;
+            this.description = description;
+            this.resolution = resolution;
+            this.time = time;
+        }
+
+        @Override
+        public HealthCheckResponse call() throws Exception {
+            double health = 1.0f;
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.getMeanMax(), 0, timer.getMean()));
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.getVarianceMax(), 0, Math.abs(timer.getVariance())));
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get50ThPecentileMax(), 0, timer.get50ThPercentile()));
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get75ThPecentileMax(), 0, timer.get75ThPercentile()));
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get90ThPecentileMax(), 0, timer.get90ThPercentile()));
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get95ThPecentileMax(), 0, timer.get95ThPercentile()));
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get99ThPecentileMax(), 0, timer.get99ThPercentile()));
+            return new HealthCheckResponseImpl(config.getName(), Math.max(health, 0f), healthString(timer), description, resolution, time);
+        }
     }
 
 }

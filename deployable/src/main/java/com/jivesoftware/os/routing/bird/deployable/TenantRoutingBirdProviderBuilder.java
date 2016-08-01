@@ -90,7 +90,9 @@ public class TenantRoutingBirdProviderBuilder {
                         if (!connectionsRequest.getRequestUuid().equals(connectionDescriptorsResponse.getRequestUuid())) {
                             LOG.warn("Request UUIDs are misaligned, request:{} response:{}", connectionsRequest, connectionDescriptorsResponse);
                         }
-                        if (expectedReleaseGroup != null && !expectedReleaseGroup.equals(connectionDescriptorsResponse.getReleaseGroup())) {
+                        if (connectionDescriptorsResponse.getReturnCode() >= 0
+                            && expectedReleaseGroup != null
+                            && !expectedReleaseGroup.equals(connectionDescriptorsResponse.getReleaseGroup())) {
                             String responseEntity = new String(responseBody, StandardCharsets.UTF_8);
                             LOG.warn("Release group changed, active:{} request:{} requestEntity:{} responseEntity:{} response:{}",
                                 activeCount.get(), connectionsRequest, postEntity, responseEntity, connectionDescriptorsResponse);

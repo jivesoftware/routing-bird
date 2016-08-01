@@ -15,11 +15,14 @@
  */
 package com.jivesoftware.os.routing.bird.health;
 
+import com.jivesoftware.os.routing.bird.health.api.ResettableHealthCheck;
 import com.jivesoftware.os.routing.bird.health.api.ScheduledHealthCheck;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,17 +60,35 @@ public class HealthCheckService {
         new NamedThreadFactory(Thread.currentThread().getThreadGroup(),
             "health-checkers")); // TODO clean up yuck.
 
-    private final List<HealthCheck> healthChecks = new ArrayList<>();
+    private final List<HealthCheckWrapper> healthChecks = new ArrayList<>();
 
     public void addHealthCheck(List<HealthCheck> toAdd) {
         for (HealthCheck add : toAdd) {
+            HealthCheckWrapper wrapper = new HealthCheckWrapper(add);
             synchronized (healthChecks) {
-                healthChecks.add(add);
+                healthChecks.add(wrapper);
             }
             if (add instanceof ScheduledHealthCheck) {
-                ScheduledHealthCheck schedualedHealthCheck = (ScheduledHealthCheck) add;
-                long checkIntervalInMillis = schedualedHealthCheck.getCheckIntervalInMillis();
-                scheduledHealthChecks.scheduleWithFixedDelay(schedualedHealthCheck, 0, checkIntervalInMillis, TimeUnit.MILLISECONDS);
+                ScheduledHealthCheck scheduledHealthCheck = (ScheduledHealthCheck) add;
+                long checkIntervalInMillis = scheduledHealthCheck.getCheckIntervalInMillis();
+                wrapper.scheduledFuture = scheduledHealthChecks.scheduleWithFixedDelay(scheduledHealthCheck, 0, checkIntervalInMillis, TimeUnit.MILLISECONDS);
+            }
+        }
+    }
+
+    public void removeHealthCheck(List<HealthCheck> toRemove) {
+        for (HealthCheck remove : toRemove) {
+            // brute force removal, hopefully used sparingly (or never)
+            synchronized (healthChecks) {
+                Iterator<HealthCheckWrapper> iter = healthChecks.iterator();
+                while (iter.hasNext()) {
+                    HealthCheckWrapper wrapper = iter.next();
+                    if (wrapper.healthCheck == remove) {
+                        wrapper.cancel();
+                        iter.remove();
+                        // don't break, in case the health check was added multiple times
+                    }
+                }
             }
         }
     }
@@ -75,14 +96,41 @@ public class HealthCheckService {
     public List<HealthCheckResponse> checkHealth() throws Exception {
         List<HealthCheckResponse> response = new ArrayList<>();
         synchronized (healthChecks) {
-            for (HealthCheck healthCheck : healthChecks) {
-                HealthCheckResponse healthCheckResponse = healthCheck.checkHealth();
+            for (HealthCheckWrapper wrapper : healthChecks) {
+                HealthCheckResponse healthCheckResponse = wrapper.healthCheck.checkHealth();
                 if (-Double.MAX_VALUE != healthCheckResponse.getHealth()) {
                     response.add(healthCheckResponse);
                 }
             }
         }
         return response;
+    }
+
+    public void resetHealthChecks() {
+        synchronized (healthChecks) {
+            for (HealthCheckWrapper wrapper : healthChecks) {
+                if (wrapper.healthCheck instanceof ResettableHealthCheck) {
+                    ((ResettableHealthCheck) wrapper.healthCheck).reset();
+                }
+            }
+        }
+    }
+
+    private static class HealthCheckWrapper {
+
+        private final HealthCheck healthCheck;
+
+        private ScheduledFuture<?> scheduledFuture;
+
+        private HealthCheckWrapper(HealthCheck healthCheck) {
+            this.healthCheck = healthCheck;
+        }
+
+        private void cancel() {
+            if (scheduledFuture != null) {
+                scheduledFuture.cancel(true);
+            }
+        }
     }
 
 }

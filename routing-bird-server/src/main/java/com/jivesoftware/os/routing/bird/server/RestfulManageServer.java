@@ -84,6 +84,11 @@ public class RestfulManageServer {
         return this;
     }
 
+    public RestfulManageServer removeHealthCheck(HealthCheck... check) {
+        healthCheckService.removeHealthCheck(Arrays.asList(check));
+        return this;
+    }
+
     public void start() throws Exception {
         server.start();
     }
