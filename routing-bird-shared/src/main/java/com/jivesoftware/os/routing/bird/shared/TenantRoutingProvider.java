@@ -26,7 +26,9 @@ public class TenantRoutingProvider<T> {
     private final String instanceId;
     private final ConnectionDescriptorsProvider connectionsDescriptorProvider;
 
-    public TenantRoutingProvider(ScheduledExecutorService connectionsRefresher, String instanceId, ConnectionDescriptorsProvider connectionsDescriptorProvider) {
+    public TenantRoutingProvider(ScheduledExecutorService connectionsRefresher,
+        String instanceId,
+        ConnectionDescriptorsProvider connectionsDescriptorProvider) {
         this.connectionsRefresher = connectionsRefresher;
         this.instanceId = instanceId;
         this.connectionsDescriptorProvider = connectionsDescriptorProvider;
@@ -49,15 +51,15 @@ public class TenantRoutingProvider<T> {
         }
     }
 
-    public TenantsRoutingReport getRoutingReport() {
-        TenantsRoutingReport report = new TenantsRoutingReport();
+    public TenantsRoutingReport<T> getRoutingReport() {
+        TenantsRoutingReport<T> report = new TenantsRoutingReport<>();
         for (Entry<String, TenantsServiceConnectionDescriptorProvider<T>> e : serviceConnectionDescriptorsProvider.entrySet()) {
             report.serviceReport.put(e.getKey(), e.getValue().getRoutingReport());
         }
         return report;
     }
 
-    public TenantsServiceConnectionDescriptorProvider getConnections(String connectToServiceNamed, String portName, long refreshConnectionsAfterNMillis) {
+    public TenantsServiceConnectionDescriptorProvider<T> getConnections(String connectToServiceNamed, String portName, long refreshConnectionsAfterNMillis) {
         if (connectToServiceNamed == null) {
             return null;
         }
