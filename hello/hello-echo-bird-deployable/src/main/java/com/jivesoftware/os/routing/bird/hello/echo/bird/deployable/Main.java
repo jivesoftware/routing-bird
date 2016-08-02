@@ -42,7 +42,10 @@ public class Main {
             10_000);
         TenantRoutingHttpClientInitializer<String> tenantRoutingHttpClientInitializer = new TenantRoutingHttpClientInitializer<>();
         HttpDeliveryClientHealthProvider deliveryClientHealthProvider = new HttpDeliveryClientHealthProvider("", null, "", 5000, 100);
-        TenantAwareHttpClient<String> client = tenantRoutingHttpClientInitializer.initialize(connections, deliveryClientHealthProvider, 10, 10_000);
+        TenantAwareHttpClient<String> client = tenantRoutingHttpClientInitializer.builder(connections, deliveryClientHealthProvider)
+            .deadAfterNErrors(10)
+            .checkDeadEveryNMillis(10_000)
+            .build();
         HelloRoutingBirdService helloRoutingBirdService = new HelloRoutingBirdServiceInitializer()
             .initialize(deployable.config(HelloRoutingBirdServiceConfig.class), client);
 

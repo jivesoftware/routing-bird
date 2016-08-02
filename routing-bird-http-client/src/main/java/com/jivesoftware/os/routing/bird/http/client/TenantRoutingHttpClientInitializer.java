@@ -26,61 +26,107 @@ import java.util.List;
 
 public class TenantRoutingHttpClientInitializer<T> {
 
-    public TenantAwareHttpClient<T> initialize(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
-        ClientHealthProvider clientHealthProvider,
-        int deadAfterNErrors,
-        long checkDeadEveryNMillis) {
-        return initialize(connectionPoolProvider, clientHealthProvider, deadAfterNErrors, checkDeadEveryNMillis, -1, -1);
+    public Builder<T> builder(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider, ClientHealthProvider clientHealthProvider) {
+        return new Builder<>(connectionPoolProvider, clientHealthProvider);
     }
 
-    public TenantAwareHttpClient<T> initialize(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
-        ClientHealthProvider clientHealthProvider,
-        int deadAfterNErrors,
-        long checkDeadEveryNMillis,
-        long debugClientCount,
-        long debugClientCountInterval) {
+    public static class Builder<T> {
 
-        ClientConnectionsFactory<HttpClient, HttpClientException> clientConnectionsFactory = (routingGroup, connectionDescriptors) -> {
-            List<ConnectionDescriptor> descriptors = connectionDescriptors.getConnectionDescriptors();
-            ConnectionDescriptor[] connections = descriptors.toArray(new ConnectionDescriptor[descriptors.size()]);
-            HttpClient[] httpClients = new HttpClient[descriptors.size()];
-            ClientHealth[] clientHealths = new ClientHealth[descriptors.size()];
-            HttpClientFactoryProvider httpClientFactoryProvider = new HttpClientFactoryProvider();
-            for (int i = 0; i < connections.length; i++) {
-                ConnectionDescriptor connection = connections[i];
-                List<HttpClientConfiguration> config = new ArrayList<>();
-                config.add(HttpClientConfig
-                    .newBuilder()
-                    .setMaxConnections(32) // TODO expose to config
-                    .setSocketTimeoutInMillis(600000) // TODO fix get this from connectionDescriptors.properties
-                    .build());
-                HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config,
-                    debugClientCount,
-                    debugClientCountInterval);
-                HttpClient httpClient = createHttpClientFactory.createClient(connection.getHostPort().getHost(), connection.getHostPort().getPort());
-                httpClients[i] = httpClient;
-                clientHealths[i] = clientHealthProvider.get(connection);
+        private final TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider;
+        private final ClientHealthProvider clientHealthProvider;
 
-            }
+        private int deadAfterNErrors = 10;
+        private long checkDeadEveryNMillis = 10_000;
 
-            return new ErrorCheckingTimestampedClients<>(
-                routingGroup,
-                connectionDescriptors.getTimestamp(),
-                connections,
-                httpClients,
-                clientHealths,
-                deadAfterNErrors,
-                checkDeadEveryNMillis); //TODO config
-        };
+        private int maxConnections = 32;
+        private int maxConnectionsPerHost = -1;
 
-        ClientsCloser<HttpClient> clientsCloser = clients -> {
-            for (HttpClient client : clients) {
-                client.close();
-            }
-        };
+        private int socketTimeoutInMillis = 600_000;
 
-        TenantRoutingClient<T, HttpClient, HttpClientException> tenantRoutingClient = new TenantRoutingClient<>(connectionPoolProvider,
-            clientConnectionsFactory, clientsCloser);
-        return new TenantRoutingHttpClient<>(tenantRoutingClient);
+        private long debugClientCount = -1;
+        private long debugClientCountInterval = -1;
+
+        private Builder(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
+            ClientHealthProvider clientHealthProvider) {
+            this.connectionPoolProvider = connectionPoolProvider;
+            this.clientHealthProvider = clientHealthProvider;
+        }
+
+        public Builder<T> deadAfterNErrors(int deadAfterNErrors) {
+            this.deadAfterNErrors = deadAfterNErrors;
+            return this;
+        }
+
+        public Builder<T> checkDeadEveryNMillis(long checkDeadEveryNMillis) {
+            this.checkDeadEveryNMillis = checkDeadEveryNMillis;
+            return this;
+        }
+
+        public Builder<T> maxConnections(int maxConnections) {
+            this.maxConnections = maxConnections;
+            return this;
+        }
+
+        public Builder<T> maxConnectionsPerHost(int maxConnectionsPerHost) {
+            this.maxConnectionsPerHost = maxConnectionsPerHost;
+            return this;
+        }
+
+        public Builder<T> socketTimeoutInMillis(int socketTimeoutInMillis) {
+            this.socketTimeoutInMillis = socketTimeoutInMillis;
+            return this;
+        }
+
+        public Builder<T> debugClient(long debugClientCount, long debugClientCountInterval) {
+            this.debugClientCount = debugClientCount;
+            this.debugClientCountInterval = debugClientCountInterval;
+            return this;
+        }
+
+        public TenantAwareHttpClient<T> build() {
+
+            ClientConnectionsFactory<HttpClient, HttpClientException> clientConnectionsFactory = (routingGroup, connectionDescriptors) -> {
+                List<ConnectionDescriptor> descriptors = connectionDescriptors.getConnectionDescriptors();
+                ConnectionDescriptor[] connections = descriptors.toArray(new ConnectionDescriptor[descriptors.size()]);
+                HttpClient[] httpClients = new HttpClient[descriptors.size()];
+                ClientHealth[] clientHealths = new ClientHealth[descriptors.size()];
+                HttpClientFactoryProvider httpClientFactoryProvider = new HttpClientFactoryProvider();
+                for (int i = 0; i < connections.length; i++) {
+                    ConnectionDescriptor connection = connections[i];
+                    List<HttpClientConfiguration> config = new ArrayList<>();
+                    config.add(HttpClientConfig
+                        .newBuilder()
+                        .setMaxConnections(maxConnections)
+                        .setMaxConnectionsPerHost(maxConnectionsPerHost)
+                        .setSocketTimeoutInMillis(socketTimeoutInMillis)
+                        .build());
+                    HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config,
+                        debugClientCount,
+                        debugClientCountInterval);
+                    HttpClient httpClient = createHttpClientFactory.createClient(connection.getHostPort().getHost(), connection.getHostPort().getPort());
+                    httpClients[i] = httpClient;
+                    clientHealths[i] = clientHealthProvider.get(connection);
+                }
+
+                return new ErrorCheckingTimestampedClients<>(
+                    routingGroup,
+                    connectionDescriptors.getTimestamp(),
+                    connections,
+                    httpClients,
+                    clientHealths,
+                    deadAfterNErrors,
+                    checkDeadEveryNMillis);
+            };
+
+            ClientsCloser<HttpClient> clientsCloser = clients -> {
+                for (HttpClient client : clients) {
+                    client.close();
+                }
+            };
+
+            TenantRoutingClient<T, HttpClient, HttpClientException> tenantRoutingClient = new TenantRoutingClient<>(connectionPoolProvider,
+                clientConnectionsFactory, clientsCloser);
+            return new TenantRoutingHttpClient<>(tenantRoutingClient);
+        }
     }
 }
