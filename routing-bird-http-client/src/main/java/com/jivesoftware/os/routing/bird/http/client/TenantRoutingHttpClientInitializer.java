@@ -84,7 +84,6 @@ public class TenantRoutingHttpClientInitializer<T> {
         }
 
         public TenantAwareHttpClient<T> build() {
-
             ClientConnectionsFactory<HttpClient, HttpClientException> clientConnectionsFactory = (routingGroup, connectionDescriptors) -> {
                 List<ConnectionDescriptor> descriptors = connectionDescriptors.getConnectionDescriptors();
                 ConnectionDescriptor[] connections = descriptors.toArray(new ConnectionDescriptor[descriptors.size()]);
@@ -93,6 +92,7 @@ public class TenantRoutingHttpClientInitializer<T> {
                 HttpClientFactoryProvider httpClientFactoryProvider = new HttpClientFactoryProvider();
                 for (int i = 0; i < connections.length; i++) {
                     ConnectionDescriptor connection = connections[i];
+
                     List<HttpClientConfiguration> config = new ArrayList<>();
                     config.add(HttpClientConfig
                         .newBuilder()
@@ -100,11 +100,15 @@ public class TenantRoutingHttpClientInitializer<T> {
                         .setMaxConnectionsPerHost(maxConnectionsPerHost)
                         .setSocketTimeoutInMillis(socketTimeoutInMillis)
                         .build());
+
                     HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config,
                         debugClientCount,
-                        debugClientCountInterval);
-                    HttpClient httpClient = createHttpClientFactory.createClient(connection.getHostPort().getHost(), connection.getHostPort().getPort());
-                    httpClients[i] = httpClient;
+                        debugClientCountInterval,
+                        connection.getMonkeys() != null && connection.getMonkeys().containsKey("RANDOM_CONNECTION_LATENCY"));
+                    httpClients[i] = createHttpClientFactory.createClient(
+                            connection.getHostPort().getHost(),
+                            connection.getHostPort().getPort());
+
                     clientHealths[i] = clientHealthProvider.get(connection);
                 }
 
