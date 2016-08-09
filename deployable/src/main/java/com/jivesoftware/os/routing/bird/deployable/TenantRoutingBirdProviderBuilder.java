@@ -30,7 +30,6 @@ import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -49,7 +48,6 @@ public class TenantRoutingBirdProviderBuilder {
     }
 
     public ConnectionDescriptorsProvider build() {
-
         HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder().build();
         final HttpClient httpClient = new HttpClientFactoryProvider()
             .createHttpClientFactory(Collections.singletonList(httpClientConfig))

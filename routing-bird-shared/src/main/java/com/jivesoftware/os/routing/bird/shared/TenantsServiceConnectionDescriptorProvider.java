@@ -135,13 +135,15 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
                     for (ConnectionDescriptor connectionDescriptor : current.getConnectionDescriptors()) {
                         currentConnectionDescriptors.put(new ConnectionDescriptorKey(connectionDescriptor.getInstanceDescriptor(),
                             connectionDescriptor.getHostPort(),
-                            connectionDescriptor.getProperties()),
+                            connectionDescriptor.getProperties(),
+                            connectionDescriptor.getMonkeys()),
                             connectionDescriptor);
                     }
                     for (ConnectionDescriptor connectionDescriptor : latest) {
                         currentConnectionDescriptors.remove(new ConnectionDescriptorKey(connectionDescriptor.getInstanceDescriptor(),
                             connectionDescriptor.getHostPort(),
-                            connectionDescriptor.getProperties()));
+                            connectionDescriptor.getProperties(),
+                            connectionDescriptor.getMonkeys()));
                     }
                     if (currentConnectionDescriptors.isEmpty()) {
                         connections = current;
@@ -162,11 +164,16 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
         private final InstanceDescriptor instanceDescriptor;
         private final HostPort hostPort;
         private final Map<String, String> properties;
+        private final Map<String, String> monkeys;
 
-        public ConnectionDescriptorKey(InstanceDescriptor instanceDescriptor, HostPort hostPort, Map<String, String> properties) {
+        public ConnectionDescriptorKey(InstanceDescriptor instanceDescriptor,
+            HostPort hostPort,
+            Map<String, String> properties,
+            Map<String, String> monkeys) {
             this.instanceDescriptor = instanceDescriptor;
             this.hostPort = hostPort;
             this.properties = properties;
+            this.monkeys = monkeys;
         }
 
         @Override
@@ -194,6 +201,9 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
                 return false;
             }
             if (!Objects.equals(this.properties, other.properties)) {
+                return false;
+            }
+            if (!Objects.equals(this.monkeys, other.monkeys)) {
                 return false;
             }
             return true;
