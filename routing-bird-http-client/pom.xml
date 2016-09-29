@@ -58,5 +58,4 @@
             <artifactId>commons-math</artifactId>
         </dependency>
     </dependencies>
-    <name>routing-bird-http-client</name>
 </project>
