@@ -39,10 +39,10 @@ public class TenancyServiceBackedOAuthTenancyValidatorInitializer {
 
     public interface TenancyServiceBackedOAuthTenancyValidatorConfig extends Config {
 
-        @StringDefault("pleaseSetToCorrectServiceName")
+        @StringDefault("pleaseSetToCorrect-ServiceName")
         String getOauthEndpointsAsServiceName();
 
-        @BooleanDefault(false)
+        @BooleanDefault(true)
         boolean getOauthValidatorIsEnabled();
 
         @BooleanDefault(false)

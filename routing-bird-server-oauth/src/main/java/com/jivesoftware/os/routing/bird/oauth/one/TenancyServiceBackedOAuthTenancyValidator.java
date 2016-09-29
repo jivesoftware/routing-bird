@@ -56,7 +56,7 @@ public class TenancyServiceBackedOAuthTenancyValidator implements TenancyValidat
     public boolean isValid(String tenantId, OAuth1Signature oAuth1Signature, OAuth1Request request) throws TenancyValidationException {
         String secret = secretManager.getSecret(tenantId);
         if (secret == null) {
-            log.trace("secret for tenantId:{} is null", tenantId);
+            log.warn("secret for tenantId:{} is null", tenantId);
             log.inc("oauth>secrets>missing");
             log.inc("oauth>tenant>" + tenantId + ">secrets>missing");
             throw new TenancyValidationException("Failed to locate secret for tenantId:" + tenantId);
@@ -76,7 +76,7 @@ public class TenancyServiceBackedOAuthTenancyValidator implements TenancyValidat
 
         String consumerKey = params.getConsumerKey();
         if ((consumerKey == null) || !consumerKey.equals(tenantId)) {
-            log.trace("consumerKey:{} is null or not equal to tenantId:{}", consumerKey, tenantId);
+            log.warn("consumerKey:{} is null or not equal to tenantId:{}", consumerKey, tenantId);
             log.inc("oauth>error>consumerKeyNotEqual");
             log.inc("oauth>tenant>" + tenantId + ">error>consumerKeyNotEqual");
             throw new TenancyValidationException("Failed consumer key is not equal to tenantId:" + tenantId);
@@ -87,7 +87,7 @@ public class TenancyServiceBackedOAuthTenancyValidator implements TenancyValidat
         long oauthTimeStamp = Long.parseLong(timestampStr) * 1000L;
         long now = System.currentTimeMillis();
         if (Math.abs(now - oauthTimeStamp) > timestampAgeLimitMillis) {
-            log.trace("Timestamp out of range. timestamp:{}msec delta:{}msec", oauthTimeStamp, now - oauthTimeStamp);
+            log.warn("Timestamp out of range. timestamp:{}msec delta:{}msec", oauthTimeStamp, now - oauthTimeStamp);
             log.inc("oauth>error>outsideTimeRange");
             log.inc("oauth>tenant>" + tenantId + ">error>outsideTimeRange");
             throw new TenancyValidationException("The request timestamp is outside the allowable range. Please ensure you are running NTP.");
@@ -101,13 +101,13 @@ public class TenancyServiceBackedOAuthTenancyValidator implements TenancyValidat
 
             boolean verify = oAuth1Signature.verify(request, params, secrets);
             if (!verify) {
-                log.trace("OAuth signature verification failed.");
+                log.warn("OAuth signature verification failed.");
                 log.inc("oauth>error>verificationFailed");
                 log.inc("oauth>tenant>" + tenantId + ">error>verificationFailed");
             }
             return verify;
         } catch (OAuth1SignatureException e) {
-            log.trace("OAuth signature verification failed.");
+            log.warn("OAuth signature verification failed. {}", e.getClass().getSimpleName());
             log.inc("oauth>error>verificationError");
             log.inc("oauth>tenant>" + tenantId + ">error>verificationError");
             throw new TenancyValidationException("Oauth signature verification error.");
