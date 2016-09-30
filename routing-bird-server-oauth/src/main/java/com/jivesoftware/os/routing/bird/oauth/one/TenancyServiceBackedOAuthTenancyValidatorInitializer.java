@@ -30,7 +30,6 @@ import org.merlin.config.defaults.BooleanDefault;
 import org.merlin.config.defaults.IntDefault;
 import org.merlin.config.defaults.LongDefault;
 import org.merlin.config.defaults.StringDefault;
-import sun.security.ssl.SSLSocketFactoryImpl;
 
 /**
  *
@@ -101,7 +100,6 @@ public class TenancyServiceBackedOAuthTenancyValidatorInitializer {
         if (config.getOauthValidatorCertAuthorityScheme().toLowerCase().trim().equals("https")) {
             HttpClientSSLConfig sslConfig = HttpClientSSLConfig.newBuilder()
                 .setUseSSL(true)
-                .setUseSslWithCustomSSLSocketFactory(new SSLSocketFactoryImpl())
                 .build();
             configs.add(sslConfig);
         }
