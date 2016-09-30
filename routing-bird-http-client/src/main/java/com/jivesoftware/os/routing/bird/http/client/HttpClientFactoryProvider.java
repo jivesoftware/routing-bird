@@ -25,6 +25,7 @@ import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.routing.HttpRoutePlanner;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.DefaultRoutePlanner;
 import org.apache.http.impl.conn.DefaultSchemePortResolver;
@@ -57,9 +58,18 @@ public class HttpClientFactoryProvider {
             poolingHttpClientConnectionManager.setDefaultMaxPerRoute(Integer.MAX_VALUE);
         }
 
-        poolingHttpClientConnectionManager.setDefaultSocketConfig(SocketConfig.custom()
-            .setSoTimeout(httpClientConfig.getSocketTimeoutInMillis() > 0 ? httpClientConfig.getSocketTimeoutInMillis() : 0)
-            .build());
+        HttpClientSSLConfig sslConfig = locateConfig(configurations, HttpClientSSLConfig.class, null);
+        String scheme;
+        if (sslConfig != null && sslConfig.isUseSsl()) {
+            scheme = "https";
+        } else {
+            scheme = "http";
+        }
+
+        poolingHttpClientConnectionManager
+            .setDefaultSocketConfig(SocketConfig.custom()
+                .setSoTimeout(httpClientConfig.getSocketTimeoutInMillis() > 0 ? httpClientConfig.getSocketTimeoutInMillis() : 0)
+                .build());
 
         Closeable closeable;
         HttpClientConnectionManager clientConnectionManager;
@@ -73,35 +83,39 @@ public class HttpClientFactoryProvider {
             closeable = poolingHttpClientConnectionManager;
         }
 
-        return new HttpClientFactory() {
-            @Override
-            public HttpClient createClient(final String host, final int port) {
-                HttpRoutePlanner rp = new DefaultRoutePlanner(DefaultSchemePortResolver.INSTANCE) {
-                    @Override
-                    public HttpRoute determineRoute(
-                        final HttpHost httpHost,
-                        final HttpRequest request,
-                        final HttpContext context) throws HttpException {
-                        HttpHost target = httpHost != null ? httpHost : new HttpHost(host, port);
-                        return super.determineRoute(target, request, context);
-                    }
-                };
-
-                CloseableHttpClient client = HttpClients.custom()
-                    .setConnectionManager(clientConnectionManager)
-                    .setRoutePlanner(rp)
-                    .build();
-
-                if (latentClient) {
-                    return new LatentHttpClient(client,
-                        closeable,
-                        httpClientConfig.getCopyOfHeadersForEveryRequest());
+        return (String host, int port) -> {
+            HttpRoutePlanner rp = new DefaultRoutePlanner(DefaultSchemePortResolver.INSTANCE) {
+                @Override
+                public HttpRoute determineRoute(
+                    final HttpHost httpHost,
+                    final HttpRequest request,
+                    final HttpContext context) throws HttpException {
+                    HttpHost target = httpHost != null ? httpHost : new HttpHost(host, port, scheme);
+                    return super.determineRoute(target, request, context);
                 }
+            };
 
-                return new ApacheHttpClient441BackedHttpClient(client,
+            HttpClientBuilder httpClientBuilder = HttpClients.custom()
+                .setConnectionManager(clientConnectionManager)
+                .setRoutePlanner(rp);
+
+            if (sslConfig != null && sslConfig.isUseSsl()) {
+                if (sslConfig.getCustomSSLSocketFactory() != null) {
+                    httpClientBuilder.setSSLSocketFactory(sslConfig.getCustomSSLSocketFactory());
+                }
+            }
+
+            CloseableHttpClient client = httpClientBuilder.build();
+
+            if (latentClient) {
+                return new LatentHttpClient(client,
                     closeable,
                     httpClientConfig.getCopyOfHeadersForEveryRequest());
             }
+
+            return new ApacheHttpClient441BackedHttpClient(client,
+                closeable,
+                httpClientConfig.getCopyOfHeadersForEveryRequest());
         };
     }
 

@@ -15,14 +15,14 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
-import javax.net.ssl.SSLSocketFactory;
+import org.apache.http.conn.socket.LayeredConnectionSocketFactory;
 
 public class HttpClientSSLConfig implements HttpClientConfiguration {
 
     private final boolean useSSL;
-    private final SSLSocketFactory customSSLSocketFactory;
+    private final LayeredConnectionSocketFactory customSSLSocketFactory;
 
-    private HttpClientSSLConfig(boolean useSSL, SSLSocketFactory customSSLSocketFactory) {
+    private HttpClientSSLConfig(boolean useSSL, LayeredConnectionSocketFactory customSSLSocketFactory) {
         this.useSSL = useSSL;
         this.customSSLSocketFactory = customSSLSocketFactory;
     }
@@ -31,7 +31,7 @@ public class HttpClientSSLConfig implements HttpClientConfiguration {
         return useSSL;
     }
 
-    public SSLSocketFactory getCustomSSLSocketFactory() {
+    public LayeredConnectionSocketFactory getCustomSSLSocketFactory() {
         return customSSLSocketFactory;
     }
 
@@ -49,7 +49,7 @@ public class HttpClientSSLConfig implements HttpClientConfiguration {
     final public static class Builder {
 
         private boolean useSSL = false;
-        private SSLSocketFactory customSSLSocketFactory = null;
+        private LayeredConnectionSocketFactory customSSLSocketFactory = null;
 
         private Builder() {
         }
@@ -59,7 +59,7 @@ public class HttpClientSSLConfig implements HttpClientConfiguration {
             return this;
         }
 
-        public Builder setUseSslWithCustomSSLSocketFactory(SSLSocketFactory sslSocketFactory) {
+        public Builder setUseSslWithCustomSSLSocketFactory(LayeredConnectionSocketFactory sslSocketFactory) {
             if (sslSocketFactory == null) {
                 throw new IllegalArgumentException("sslSocketFactory cannot be null");
             }
