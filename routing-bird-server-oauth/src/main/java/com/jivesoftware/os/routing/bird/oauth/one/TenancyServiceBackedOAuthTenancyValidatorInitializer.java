@@ -44,7 +44,7 @@ public class TenancyServiceBackedOAuthTenancyValidatorInitializer {
         @BooleanDefault(true)
         boolean getOauthValidatorIsEnabled();
 
-        @BooleanDefault(false)
+        @BooleanDefault(true)
         boolean getOauthValidatorIsDryRun();
 
         @StringDefault("pleaseSetToCorrect-CertAuthorityScheme")
