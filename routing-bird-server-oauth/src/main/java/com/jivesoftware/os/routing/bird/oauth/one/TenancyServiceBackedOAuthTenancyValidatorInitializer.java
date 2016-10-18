@@ -95,20 +95,6 @@ public class TenancyServiceBackedOAuthTenancyValidatorInitializer {
             return (TenancyValidator) NoOpTenancyValidator.SINGLETON;
         }
 
-        List<HttpClientConfiguration> configs = Lists.newArrayList();
-        HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder()
-            .setSocketTimeoutInMillis(config.getOauthValidatorCertAuthoritySocketTimeout())
-            .build();
-        configs.add(httpClientConfig);
-
-        if (config.getOauthValidatorCertAuthorityScheme().toLowerCase().trim().equals("https")) {
-            HttpClientSSLConfig sslConfig = HttpClientSSLConfig.newBuilder()
-                .setUseSSL(true)
-                .build();
-            configs.add(sslConfig);
-        }
-
-        HttpClientFactory clientFactory = new HttpClientFactoryProvider().createHttpClientFactory(configs);
         long secretTimeoutHard = config.getOauthValidatorSecretTimeoutHard();
         long secretTimeoutSoft = config.getOauthValidatorSecretTimeoutSoft();
 
@@ -125,15 +111,43 @@ public class TenancyServiceBackedOAuthTenancyValidatorInitializer {
                 String host = parts[1];
                 int port = Integer.parseInt(parts[2]);
 
+                List<HttpClientConfiguration> configs = Lists.newArrayList();
+                HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder()
+                    .setSocketTimeoutInMillis(config.getOauthValidatorCertAuthoritySocketTimeout())
+                    .build();
+                configs.add(httpClientConfig);
+
+                if (scheme.equals("https")) {
+                    HttpClientSSLConfig sslConfig = HttpClientSSLConfig.newBuilder()
+                        .setUseSSL(true)
+                        .build();
+                    configs.add(sslConfig);
+                }
+                HttpClientFactory clientFactory = new HttpClientFactoryProvider().createHttpClientFactory(configs);
+
                 HttpClient httpClient = clientFactory.createClient(host, port);
                 HttpRequestHelper client = new HttpRequestHelper(httpClient, new ObjectMapper());
-                TenancyServiceBackedSecretManager secretManager = new TenancyServiceBackedSecretManager(scheme,
+                TenancyServiceBackedSecretManager secretManager = new TenancyServiceBackedSecretManager(config.getOauthEndpointsAsServiceName(),
                     client,
                     secretTimeoutHard,
                     secretTimeoutSoft);
                 secretManagers.add(secretManager);
             }
         } else {
+            List<HttpClientConfiguration> configs = Lists.newArrayList();
+            HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder()
+                .setSocketTimeoutInMillis(config.getOauthValidatorCertAuthoritySocketTimeout())
+                .build();
+            configs.add(httpClientConfig);
+
+            if (config.getOauthValidatorCertAuthorityScheme().toLowerCase().trim().equals("https")) {
+                HttpClientSSLConfig sslConfig = HttpClientSSLConfig.newBuilder()
+                    .setUseSSL(true)
+                    .build();
+                configs.add(sslConfig);
+            }
+
+            HttpClientFactory clientFactory = new HttpClientFactoryProvider().createHttpClientFactory(configs);
             HttpClient httpClient = clientFactory.createClient(config.getOauthValidatorCertAuthorityHost(),
                 config.getOauthValidatorCertAuthorityPort());
             HttpRequestHelper client = new HttpRequestHelper(httpClient, new ObjectMapper());
