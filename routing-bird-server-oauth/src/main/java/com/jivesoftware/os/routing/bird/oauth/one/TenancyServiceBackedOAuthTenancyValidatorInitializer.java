@@ -9,6 +9,7 @@
 package com.jivesoftware.os.routing.bird.oauth.one;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.net.HostAndPort;
 import com.jivesoftware.os.routing.bird.http.client.HttpClient;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientConfig;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientConfiguration;
@@ -47,17 +48,20 @@ public class TenancyServiceBackedOAuthTenancyValidatorInitializer {
         @BooleanDefault(true)
         boolean getOauthValidatorIsDryRun();
 
+        @StringDefault("")
+        String getOauthValidatorCertAuthoritySchemeHostPortTuples();
+
         @StringDefault("pleaseSetToCorrect-CertAuthorityScheme")
         String getOauthValidatorCertAuthorityScheme();
 
         @StringDefault("pleaseSetToCorrect-CertAuthorityHost")
         String getOauthValidatorCertAuthorityHost();
 
-        @IntDefault(60* 1000)
-        int getOauthValidatorCertAuthoritySocketTimeout();
-
         @IntDefault(-1)
         int getOauthValidatorCertAuthorityPort();
+
+        @IntDefault(60 * 1000)
+        int getOauthValidatorCertAuthoritySocketTimeout();
 
         // Will expire cached secrets more than 60 seconds old ...
         @LongDefault(60 * 1000)
@@ -88,7 +92,7 @@ public class TenancyServiceBackedOAuthTenancyValidatorInitializer {
     public TenancyValidator<OAuth1Signature, OAuth1Request> initialize(TenancyServiceBackedOAuthTenancyValidatorConfig config) throws Exception {
 
         if (!config.getOauthValidatorIsEnabled()) {
-            return (TenancyValidator)NoOpTenancyValidator.SINGLETON;
+            return (TenancyValidator) NoOpTenancyValidator.SINGLETON;
         }
 
         List<HttpClientConfiguration> configs = Lists.newArrayList();
@@ -105,19 +109,44 @@ public class TenancyServiceBackedOAuthTenancyValidatorInitializer {
         }
 
         HttpClientFactory clientFactory = new HttpClientFactoryProvider().createHttpClientFactory(configs);
-        HttpClient httpClient = clientFactory.createClient(config.getOauthValidatorCertAuthorityHost(),
-            config.getOauthValidatorCertAuthorityPort());
-        HttpRequestHelper client = new HttpRequestHelper(httpClient, new ObjectMapper());
-
         long secretTimeoutHard = config.getOauthValidatorSecretTimeoutHard();
         long secretTimeoutSoft = config.getOauthValidatorSecretTimeoutSoft();
 
-        TenancyServiceBackedSecretManager secretManager = new TenancyServiceBackedSecretManager(config.getOauthEndpointsAsServiceName(),
-            client,
-            secretTimeoutHard, secretTimeoutSoft);
+        List<TenancyServiceBackedSecretManager> secretManagers = Lists.newArrayList();
+
+        String oauthValidatorCertAuthorityHostPortTuples = config.getOauthValidatorCertAuthoritySchemeHostPortTuples();
+
+        if (oauthValidatorCertAuthorityHostPortTuples != null && !oauthValidatorCertAuthorityHostPortTuples.trim().isEmpty()) {
+            String[] schemeHostPorts = oauthValidatorCertAuthorityHostPortTuples.trim().split("\\s*,\\s*");
+
+            for (String schemeHostPort : schemeHostPorts) {
+                String[] parts = schemeHostPort.split(":");
+                String scheme = parts[0];
+                String host = parts[1];
+                int port = Integer.parseInt(parts[2]);
+
+                HttpClient httpClient = clientFactory.createClient(host, port);
+                HttpRequestHelper client = new HttpRequestHelper(httpClient, new ObjectMapper());
+                TenancyServiceBackedSecretManager secretManager = new TenancyServiceBackedSecretManager(scheme,
+                    client,
+                    secretTimeoutHard,
+                    secretTimeoutSoft);
+                secretManagers.add(secretManager);
+            }
+        } else {
+            HttpClient httpClient = clientFactory.createClient(config.getOauthValidatorCertAuthorityHost(),
+                config.getOauthValidatorCertAuthorityPort());
+            HttpRequestHelper client = new HttpRequestHelper(httpClient, new ObjectMapper());
+
+            TenancyServiceBackedSecretManager secretManager = new TenancyServiceBackedSecretManager(config.getOauthEndpointsAsServiceName(),
+                client,
+                secretTimeoutHard,
+                secretTimeoutSoft);
+            secretManagers.add(secretManager);
+        }
 
         TenancyServiceBackedOAuthTenancyValidator validator = new TenancyServiceBackedOAuthTenancyValidator(
-            secretManager,
+            secretManagers,
             config.getOauthValidatorRequestTimestampAgeLimitMillis(),
             config.getOauthValidatorLoadBalancerRejiggeringIdEnabled()
         );

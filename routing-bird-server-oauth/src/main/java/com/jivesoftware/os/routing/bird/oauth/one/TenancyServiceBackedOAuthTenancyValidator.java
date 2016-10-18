@@ -20,15 +20,14 @@ import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
 import org.glassfish.jersey.oauth1.signature.OAuth1SignatureException;
 
 /**
- *
  * Note that to fully implement OAuth, we need to check for nonce-timestamp
  * uniqueness. We are deliberately deferring this to a future release.
- *
- *
+ * <p>
+ * <p>
  * When behind a loadbalancer you will likely need to add the following rules.
- *
+ * <p>
  * HTTP_HTTPS_X-Forward_set_header
- * 
+ * <p>
  * This is needed in the LB for this to work! when HTTP_REQUEST { if
  * {([TCP::local_port] == 80) and !( [HTTP::header "X-Forwarded-Proto"] eq
  * "http") }{ HTTP::header insert X-Forwarded-Proto "http" HTTP::header insert
@@ -41,27 +40,19 @@ public class TenancyServiceBackedOAuthTenancyValidator implements TenancyValidat
     public final static String LB_PROTO_HEADER = "x-forwarded-proto";
     private final static MetricLogger log = MetricLoggerFactory.getLogger();
     private final long timestampAgeLimitMillis;
-    private final TenancyServiceBackedSecretManager secretManager;
+    private final List<TenancyServiceBackedSecretManager> secretManagers;
     private final Boolean doLoadBalancerRejiggering;
 
-    public TenancyServiceBackedOAuthTenancyValidator(TenancyServiceBackedSecretManager secretManager,
+    public TenancyServiceBackedOAuthTenancyValidator(List<TenancyServiceBackedSecretManager> secretManagers,
         long timestampAgeLimitMillis,
         Boolean loadBalancerRejiggering) {
         this.timestampAgeLimitMillis = timestampAgeLimitMillis;
-        this.secretManager = secretManager;
+        this.secretManagers = secretManagers;
         this.doLoadBalancerRejiggering = (loadBalancerRejiggering == null) ? Boolean.FALSE : loadBalancerRejiggering;
     }
 
     @Override
     public boolean isValid(String tenantId, OAuth1Signature oAuth1Signature, OAuth1Request request) throws TenancyValidationException {
-        String secret = secretManager.getSecret(tenantId);
-        if (secret == null) {
-            log.warn("secret for tenantId:{} is null", tenantId);
-            log.inc("oauth>secrets>missing");
-            log.inc("oauth>tenant>" + tenantId + ">secrets>missing");
-            throw new TenancyValidationException("Failed to locate secret for tenantId:" + tenantId);
-        }
-
         if (doLoadBalancerRejiggering) {
             log.trace("request will be rejiggered");
             log.inc("oauth>rejiggeredRequest");
@@ -93,33 +84,48 @@ public class TenancyServiceBackedOAuthTenancyValidator implements TenancyValidat
             throw new TenancyValidationException("The request timestamp is outside the allowable range. Please ensure you are running NTP.");
         }
 
-        OAuth1Secrets secrets = new OAuth1Secrets();
-        secrets.setConsumerSecret(secret);
-        secrets.setTokenSecret(secret);
-
-        try {
-
-            boolean verify = oAuth1Signature.verify(request, params, secrets);
-            if (!verify) {
-                log.warn("OAuth signature verification failed.");
-                log.inc("oauth>error>verificationFailed");
-                log.inc("oauth>tenant>" + tenantId + ">error>verificationFailed");
+        for (TenancyServiceBackedSecretManager secretManager : secretManagers) {
+            String secret = secretManager.getSecret(tenantId);
+            if (secret == null) {
+                log.warn("secret for tenantId:{} is null", tenantId);
+                log.inc("oauth>secrets>missing");
+                log.inc("oauth>tenant>" + tenantId + ">secrets>missing");
+                throw new TenancyValidationException("Failed to locate secret for tenantId:" + tenantId);
             }
-            return verify;
-        } catch (OAuth1SignatureException e) {
-            log.warn("OAuth signature verification failed. {}", e.getClass().getSimpleName());
-            log.inc("oauth>error>verificationError");
-            log.inc("oauth>tenant>" + tenantId + ">error>verificationError");
-            throw new TenancyValidationException("Oauth signature verification error.");
+
+            OAuth1Secrets secrets = new OAuth1Secrets();
+            secrets.setConsumerSecret(secret);
+            secrets.setTokenSecret(secret);
+
+            try {
+                boolean verify = oAuth1Signature.verify(request, params, secrets);
+                if (verify) {
+                    return true;
+                } else {
+                    log.warn("OAuth signature verification failed.");
+                    log.inc("oauth>error>verificationFailed");
+                    log.inc("oauth>tenant>" + tenantId + ">error>verificationFailed");
+                }
+            } catch (OAuth1SignatureException e) {
+                log.warn("OAuth signature verification failed. {}", e.getClass().getSimpleName());
+                log.inc("oauth>error>verificationError");
+                log.inc("oauth>tenant>" + tenantId + ">error>verificationError");
+                throw new TenancyValidationException("Oauth signature verification error.");
+            }
         }
+        return false;
     }
 
     public void expireSecretCacheIfNecessary() {
-        secretManager.verifyLastSecretRemovalTime();
+        for (TenancyServiceBackedSecretManager secretManager : secretManagers) {
+            secretManager.verifyLastSecretRemovalTime();
+        }
     }
 
     @Override
     public void clearSecretCache() {
-        secretManager.clearCache();
+        for (TenancyServiceBackedSecretManager secretManager : secretManagers) {
+            secretManager.clearCache();
+        }
     }
 }
