@@ -38,6 +38,7 @@ public class InstanceDescriptor {
     public final String versionName;
     public final String repository;
     public final Map<String, InstanceDescriptorPort> ports = new ConcurrentHashMap<>();
+    public final String publicKey;
     public final long restartTimestampGMTMillis; // deliberately not part of hash or equals.
     public final boolean enabled;
 
@@ -55,6 +56,7 @@ public class InstanceDescriptor {
         @JsonProperty("instanceName") int instanceName,
         @JsonProperty("versionName") String versionName,
         @JsonProperty("repository") String repository,
+        @JsonProperty("publicKey") String publicKey,
         @JsonProperty("restartTimestampGMTMillis") long restartTimestampGMTMillis,
         @JsonProperty("enabled") boolean enabled) {
 
@@ -71,33 +73,38 @@ public class InstanceDescriptor {
         this.instanceName = instanceName;
         this.versionName = versionName;
         this.repository = repository;
+        this.publicKey = publicKey;
         this.restartTimestampGMTMillis = restartTimestampGMTMillis;
         this.enabled = enabled;
     }
 
     public static class InstanceDescriptorPort {
 
+        public final boolean sslEnabled;
         public final int port;
 
         @JsonCreator
-        public InstanceDescriptorPort(@JsonProperty(value = "port") int port) {
+        public InstanceDescriptorPort(@JsonProperty("sslEnabled") boolean sslEnabled,
+            @JsonProperty("port") int port) {
+            this.sslEnabled = sslEnabled;
             this.port = port;
         }
 
         @Override
         public String toString() {
-            return "InstanceDescriptorPort{" + "port=" + port + '}';
+            return "InstanceDescriptorPort{" + "sslEnabled=" + sslEnabled + ", port=" + port + '}';
         }
 
         @Override
         public int hashCode() {
-            int hash = 3;
-            hash = 79 * hash + this.port;
-            return hash;
+            throw new UnsupportedOperationException("NOPE");
         }
 
         @Override
         public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
             if (obj == null) {
                 return false;
             }
@@ -105,12 +112,14 @@ public class InstanceDescriptor {
                 return false;
             }
             final InstanceDescriptorPort other = (InstanceDescriptorPort) obj;
+            if (this.sslEnabled != other.sslEnabled) {
+                return false;
+            }
             if (this.port != other.port) {
                 return false;
             }
             return true;
         }
-
     }
 
     @Override
@@ -129,6 +138,7 @@ public class InstanceDescriptor {
             + ", instanceName=" + instanceName
             + ", versionName=" + versionName
             + ", repository=" + repository
+            + ", publicKey=" + publicKey
             + ", ports=" + ports
             + ", restartTimestampGMTMillis=" + restartTimestampGMTMillis
             + ", enabled=" + enabled
@@ -188,27 +198,15 @@ public class InstanceDescriptor {
         if (repository != null ? !repository.equals(that.repository) : that.repository != null) {
             return false;
         }
+        if (publicKey != null ? !publicKey.equals(that.publicKey) : that.publicKey != null) {
+            return false;
+        }
         return !(ports != null ? !ports.equals(that.ports) : that.ports != null);
 
     }
 
     @Override
     public int hashCode() {
-        int result = datacenter != null ? datacenter.hashCode() : 0;
-        result = 31 * result + (rack != null ? rack.hashCode() : 0);
-        result = 31 * result + (publicHost != null ? publicHost.hashCode() : 0);
-        result = 31 * result + (clusterKey != null ? clusterKey.hashCode() : 0);
-        result = 31 * result + (clusterName != null ? clusterName.hashCode() : 0);
-        result = 31 * result + (serviceKey != null ? serviceKey.hashCode() : 0);
-        result = 31 * result + (serviceName != null ? serviceName.hashCode() : 0);
-        result = 31 * result + (releaseGroupKey != null ? releaseGroupKey.hashCode() : 0);
-        result = 31 * result + (releaseGroupName != null ? releaseGroupName.hashCode() : 0);
-        result = 31 * result + (instanceKey != null ? instanceKey.hashCode() : 0);
-        result = 31 * result + instanceName;
-        result = 31 * result + (versionName != null ? versionName.hashCode() : 0);
-        result = 31 * result + (repository != null ? repository.hashCode() : 0);
-        result = 31 * result + (ports != null ? ports.hashCode() : 0);
-        result = 31 * result + (enabled ? 1 : 0);
-        return result;
+        throw new UnsupportedOperationException("NOPE");
     }
 }

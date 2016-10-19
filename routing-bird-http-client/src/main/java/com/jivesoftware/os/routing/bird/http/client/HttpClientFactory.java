@@ -23,6 +23,6 @@ public interface HttpClientFactory {
      * @param port
      * @return
      */
-    HttpClient createClient(String host, int port);
+    HttpClient createClient(OAuthSigner  signer, String host, int port);
 
 }

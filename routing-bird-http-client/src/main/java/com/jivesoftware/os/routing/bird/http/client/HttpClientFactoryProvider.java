@@ -34,14 +34,7 @@ import org.apache.http.protocol.HttpContext;
 
 public class HttpClientFactoryProvider {
 
-    public HttpClientFactory createHttpClientFactory(final Collection<HttpClientConfiguration> configurations) {
-        return createHttpClientFactory(configurations, -1, -1, false);
-    }
-
-    public HttpClientFactory createHttpClientFactory(final Collection<HttpClientConfiguration> configurations,
-        long debugClientCount,
-        long debugClientCountInterval,
-        boolean latentClient) {
+    public HttpClientFactory createHttpClientFactory(Collection<HttpClientConfiguration> configurations, boolean latentClient) {
 
         final HttpClientConfig httpClientConfig = locateConfig(configurations, HttpClientConfig.class, HttpClientConfig.newBuilder().build());
         final PoolingHttpClientConnectionManager poolingHttpClientConnectionManager = new PoolingHttpClientConnectionManager();
@@ -73,17 +66,10 @@ public class HttpClientFactoryProvider {
 
         Closeable closeable;
         HttpClientConnectionManager clientConnectionManager;
-        if (debugClientCountInterval >= 0) {
-            LeakDetectingHttpClientConnectionManager leakDetectingHttpClientConnectionManager = new LeakDetectingHttpClientConnectionManager(
-                poolingHttpClientConnectionManager, debugClientCount, debugClientCountInterval);
-            clientConnectionManager = leakDetectingHttpClientConnectionManager;
-            closeable = leakDetectingHttpClientConnectionManager::close;
-        } else {
-            clientConnectionManager = poolingHttpClientConnectionManager;
-            closeable = poolingHttpClientConnectionManager;
-        }
+        clientConnectionManager = poolingHttpClientConnectionManager;
+        closeable = poolingHttpClientConnectionManager;
 
-        return (String host, int port) -> {
+        return (OAuthSigner signer, String host, int port) -> {
             HttpRoutePlanner rp = new DefaultRoutePlanner(DefaultSchemePortResolver.INSTANCE) {
                 @Override
                 public HttpRoute determineRoute(
@@ -106,16 +92,14 @@ public class HttpClientFactoryProvider {
             }
 
             CloseableHttpClient client = httpClientBuilder.build();
-
-            if (latentClient) {
-                return new LatentHttpClient(client,
-                    closeable,
-                    httpClientConfig.getCopyOfHeadersForEveryRequest());
-            }
-
-            return new ApacheHttpClient441BackedHttpClient(client,
+            HttpClient httpClient = new ApacheHttpClient441BackedHttpClient(signer, client,
                 closeable,
                 httpClientConfig.getCopyOfHeadersForEveryRequest());
+
+            if (latentClient) {
+                httpClient = new LatentHttpClient(httpClient);
+            }
+            return httpClient;
         };
     }
 

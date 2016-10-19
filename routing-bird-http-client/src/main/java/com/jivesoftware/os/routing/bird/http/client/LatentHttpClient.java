@@ -17,20 +17,16 @@ package com.jivesoftware.os.routing.bird.http.client;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
-import java.io.Closeable;
 import java.util.Map;
-import org.apache.http.impl.client.CloseableHttpClient;
 
 public class LatentHttpClient implements HttpClient {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
-    private final ApacheHttpClient441BackedHttpClient delegate;
+    private final HttpClient delegate;
 
-    public LatentHttpClient(CloseableHttpClient client,
-        Closeable onClose,
-        Map<String, String> headersForEveryRequest) {
-        this.delegate = new ApacheHttpClient441BackedHttpClient(client, onClose, headersForEveryRequest);
+    public LatentHttpClient(HttpClient delegate) {
+        this.delegate = delegate;
     }
 
     private void randSleep() {

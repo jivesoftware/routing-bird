@@ -32,9 +32,15 @@ public class RestfulManageServer {
 
     public RestfulManageServer(int port,
         String applicationName,
+        boolean sslEnabled,
+        String keyManagerPassword,
+        String keyStorePassword,
+        String keyStorePath,
         int maxNumberOfThreads,
         int maxQueuedRequests) {
-        server = new RestfulServer(port, applicationName, maxNumberOfThreads, maxQueuedRequests);
+        server = new RestfulServer(port, applicationName, sslEnabled,
+            keyManagerPassword, keyStorePassword, keyStorePath,
+            maxNumberOfThreads, maxQueuedRequests);
 
         jerseyEndpoints = new JerseyEndpoints()
             .enableCORS()

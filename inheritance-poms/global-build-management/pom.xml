@@ -25,7 +25,11 @@
     </properties>
     <dependencyManagement>
         <dependencies>
-
+            <dependency>
+                <groupId>oauth.signpost</groupId>
+                <artifactId>signpost-commonshttp4</artifactId>
+                <version>1.2.1.2</version>
+            </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>

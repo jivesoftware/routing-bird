@@ -37,14 +37,13 @@ public class InMemoryConnectionsDescriptorsProviderTest {
         Assert.assertTrue(response.getConnections().isEmpty());
         Assert.assertEquals(response.getReleaseGroup(), "default");
 
-        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
-        ConnectionDescriptor a = new ConnectionDescriptor(instanceDescriptor, new HostPort("a", 1), Collections.EMPTY_MAP, Collections.EMPTY_MAP);
+        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", "pk", 0, true);
+        ConnectionDescriptor a = new ConnectionDescriptor(instanceDescriptor, false, new HostPort("a", 1), Collections.EMPTY_MAP, Collections.EMPTY_MAP);
         connectionDescriptorsProvider.set("tenantId", "instanceId", "connectToServiceNamed", "portName", a);
         got = connectionDescriptorsProvider.get("tenantId", "instanceId", "connectToServiceNamed", "portName");
         Assert.assertEquals(got.getHostPort(), a.getHostPort());
         Assert.assertEquals(got.getInstanceDescriptor(), a.getInstanceDescriptor());
         Assert.assertEquals(got.getProperties(), a.getProperties());
-
 
         response = connectionDescriptorsProvider.requestConnections(requestConnections, null);
         Assert.assertNotNull(response);

@@ -23,6 +23,7 @@ import com.jivesoftware.os.routing.bird.shared.TenantRoutingClient;
 import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescriptorProvider;
 import java.util.ArrayList;
 import java.util.List;
+import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
 
 public class TenantRoutingHttpClientInitializer<T> {
 
@@ -101,13 +102,30 @@ public class TenantRoutingHttpClientInitializer<T> {
                         .setSocketTimeoutInMillis(socketTimeoutInMillis)
                         .build());
 
-                    HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config,
-                        debugClientCount,
-                        debugClientCountInterval,
-                        connection.getMonkeys() != null && connection.getMonkeys().containsKey("RANDOM_CONNECTION_LATENCY"));
+                    OAuthSigner signer = null;
+                    if (connection.getSslEnabled()) {
+                        
+
+                        String consumerKey = connection.getInstanceDescriptor().instanceKey; // instanceKey
+                        String consumerSecret = connection.getInstanceDescriptor().publicKey; // RSA public key
+                        String token = consumerKey;
+                        String tokenSecret = consumerSecret;
+
+                        CommonsHttpOAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
+                        oAuthConsumer.setTokenWithSecret(token, tokenSecret);
+                        signer = ((request) -> {
+                            return oAuthConsumer.sign(request);
+                        });
+
+                    }
+
+                    boolean latentClient = connection.getMonkeys() != null && connection.getMonkeys().containsKey("RANDOM_CONNECTION_LATENCY");
+
+                    HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config, latentClient);
                     httpClients[i] = createHttpClientFactory.createClient(
-                            connection.getHostPort().getHost(),
-                            connection.getHostPort().getPort());
+                        signer,
+                        connection.getHostPort().getHost(),
+                        connection.getHostPort().getPort());
 
                     clientHealths[i] = clientHealthProvider.get(connection);
                 }

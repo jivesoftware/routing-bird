@@ -24,6 +24,7 @@ import com.jivesoftware.os.routing.bird.http.client.HttpClientConfiguration;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientFactory;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientFactoryProvider;
 import com.jivesoftware.os.routing.bird.http.client.HttpRequestHelper;
+import com.jivesoftware.os.routing.bird.http.client.OAuthSigner;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -61,7 +62,7 @@ public class ConfigExtractor {
         String setPath = args[4];
         String getPath = args[5];
 
-        HttpRequestHelper buildRequestHelper = buildRequestHelper(configHost, Integer.parseInt(configPort));
+        HttpRequestHelper buildRequestHelper = buildRequestHelper(null, configHost, Integer.parseInt(configPort));
 
         try {
             Set<URL> packages = new HashSet<>();
@@ -183,10 +184,11 @@ public class ConfigExtractor {
         };
     }
 
-    static HttpRequestHelper buildRequestHelper(String host, int port) {
+    static HttpRequestHelper buildRequestHelper(OAuthSigner signer, String host, int port) {
         HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder().build();
-        HttpClientFactory httpClientFactory = new HttpClientFactoryProvider().createHttpClientFactory(Arrays.<HttpClientConfiguration>asList(httpClientConfig));
-        HttpClient httpClient = httpClientFactory.createClient(host, port);
+        HttpClientFactory httpClientFactory = new HttpClientFactoryProvider().createHttpClientFactory(Arrays.<HttpClientConfiguration>asList(httpClientConfig),
+            false);
+        HttpClient httpClient = httpClientFactory.createClient(signer, host, port);
         HttpRequestHelper requestHelper = new HttpRequestHelper(httpClient, new ObjectMapper());
         return requestHelper;
     }

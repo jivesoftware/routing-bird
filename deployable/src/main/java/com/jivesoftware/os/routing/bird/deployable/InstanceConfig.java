@@ -16,6 +16,7 @@
 package com.jivesoftware.os.routing.bird.deployable;
 
 import org.merlin.config.Config;
+import org.merlin.config.defaults.BooleanDefault;
 import org.merlin.config.defaults.Default;
 import org.merlin.config.defaults.IntDefault;
 
@@ -40,11 +41,15 @@ public interface InstanceConfig extends Config {
 
     void setRoutesPort(int port);
 
+    @Default("/upena/request/passwords")
+    String getKeyStorePasswordsPath();
+
+    void setPasswordsPath(String path);
+
     @Default("/upena/request/connections")
     String getRoutesPath();
 
     void setRoutesPath(String path);
-
 
     @Default("/upena/connections/health")
     String getConnectionsHealth();
@@ -87,8 +92,14 @@ public interface InstanceConfig extends Config {
     @IntDefault(10000)
     Integer getMainPort();
 
+    @BooleanDefault(false)
+    boolean getMainSslEnabled();
+
     @IntDefault(10001)
     Integer getManagePort();
+
+    @BooleanDefault(false)
+    boolean getManageSslEnabled();
 
     @IntDefault(1024)
     Integer getMainMaxThreads();

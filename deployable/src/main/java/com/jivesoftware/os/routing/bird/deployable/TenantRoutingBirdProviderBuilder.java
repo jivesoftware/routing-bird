@@ -26,6 +26,7 @@ import com.jivesoftware.os.routing.bird.http.client.HttpClientConfig;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientException;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientFactoryProvider;
 import com.jivesoftware.os.routing.bird.http.client.HttpResponse;
+import com.jivesoftware.os.routing.bird.http.client.OAuthSigner;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsResponse;
 import java.io.IOException;
@@ -47,11 +48,11 @@ public class TenantRoutingBirdProviderBuilder {
         this.routesPath = routesPath;
     }
 
-    public ConnectionDescriptorsProvider build() {
+    public ConnectionDescriptorsProvider build(OAuthSigner signer) {
         HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder().build();
         final HttpClient httpClient = new HttpClientFactoryProvider()
-            .createHttpClientFactory(Collections.singletonList(httpClientConfig))
-            .createClient(routesHost, routesPort);
+            .createHttpClientFactory(Collections.singletonList(httpClientConfig), false)
+            .createClient(signer, routesHost, routesPort);
 
         AtomicLong activeCount = new AtomicLong();
         final ObjectMapper mapper = new ObjectMapper();
@@ -76,7 +77,7 @@ public class TenantRoutingBirdProviderBuilder {
                     response = httpClient.postJson(routesPath, postEntity, null);
                 } catch (HttpClientException e) {
                     LOG.error("Error posting query request to server.  The entity posted was {} and the endpoint posted to was {}",
-                        new Object[] { postEntity, routesPath }, e);
+                        new Object[]{postEntity, routesPath}, e);
                     return null;
                 }
 

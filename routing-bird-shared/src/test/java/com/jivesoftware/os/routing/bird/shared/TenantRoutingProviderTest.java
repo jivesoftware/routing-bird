@@ -51,10 +51,9 @@ public class TenantRoutingProviderTest {
     @Test
     public void testGetConnections() throws Exception {
 
-       
         List<ConnectionDescriptor> connections = new ArrayList<>();
-        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", 0, true);
-        connections.add(new ConnectionDescriptor(instanceDescriptor, new HostPort("a", 1), Collections.EMPTY_MAP, Collections.EMPTY_MAP));
+        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", "pk", 0, true);
+        connections.add(new ConnectionDescriptor(instanceDescriptor, false, new HostPort("a", 1), Collections.EMPTY_MAP, Collections.EMPTY_MAP));
         ConnectionDescriptorsResponse response = new ConnectionDescriptorsResponse(0, null, "releaseGroupA", connections, null);
         connectionDescriptorsProviderResponse.set(response);
 

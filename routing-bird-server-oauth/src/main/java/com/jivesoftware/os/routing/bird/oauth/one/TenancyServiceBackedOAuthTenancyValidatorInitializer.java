@@ -9,7 +9,6 @@
 package com.jivesoftware.os.routing.bird.oauth.one;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.net.HostAndPort;
 import com.jivesoftware.os.routing.bird.http.client.HttpClient;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientConfig;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientConfiguration;
@@ -123,9 +122,9 @@ public class TenancyServiceBackedOAuthTenancyValidatorInitializer {
                         .build();
                     configs.add(sslConfig);
                 }
-                HttpClientFactory clientFactory = new HttpClientFactoryProvider().createHttpClientFactory(configs);
+                HttpClientFactory clientFactory = new HttpClientFactoryProvider().createHttpClientFactory(configs, false);
 
-                HttpClient httpClient = clientFactory.createClient(host, port);
+                HttpClient httpClient = clientFactory.createClient(null, host, port);
                 HttpRequestHelper client = new HttpRequestHelper(httpClient, new ObjectMapper());
                 TenancyServiceBackedSecretManager secretManager = new TenancyServiceBackedSecretManager(config.getOauthEndpointsAsServiceName(),
                     client,
@@ -147,8 +146,8 @@ public class TenancyServiceBackedOAuthTenancyValidatorInitializer {
                 configs.add(sslConfig);
             }
 
-            HttpClientFactory clientFactory = new HttpClientFactoryProvider().createHttpClientFactory(configs);
-            HttpClient httpClient = clientFactory.createClient(config.getOauthValidatorCertAuthorityHost(),
+            HttpClientFactory clientFactory = new HttpClientFactoryProvider().createHttpClientFactory(configs, false);
+            HttpClient httpClient = clientFactory.createClient(null, config.getOauthValidatorCertAuthorityHost(),
                 config.getOauthValidatorCertAuthorityPort());
             HttpRequestHelper client = new HttpRequestHelper(httpClient, new ObjectMapper());
 

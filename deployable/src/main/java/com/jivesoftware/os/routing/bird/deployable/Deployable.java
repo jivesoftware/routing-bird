@@ -32,6 +32,10 @@ import com.jivesoftware.os.routing.bird.health.HealthCheckResponse;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponseImpl;
 import com.jivesoftware.os.routing.bird.health.api.ResettableHealthCheck;
 import com.jivesoftware.os.routing.bird.health.api.ScheduledHealthCheck;
+import com.jivesoftware.os.routing.bird.http.client.HttpClient;
+import com.jivesoftware.os.routing.bird.http.client.HttpClientConfig;
+import com.jivesoftware.os.routing.bird.http.client.HttpClientFactoryProvider;
+import com.jivesoftware.os.routing.bird.http.client.HttpResponse;
 import com.jivesoftware.os.routing.bird.http.server.endpoints.TenantRoutingRestEndpoints;
 import com.jivesoftware.os.routing.bird.server.InitializeRestfulServer;
 import com.jivesoftware.os.routing.bird.server.JerseyEndpoints;
@@ -40,8 +44,9 @@ import com.jivesoftware.os.routing.bird.server.RestfulServer;
 import com.jivesoftware.os.routing.bird.server.util.Resource;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
 import com.jivesoftware.os.routing.bird.shared.TenantRoutingProvider;
-import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -68,34 +73,64 @@ public class Deployable {
     private final ScheduledExecutorService connectionRefresh = Executors.newScheduledThreadPool(1, new ThreadFactoryBuilder().setNameFormat(
         "connectionRefresh-%d").build());
 
-    public Deployable(String[] args) throws IOException {
+    public Deployable(String[] args) throws Exception {
         this.mainProperties = new MainProperties(args);
         this.configBinder = new ConfigBinder(args);
         this.instanceConfig = configBinder.bind(InstanceConfig.class);
         init(null);
     }
 
-    public Deployable(String[] args, ConfigBinder configBinder, InstanceConfig instanceConfig, ConnectionDescriptorsProvider connectionsDescriptorProvider) {
+    public Deployable(String[] args,
+        ConfigBinder configBinder,
+        InstanceConfig instanceConfig,
+        ConnectionDescriptorsProvider connectionsDescriptorProvider) throws Exception {
+
         this.mainProperties = new MainProperties(args);
         this.configBinder = configBinder;
         this.instanceConfig = instanceConfig;
         init(connectionsDescriptorProvider);
     }
 
-    private void init(ConnectionDescriptorsProvider connectionsDescriptorProvider) {
+    private void init(ConnectionDescriptorsProvider connectionsDescriptorProvider) throws Exception {
 
         if (connectionsDescriptorProvider == null) {
 
             TenantRoutingBirdProviderBuilder tenantRoutingBirdBuilder = new TenantRoutingBirdProviderBuilder(instanceConfig.getRoutesHost(),
                 instanceConfig.getRoutesPort(), instanceConfig.getRoutesPath());
-            connectionsDescriptorProvider = tenantRoutingBirdBuilder.build();
+            connectionsDescriptorProvider = tenantRoutingBirdBuilder.build(null);
         }
 
         tenantRoutingProvider = new TenantRoutingProvider(connectionRefresh, instanceConfig.getInstanceKey(), connectionsDescriptorProvider);
 
         String applicationName = "manage " + instanceConfig.getServiceName() + " " + instanceConfig.getClusterName();
+
+        String keyManagerPassword = null;
+        String keyStorePassword = null;
+        String keyStorePath = "./certs/sslKeystore";
+
+        if (instanceConfig.getMainSslEnabled() || instanceConfig.getManageSslEnabled()) {
+
+            String routesHost = instanceConfig.getRoutesHost();
+            Integer routesPort = instanceConfig.getRoutesPort();
+            HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder().build();
+            HttpClient httpClient = new HttpClientFactoryProvider()
+                .createHttpClientFactory(Collections.singletonList(httpClientConfig), false)
+                .createClient(null, routesHost, routesPort);
+            HttpResponse response = httpClient.get(instanceConfig.getKeyStorePasswordsPath() + "/" + instanceConfig.getInstanceKey(), null);
+
+            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                keyStorePassword = new String(response.getResponseBody(), StandardCharsets.UTF_8);
+            } else {
+                throw new Exception("Failed to access required keystore password. " + response.getStatusCode());
+            }
+        }
+
         restfulManageServer = new RestfulManageServer(instanceConfig.getManagePort(),
             applicationName,
+            instanceConfig.getManageSslEnabled(),
+            keyManagerPassword,
+            keyStorePassword,
+            keyStorePath,
             instanceConfig.getManageMaxThreads(),
             instanceConfig.getManageMaxQueuedRequests());
 
@@ -107,6 +142,10 @@ public class Deployable {
         jerseyEndpoints = new JerseyEndpoints();
         restfulServer = new InitializeRestfulServer(instanceConfig.getMainPort(),
             applicationName,
+            instanceConfig.getMainSslEnabled(),
+            keyManagerPassword,
+            keyStorePassword,
+            keyStorePath,
             instanceConfig.getMainMaxThreads(),
             instanceConfig.getMainMaxQueuedRequests());
     }
@@ -178,12 +217,12 @@ public class Deployable {
                 healthCheck.setHealthy("'" + applicationName + "' service is initialized.");
                 banneredOneLiner("'" + applicationName + "' service started. Elapse:" + (System.currentTimeMillis() - time));
                 server.addHealthCheck((HealthCheck) () -> {
-                    String status = "Service on port:" + instanceConfig.getManagePort() + " has" +
-                        " current:" + server.getThreads() +
-                        " idle:" + server.getIdleThreads() +
-                        " busy:" + server.getBusyThreads() +
-                        " max:" + server.getMaxThreads() +
-                        " threads";
+                    String status = "Service on port:" + instanceConfig.getManagePort() + " has"
+                        + " current:" + server.getThreads()
+                        + " idle:" + server.getIdleThreads()
+                        + " busy:" + server.getBusyThreads()
+                        + " max:" + server.getMaxThreads()
+                        + " threads";
                     String description = "How many free thread are available to handle http request.";
                     String resolution = "Increase the number or threads or add more services.";
                     return new HealthCheckResponseImpl("manage>http>threadPool",
@@ -455,12 +494,12 @@ public class Deployable {
                 healthCheck.setHealthy("'" + applicationName + "' service is initialized.");
                 startedUpBanner();
                 restfulManageServer.addHealthCheck((HealthCheck) () -> {
-                    String status = "Service on port:" + instanceConfig.getMainPort() + " has" +
-                        " current:" + server.getThreads() +
-                        " idle:" + server.getIdleThreads() +
-                        " busy:" + server.getBusyThreads() +
-                        " max:" + server.getMaxThreads() +
-                        " threads";
+                    String status = "Service on port:" + instanceConfig.getMainPort() + " has"
+                        + " current:" + server.getThreads()
+                        + " idle:" + server.getIdleThreads()
+                        + " busy:" + server.getBusyThreads()
+                        + " max:" + server.getMaxThreads()
+                        + " threads";
                     String description = "How many free thread are available to handle http request.";
                     String resolution = "Increase the number or threads or add more services.";
                     return new HealthCheckResponseImpl("main>http>threadPool",

@@ -18,8 +18,7 @@ package com.jivesoftware.os.routing.bird.server;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URISyntaxException;
-import java.security.KeyStore;
-import javax.net.ssl.X509TrustManager;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -50,7 +49,16 @@ public class RestfulServer {
     private final String applicationName;
     private final ContextHandlerCollection handlers;
 
-    public RestfulServer(int port, String applicationName, int maxNumberOfThreads, int maxQueuedRequests) {
+    public RestfulServer(
+        int port,
+        String applicationName,
+        boolean sslEnabled,
+        String keyManagerPassword,
+        String keyStorePassword,
+        String keyStorePath,
+        int maxNumberOfThreads,
+        int maxQueuedRequests) {
+
         this.applicationName = applicationName;
         int maxThreads = maxNumberOfThreads + ACCEPTORS + SELECTORS;
         BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(MIN_THREADS, MIN_THREADS, maxQueuedRequests);
@@ -60,10 +68,11 @@ public class RestfulServer {
 
         server.addEventListener(new MBeanContainer(ManagementFactory.getPlatformMBeanServer()));
         server.setHandler(handlers);
-        server.addConnector(makeConnector(port));
-        int sslPort = -1; //TODO
-        if (sslPort > 0) {
-            server.addConnector(makeSslConnector(sslPort));
+
+        if (sslEnabled) {
+            server.addConnector(makeSslConnector(keyManagerPassword, keyStorePassword, keyStorePath, port));
+        } else {
+            server.addConnector(makeConnector(port));
         }
     }
 
@@ -90,30 +99,53 @@ public class RestfulServer {
     private Connector makeConnector(int port) {
         ServerConnector connector = new ServerConnector(server, ACCEPTORS, SELECTORS);
         connector.setPort(port);
+        connector.setIdleTimeout(30000); // Config
         return connector;
     }
 
-    private Connector makeSslConnector(int port) {
-        HttpConfiguration https = new HttpConfiguration();
-        https.addCustomizer(new SecureRequestCustomizer());
+    private Connector makeSslConnector(String keyManagerPassword,
+        String keyStorePassword,
+        String keyStorePath,
+        int port) {
+
+        // HTTP Configuration
+        HttpConfiguration http_config = new HttpConfiguration();
+        http_config.setSecureScheme("https");
+        http_config.setSecurePort(port);
+        http_config.setOutputBufferSize(32768);
+        http_config.setRequestHeaderSize(8192);
+        http_config.setResponseHeaderSize(8192);
+        http_config.setSendServerVersion(true);
+        http_config.setSendDateHeader(false);
+        // httpConfig.addCustomizer(new ForwardedRequestCustomizer());
 
         SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath("/tmp/todo.ks");
-        sslContextFactory.setKeyStorePassword("todo");
-        sslContextFactory.setKeyManagerPassword("todo");
-        sslContextFactory.setTrustStorePath("/tmp/todo.ts");
-        sslContextFactory.setTrustStorePassword("todo");
-        sslContextFactory.setNeedClientAuth(true); //TODO mutual SSL, expose to configuration
-        //TODO cipher suites
-        X509TrustManager x509TrustManager;
+        if (keyStorePath != null) {
+            sslContextFactory.setKeyStorePath(keyStorePath);
+        }
+        if (keyStorePassword != null) {
+            sslContextFactory.setKeyStorePassword(keyStorePassword);
+        }
+        if (keyManagerPassword != null) {
+            sslContextFactory.setKeyManagerPassword(keyManagerPassword);
+        }
+        sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA",
+            "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
+            "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
+            "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
+            "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+            "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
 
-        ServerConnector connector = new ServerConnector(server,
-            ACCEPTORS,
-            SELECTORS,
-            new SslConnectionFactory(sslContextFactory, "http/1.1"),
-            new HttpConnectionFactory(https));
-        connector.setPort(port);
-        return connector;
+        // SSL HTTP Configuration
+        HttpConfiguration https_config = new HttpConfiguration(http_config);
+        https_config.addCustomizer(new SecureRequestCustomizer());
+
+        // SSL Connector
+        ServerConnector sslConnector = new ServerConnector(server,
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            new HttpConnectionFactory(https_config));
+        sslConnector.setPort(port);
+        return sslConnector;
     }
 
     public void addContextHandler(String context, HasServletContextHandler contextHandler) {

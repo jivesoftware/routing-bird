@@ -9,10 +9,11 @@ import java.util.Arrays;
  */
 public class HttpRequestHelperUtils {
 
-    public static HttpRequestHelper buildRequestHelper(String host, int port) {
+    public static HttpRequestHelper buildRequestHelper(OAuthSigner signer, String host, int port) {
         HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder().build();
-        HttpClientFactory httpClientFactory = new HttpClientFactoryProvider().createHttpClientFactory(Arrays.<HttpClientConfiguration>asList(httpClientConfig));
-        HttpClient httpClient = httpClientFactory.createClient(host, port);
+        HttpClientFactory httpClientFactory = new HttpClientFactoryProvider().createHttpClientFactory(Arrays.<HttpClientConfiguration>asList(httpClientConfig),
+            false);
+        HttpClient httpClient = httpClientFactory.createClient(signer, host, port);
         HttpRequestHelper requestHelper = new HttpRequestHelper(httpClient, new ObjectMapper());
         return requestHelper;
     }
