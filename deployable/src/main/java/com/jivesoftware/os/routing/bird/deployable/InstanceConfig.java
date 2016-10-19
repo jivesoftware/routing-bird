@@ -41,7 +41,7 @@ public interface InstanceConfig extends Config {
 
     void setRoutesPort(int port);
 
-    @Default("/upena/request/passwords")
+    @Default("/upena/request/keyStorePassword")
     String getKeyStorePasswordsPath();
 
     void setPasswordsPath(String path);
