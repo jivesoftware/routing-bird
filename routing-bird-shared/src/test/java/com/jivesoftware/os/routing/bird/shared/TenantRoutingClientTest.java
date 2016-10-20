@@ -44,7 +44,7 @@ public class TenantRoutingClientTest {
     private NextClientStrategy strategy;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
         initMocks(this);
         try {
             Mockito.when(clientCall.call(Mockito.any(TestClient.class))).thenReturn(new ClientResponse<>(Boolean.TRUE, true));
@@ -55,7 +55,7 @@ public class TenantRoutingClientTest {
         initDescriptorsPool(System.currentTimeMillis());
     }
 
-    private void initDescriptorsPool(long timestamp) {
+    private void initDescriptorsPool(long timestamp) throws Exception {
         InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", "pk", 0, true);
         ConnectionDescriptor descriptor = new ConnectionDescriptor(instanceDescriptor, false, new HostPort("localhost", 7777), Collections.EMPTY_MAP,
             Collections.EMPTY_MAP);

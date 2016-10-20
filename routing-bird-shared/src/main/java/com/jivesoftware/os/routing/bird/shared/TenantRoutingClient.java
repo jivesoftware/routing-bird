@@ -44,7 +44,7 @@ public class TenantRoutingClient<T, C, E extends Throwable> {
         String routingGroup = connectionPoolProvider.getRoutingGroup(tenant);
         TimestampedClients<C, E> timestampedClients = tenantsHttpClient.compute(tenant, (key, existing) -> {
             String existingRoutingGroup = existing == null ? null : existing.getRoutingGroup();
-            long existingTimestamp =  existing == null ? -1 : existing.getTimestamp();
+            long existingTimestamp = existing == null ? -1 : existing.getTimestamp();
             long timestamp = connections.getTimestamp();
             if (existingRoutingGroup == null || !existingRoutingGroup.equals(routingGroup) || existingTimestamp < timestamp) {
                 LOG.info("Updating routes for service:{} tenant:{} family:{} routingGroup:{}->{} timestamp:{}->{} identity:{}",
@@ -60,11 +60,17 @@ public class TenantRoutingClient<T, C, E extends Throwable> {
                         LOG.warn("Failed while trying to close clients:" + Arrays.toString(existing.getClients()), x);
                     }
                 }
-                TimestampedClients<C, E> updated = clientConnectionsFactory.createClients(routingGroup, connections);
+                TimestampedClients<C, E> updated;
+                try {
+                    updated = clientConnectionsFactory.createClients(routingGroup, connections);
+                } catch (Exception x) {
+                    throw new RuntimeException("Failed to create client.", x);
+                }
                 if (updated == null) {
                     throw new IllegalStateException("clientConnectionsFactory:" + clientConnectionsFactory + " should not return a null client but did!");
                 }
                 return updated;
+
             } else {
                 return existing;
             }

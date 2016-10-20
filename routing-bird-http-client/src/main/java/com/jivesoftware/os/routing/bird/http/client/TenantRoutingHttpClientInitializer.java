@@ -15,6 +15,8 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.http.client.ClientHealthProvider.ClientHealth;
 import com.jivesoftware.os.routing.bird.shared.ClientConnectionsFactory;
 import com.jivesoftware.os.routing.bird.shared.ClientsCloser;
@@ -23,8 +25,15 @@ import com.jivesoftware.os.routing.bird.shared.TenantRoutingClient;
 import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescriptorProvider;
 import java.util.ArrayList;
 import java.util.List;
+import javax.net.ssl.SSLContext;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.ssl.SSLContexts;
 
 public class TenantRoutingHttpClientInitializer<T> {
+
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     public Builder<T> builder(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider, ClientHealthProvider clientHealthProvider) {
         return new Builder<>(connectionPoolProvider, clientHealthProvider);
@@ -103,11 +112,17 @@ public class TenantRoutingHttpClientInitializer<T> {
 
                     OAuthSigner signer = null;
                     if (connection.getSslEnabled()) {
+                        HttpClientSSLConfig.Builder builder = HttpClientSSLConfig.newBuilder();
+                        builder.setUseSSL(true);
+                        if (true) {
+                            LOG.warn("Need to fix ALWAYS allowing selft sigend cert!");
+                            SSLContext sslcontext = SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
+                            // Allow TLSv1 protocol only, use NoopHostnameVerifier to trust self-singed cert
+                            builder.setUseSslWithCustomSSLSocketFactory(new SSLConnectionSocketFactory(sslcontext,
+                                new String[]{"TLSv1"}, null, new NoopHostnameVerifier()));
 
-                        HttpClientSSLConfig sslConfig = HttpClientSSLConfig.newBuilder()
-                            .setUseSSL(true)
-                            .build();
-                        config.add(sslConfig);
+                        }
+                        config.add(builder.build());
 
                     }
 
@@ -123,7 +138,6 @@ public class TenantRoutingHttpClientInitializer<T> {
 //                            return oAuthConsumer.sign(request);
 //                        });
 //                    }
-
                     boolean latentClient = connection.getMonkeys() != null && connection.getMonkeys().containsKey("RANDOM_CONNECTION_LATENCY");
 
                     HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config, latentClient);
