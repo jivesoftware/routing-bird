@@ -20,10 +20,15 @@ import java.util.Collection;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
+import org.apache.http.config.RegistryBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.routing.HttpRoutePlanner;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.LayeredConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -36,8 +41,28 @@ public class HttpClientFactoryProvider {
 
     public HttpClientFactory createHttpClientFactory(Collection<HttpClientConfiguration> configurations, boolean latentClient) {
 
-        final HttpClientConfig httpClientConfig = locateConfig(configurations, HttpClientConfig.class, HttpClientConfig.newBuilder().build());
-        final PoolingHttpClientConnectionManager poolingHttpClientConnectionManager = new PoolingHttpClientConnectionManager();
+        HttpClientConfig httpClientConfig = locateConfig(configurations, HttpClientConfig.class, HttpClientConfig.newBuilder().build());
+        HttpClientSSLConfig sslConfig = locateConfig(configurations, HttpClientSSLConfig.class, null);
+
+        String scheme;
+        PoolingHttpClientConnectionManager poolingHttpClientConnectionManager;
+        if (sslConfig != null && sslConfig.isUseSsl()) {
+            LayeredConnectionSocketFactory sslSocketFactory;
+            if (sslConfig.getCustomSSLSocketFactory() != null) {
+                sslSocketFactory = sslConfig.getCustomSSLSocketFactory();
+            } else {
+                sslSocketFactory = SSLConnectionSocketFactory.getSocketFactory();
+            }
+
+            scheme = "https";
+            poolingHttpClientConnectionManager = new PoolingHttpClientConnectionManager(RegistryBuilder.<ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                .register("https", sslSocketFactory)
+                .build());
+        } else {
+            scheme = "http";
+            poolingHttpClientConnectionManager = new PoolingHttpClientConnectionManager();
+        }
 
         if (httpClientConfig.getMaxConnections() > 0) {
             poolingHttpClientConnectionManager.setMaxTotal(httpClientConfig.getMaxConnections());
@@ -49,14 +74,6 @@ public class HttpClientFactoryProvider {
             poolingHttpClientConnectionManager.setDefaultMaxPerRoute(httpClientConfig.getMaxConnectionsPerHost());
         } else {
             poolingHttpClientConnectionManager.setDefaultMaxPerRoute(Integer.MAX_VALUE);
-        }
-
-        HttpClientSSLConfig sslConfig = locateConfig(configurations, HttpClientSSLConfig.class, null);
-        String scheme;
-        if (sslConfig != null && sslConfig.isUseSsl()) {
-            scheme = "https";
-        } else {
-            scheme = "http";
         }
 
         poolingHttpClientConnectionManager
@@ -84,12 +101,6 @@ public class HttpClientFactoryProvider {
             HttpClientBuilder httpClientBuilder = HttpClients.custom()
                 .setConnectionManager(clientConnectionManager)
                 .setRoutePlanner(rp);
-
-            if (sslConfig != null && sslConfig.isUseSsl()) {
-                if (sslConfig.getCustomSSLSocketFactory() != null) {
-                    httpClientBuilder.setSSLSocketFactory(sslConfig.getCustomSSLSocketFactory());
-                }
-            }
 
             CloseableHttpClient client = httpClientBuilder.build();
             HttpClient httpClient = new ApacheHttpClient441BackedHttpClient(signer, client,
