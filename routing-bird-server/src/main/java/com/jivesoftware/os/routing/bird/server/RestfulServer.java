@@ -53,7 +53,7 @@ public class RestfulServer {
         int port,
         String applicationName,
         boolean sslEnabled,
-        String keyManagerPassword,
+        String keyStoreAlias,
         String keyStorePassword,
         String keyStorePath,
         int maxNumberOfThreads,
@@ -70,7 +70,7 @@ public class RestfulServer {
         server.setHandler(handlers);
 
         if (sslEnabled) {
-            server.addConnector(makeSslConnector(keyManagerPassword, keyStorePassword, keyStorePath, port));
+            server.addConnector(makeSslConnector(keyStoreAlias, keyStorePassword, keyStorePath, port));
         } else {
             server.addConnector(makeConnector(port));
         }
@@ -103,7 +103,7 @@ public class RestfulServer {
         return connector;
     }
 
-    private Connector makeSslConnector(String keyManagerPassword,
+    private Connector makeSslConnector(String keyStoreAlias,
         String keyStorePassword,
         String keyStorePath,
         int port) {
@@ -120,14 +120,12 @@ public class RestfulServer {
         // httpConfig.addCustomizer(new ForwardedRequestCustomizer());
 
         SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setCertAlias(keyStoreAlias);
         if (keyStorePath != null) {
             sslContextFactory.setKeyStorePath(keyStorePath);
         }
         if (keyStorePassword != null) {
             sslContextFactory.setKeyStorePassword(keyStorePassword);
-        }
-        if (keyManagerPassword != null) {
-            sslContextFactory.setKeyManagerPassword(keyManagerPassword);
         }
         sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA",
             "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",

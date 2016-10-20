@@ -25,12 +25,12 @@ public class InitializeRestfulServer {
         int port,
         String applicationName,
         boolean sslEnabled,
-        String keyManagerPassword,
+        String keyStoreAlias,
         String keyStorePassword,
         String keyStorePath,
         int maxNumberOfThreads,
         int maxQueuedRequests) {
-        server = new RestfulServer(port, applicationName, sslEnabled, keyManagerPassword, keyStorePassword, keyStorePath,
+        server = new RestfulServer(port, applicationName, sslEnabled, keyStoreAlias, keyStorePassword, keyStorePath,
             maxNumberOfThreads, maxQueuedRequests);
     }
 
