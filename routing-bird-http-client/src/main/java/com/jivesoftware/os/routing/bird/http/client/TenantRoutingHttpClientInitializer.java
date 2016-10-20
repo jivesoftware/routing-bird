@@ -104,7 +104,11 @@ public class TenantRoutingHttpClientInitializer<T> {
 
                     OAuthSigner signer = null;
                     if (connection.getSslEnabled()) {
-                        
+
+                        HttpClientSSLConfig sslConfig = HttpClientSSLConfig.newBuilder()
+                        .setUseSSL(true)
+                        .build();
+                        config.add(sslConfig);
 
                         String consumerKey = connection.getInstanceDescriptor().instanceKey; // instanceKey
                         String consumerSecret = connection.getInstanceDescriptor().publicKey; // RSA public key
