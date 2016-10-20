@@ -23,7 +23,6 @@ import com.jivesoftware.os.routing.bird.shared.TenantRoutingClient;
 import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescriptorProvider;
 import java.util.ArrayList;
 import java.util.List;
-import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
 
 public class TenantRoutingHttpClientInitializer<T> {
 
@@ -106,22 +105,24 @@ public class TenantRoutingHttpClientInitializer<T> {
                     if (connection.getSslEnabled()) {
 
                         HttpClientSSLConfig sslConfig = HttpClientSSLConfig.newBuilder()
-                        .setUseSSL(true)
-                        .build();
+                            .setUseSSL(true)
+                            .build();
                         config.add(sslConfig);
 
-                        String consumerKey = connection.getInstanceDescriptor().instanceKey; // instanceKey
-                        String consumerSecret = connection.getInstanceDescriptor().publicKey; // RSA public key
-                        String token = consumerKey;
-                        String tokenSecret = consumerSecret;
-
-                        CommonsHttpOAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
-                        oAuthConsumer.setTokenWithSecret(token, tokenSecret);
-                        signer = ((request) -> {
-                            return oAuthConsumer.sign(request);
-                        });
-
                     }
+
+//                    if (connection.getOauthEnabled()) {
+//                        String consumerKey = connection.getInstanceDescriptor().instanceKey; // instanceKey
+//                        String consumerSecret = connection.getInstanceDescriptor().publicKey; // RSA public key
+//                        String token = consumerKey;
+//                        String tokenSecret = consumerSecret;
+//
+//                        CommonsHttpOAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
+//                        oAuthConsumer.setTokenWithSecret(token, tokenSecret);
+//                        signer = ((request) -> {
+//                            return oAuthConsumer.sign(request);
+//                        });
+//                    }
 
                     boolean latentClient = connection.getMonkeys() != null && connection.getMonkeys().containsKey("RANDOM_CONNECTION_LATENCY");
 
