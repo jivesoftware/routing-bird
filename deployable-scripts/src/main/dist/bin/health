@@ -5,8 +5,8 @@ PORT=`grep InstanceConfig_default_managePort $APP_ROOT/config/instance.propertie
 SSL=`grep InstanceConfig_default_manageSslEnabled $APP_ROOT/config/instance.properties | sed -e 's/[^=]*=//'`
 
 if [ $SSL = "true" ]; then
-    cd $APP_ROOT && curl -s http://localhost:${PORT}/manage/health
-else
     cd $APP_ROOT && curl -s -k https://localhost:${PORT}/manage/health
+else
+    cd $APP_ROOT && curl -s http://localhost:${PORT}/manage/health
 fi
 exit 0;
