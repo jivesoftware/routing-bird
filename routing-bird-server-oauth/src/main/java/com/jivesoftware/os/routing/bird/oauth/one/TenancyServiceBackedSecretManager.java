@@ -11,6 +11,7 @@ import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.mlogger.core.ValueType;
 import com.jivesoftware.os.routing.bird.http.client.HttpRequestHelper;
 import com.jivesoftware.os.routing.bird.oauth.TenancyRequestException;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TenancyServiceBackedSecretManager {
 
     private final static MetricLogger LOG = MetricLoggerFactory.getLogger();
-   
+
     private final static String LAST_SUCCESSFUL_ANY_REQUEST = "tenancySecretManager>lastSuccessfulTSRequest";
     private final static String LAST_SUCCESSFUL_SECRET_REQUEST = "tenancySecretManager>lastSuccessfulSecretRequest";
     private final static String LAST_SUCCESSFUL_REMOVAL_TIME_REQUEST = "tenancySecretManager>lastSuccessfulRemovalTimeRequest";
@@ -40,12 +41,14 @@ public class TenancyServiceBackedSecretManager {
 
     public final static long DEFAULT_SECRET_REQUEST_TIMEOUT = 400L;
     public final static long DEFAULT_SECRET_UPDATE_TIME_REQUEST_TIMEOUT = 1000L;
+    public final static long DEFAULT_SECRET_CACHE_MISS_TIMEOUT = 30 * 1000L;
 
     private final String serviceName;
-    private final HttpRequestHelper client;
+    private final List<HttpRequestHelper> clients;
 
     private final long secretTimeoutHard;
     private final long secretTimeoutSoft;
+    private final long secretCacheMissTimeout;
 
     // didn't make it configurable as we'll move to CS 2.0 soon
     private final long secretServiceRequestTimeout = DEFAULT_SECRET_REQUEST_TIMEOUT;
@@ -57,19 +60,16 @@ public class TenancyServiceBackedSecretManager {
     private final ConcurrentHashMap<String, TTLSecret> tenancySecrets;
     private final AtomicLong lastSecretRemovalEpochMillis = new AtomicLong(0);
 
-    public TenancyServiceBackedSecretManager(String serviceName, HttpRequestHelper client) {
+    public TenancyServiceBackedSecretManager(String serviceName,
+        List<HttpRequestHelper> clients,
+        long secretTimeoutHard,
+        long secretTimeoutSoft,
+        long secretCacheMissTimeout) {
         this.serviceName = serviceName;
-        this.client = client;
-        this.secretTimeoutHard = DEFAULT_SECRET_TIMEOUT_HARD;
-        this.secretTimeoutSoft = DEFAULT_SECRET_TIMEOUT_SOFT;
-        this.tenancySecrets = new ConcurrentHashMap<>();
-    }
-
-    public TenancyServiceBackedSecretManager(String serviceName, HttpRequestHelper client, long secretTimeoutHard, long secretTimeoutSoft) {
-        this.serviceName = serviceName;
-        this.client = client;
+        this.clients = clients;
         this.secretTimeoutHard = secretTimeoutHard;
         this.secretTimeoutSoft = secretTimeoutSoft;
+        this.secretCacheMissTimeout = secretCacheMissTimeout;
         this.tenancySecrets = new ConcurrentHashMap<>();
     }
 
@@ -133,62 +133,44 @@ public class TenancyServiceBackedSecretManager {
     public String getSecret(String tenantId) {
         TTLSecret ttlSecret = tenancySecrets.get(tenantId);
 
-        // case 1: secret is cached
         if (ttlSecret != null) {
-            // case 1-1: cached secret is still valid, which is the most common case so don't have to log it every time
             if (!ttlSecret.isSoftTimeout()) {
-                LOG.debug("Returning secret:{} before soft timer expires for tenant:{}  and service:{}",
-                    new Object[]{ttlSecret.getSecret(), tenantId, serviceName});
                 return ttlSecret.getSecret();
             }
-
-            // case 1-2: soft timeout, reset the timer and attempt to get the secret from the server below
             ttlSecret.resetSoftTimer();
-
-            // don't output secret normally, for secret reason
             LOG.info("Soft timer expired on cached secret of tenant:{}, service:{}", new Object[]{tenantId, serviceName});
-            LOG.debug("Soft timer expired on cached secret:{}, tenant:{}, service:{}",
-                new Object[]{ttlSecret.getSecret(), tenantId, serviceName});
         }
 
         LOG.info("Query tenancy service for tenant:{}, service:{}", new Object[]{tenantId, serviceName});
         JsonOAuthSecret jsonOAuthSecret;
 
-        try {
-            jsonOAuthSecret = getSecretFromSecretServiceWithTimeout(tenantId);
-        } catch (TenancyRequestException e) {
-            // case 1-2-1: failed to get the secret within certain amount of time, cache an empty secret
-            LOG.error("Failed to get secret for tenant:{}, service:{}", new Object[]{tenantId, serviceName});
-            if (ttlSecret != null) {
-                // case 1-2-1-1: no hard timeout, return the cached secret
-                if (!ttlSecret.isHardTimeout()) {
-                    LOG.info("Return cached secret of tenant:{}, service:{}",
-                        new Object[]{tenantId, serviceName});
-                    LOG.debug("Return cached secret:{}, tenant:{}, service:{}",
-                        new Object[]{ttlSecret.getSecret(), tenantId, serviceName});
-                    return ttlSecret.getSecret();
-                } else {
-                    // case 1-2-1-2: hard timeout, has to fail
-                    LOG.info("Hard timer expired on cached secret of tenant:{}, service:{}",
-                        new Object[]{tenantId, serviceName});
-                    LOG.debug("Hard timer expired for secret:{}, tenant:{}, service:{}",
-                        new Object[]{ttlSecret.getSecret(), tenantId, serviceName});
+        for (HttpRequestHelper client : clients) {
+
+            try {
+                jsonOAuthSecret = getSecretFromSecretServiceWithTimeout(client, tenantId);
+                String secret = jsonOAuthSecret != null ? jsonOAuthSecret.getSecret() : null;
+                if (secret != null && !secret.isEmpty()) {
+                    LOG.info("Updating tenant:{}, service:{} with new secret", new Object[]{tenantId, serviceName});
+                    tenancySecrets.put(tenantId, new TTLSecret(secret, this.secretTimeoutHard, this.secretTimeoutSoft));
+                    return secret;
+                }
+            } catch (TenancyRequestException e) {
+                LOG.error("Failed to get secret for tenant:{}, service:{}", new Object[]{tenantId, serviceName});
+                if (ttlSecret != null) {
+                    if (!ttlSecret.isHardTimeout()) {
+                        LOG.info("Return cached secret of tenant:{}, service:{}",new Object[]{tenantId, serviceName});
+                        return ttlSecret.getSecret();
+                    } else {
+                        LOG.info("Hard timer expired on cached secret of tenant:{}, service:{}",new Object[]{tenantId, serviceName});
+                    }
                 }
             }
-
-            LOG.info("Add an empty secret for tenant:{}, service:{}", new Object[]{tenantId, serviceName});
-            tenancySecrets.put(tenantId, new TTLSecret(null, this.secretTimeoutHard, this.secretTimeoutSoft));
-            return null;
         }
 
-        // case 1-2-2: service is up and returned the secret, so update cache and reset hard timeout
-        String secret = jsonOAuthSecret != null ? jsonOAuthSecret.getSecret() : null;
+        LOG.info("Add an empty secret for tenant:{}, service:{}", new Object[]{tenantId, serviceName});
+        tenancySecrets.put(tenantId, new TTLSecret(null, this.secretTimeoutHard, this.secretCacheMissTimeout));
+        return null;
 
-        LOG.info("Updating tenant:{}, service:{} with new secret", new Object[]{tenantId, serviceName});
-        LOG.debug("Updating tenant:{}, service:{} with new secret:{}", new Object[]{tenantId, serviceName, secret});
-
-        tenancySecrets.put(tenantId, new TTLSecret(secret, this.secretTimeoutHard, this.secretTimeoutSoft));
-        return secret;
     }
 
     /**
@@ -198,24 +180,23 @@ public class TenancyServiceBackedSecretManager {
      * an additional optimization to the soft/hard timeout approach above.
      */
     public void verifyLastSecretRemovalTime() {
-        long updateToLastSecretRemovalEpochMillis;
-
-        try {
-            updateToLastSecretRemovalEpochMillis = getLastSecretRemovalTimeWithTimeout();
-        } catch (TenancyRequestException ex) {
-            // case 1: failed to get the timestamp, don't do anything
-            LOG.error("Failed to get the last secret removal timestamp.", ex);
-            return;
+        long updateToLastSecretRemovalEpochMillis = 0;
+        for (HttpRequestHelper client : clients) {
+            try {
+                updateToLastSecretRemovalEpochMillis = Math.max(updateToLastSecretRemovalEpochMillis, getLastSecretRemovalTimeWithTimeout(client));
+            } catch (TenancyRequestException ex) {
+                // case 1: failed to get the timestamp, don't do anything
+                LOG.error("Failed to get the last secret removal timestamp.", ex);
+                return;
+            }
         }
 
-        // case 2: the first time get a valid timestamp, set it but do nothing on the cache
         if (lastSecretRemovalEpochMillis.get() <= 0) {
             LOG.info("Set last secret removal timestamp "
                 + "for serviceName:{} updateToLastSecretRemovalEpochMillis:{} currentLastSecretRemovalEpochMillis:{}",
                 new Object[]{serviceName, updateToLastSecretRemovalEpochMillis, lastSecretRemovalEpochMillis.get()});
             lastSecretRemovalEpochMillis.set(updateToLastSecretRemovalEpochMillis);
-        } // case 3: the timestamp is later than the last time, so, clear the cache to get the secrets again
-        else if (updateToLastSecretRemovalEpochMillis > lastSecretRemovalEpochMillis.get()) {
+        } else if (updateToLastSecretRemovalEpochMillis > lastSecretRemovalEpochMillis.get()) {
             LOG.info("Some secret had been removed on the server. Reset last secret removal timestamp "
                 + "for serviceName:{} updateToLastSecretRemovalEpochMillis:{} currentLastSecretRemovalEpochMillis:{}",
                 new Object[]{serviceName, updateToLastSecretRemovalEpochMillis, lastSecretRemovalEpochMillis.get()});
@@ -223,8 +204,7 @@ public class TenancyServiceBackedSecretManager {
 
             // this is necessary!!
             tenancySecrets.clear();
-        } // case 4: the timestamp is the same as the last time, so, extend the cache expiration time
-        else {
+        } else {
             LOG.info("No secret had been removed on the server. Reset the timers on all secrets "
                 + "for serviceName:{} updateToLastSecretRemovalEpochMillis:{} currentLastSecretRemovalEpochMillis:{}",
                 new Object[]{serviceName, updateToLastSecretRemovalEpochMillis, lastSecretRemovalEpochMillis.get()});
@@ -256,7 +236,7 @@ public class TenancyServiceBackedSecretManager {
      * @return  -- nullable
      * @throws com.jivesoftware.service.server.tenancy.validator.TenancyRequestException
      */
-    private JsonOAuthSecret getSecretFromSecretServiceWithTimeout(String tenantId) throws TenancyRequestException {
+    private JsonOAuthSecret getSecretFromSecretServiceWithTimeout(HttpRequestHelper client, String tenantId) throws TenancyRequestException {
         JsonOAuthSecret response;
         String REQUEST_SECRET = "/secret/services/tenantSecret/get?serviceName=" + serviceName + "&tenantId=" + tenantId;
 
@@ -289,7 +269,7 @@ public class TenancyServiceBackedSecretManager {
      * @return  removal timestamp
      * @throws com.jivesoftware.service.server.tenancy.validator.TenancyRequestException
      */
-    private long getLastSecretRemovalTimeWithTimeout() throws TenancyRequestException {
+    private long getLastSecretRemovalTimeWithTimeout(HttpRequestHelper client) throws TenancyRequestException {
         LastSecretRemovalEpochMillis response;
         String LAST_SECRET_REMOVAL_EPOCH_MILLIS = "/secret/services/tenantSecret/lastRemovalEpochTimestamp?serviceName=" + serviceName;
         try {
