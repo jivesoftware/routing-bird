@@ -95,11 +95,17 @@ public interface InstanceConfig extends Config {
     @BooleanDefault(false)
     boolean getMainSslEnabled();
 
+    @BooleanDefault(false)
+    boolean getMainServiceAuthEnabled();
+
     @IntDefault(10001)
     Integer getManagePort();
 
     @BooleanDefault(false)
     boolean getManageSslEnabled();
+
+     @BooleanDefault(false)
+    boolean getManageServiceAuthEnabled();
 
     @IntDefault(1024)
     Integer getMainMaxThreads();

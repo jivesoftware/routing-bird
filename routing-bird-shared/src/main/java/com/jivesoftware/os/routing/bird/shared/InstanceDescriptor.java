@@ -81,20 +81,24 @@ public class InstanceDescriptor {
     public static class InstanceDescriptorPort {
 
         public final boolean sslEnabled;
+        public final boolean serviceAuthEnabled;
         public final int port;
 
         @JsonCreator
         public InstanceDescriptorPort(@JsonProperty("sslEnabled") boolean sslEnabled,
+            @JsonProperty("serviceAuthEnabled") boolean serviceAuthEnabled,
             @JsonProperty("port") int port) {
             this.sslEnabled = sslEnabled;
+            this.serviceAuthEnabled = serviceAuthEnabled;
             this.port = port;
         }
 
         @Override
         public String toString() {
-            return "InstanceDescriptorPort{" + "sslEnabled=" + sslEnabled + ", port=" + port + '}';
+            return "InstanceDescriptorPort{" + "sslEnabled=" + sslEnabled + ", serviceAuthEnabled=" + serviceAuthEnabled + ", port=" + port + '}';
         }
 
+        
         @Override
         public int hashCode() {
             throw new UnsupportedOperationException("NOPE");
@@ -113,6 +117,9 @@ public class InstanceDescriptor {
             }
             final InstanceDescriptorPort other = (InstanceDescriptorPort) obj;
             if (this.sslEnabled != other.sslEnabled) {
+                return false;
+            }
+            if (this.serviceAuthEnabled != other.serviceAuthEnabled) {
                 return false;
             }
             if (this.port != other.port) {

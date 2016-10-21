@@ -563,6 +563,36 @@ public class RestfulBaseEndpoints {
         }
     }
 
+    /**
+     * Exceptions for service
+     *
+     * @param callback
+     * @return
+     */
+    @GET
+    @Path("/thrown")
+    public Response thrown(@QueryParam("callback") @DefaultValue("") String callback) {
+        try {
+            return Response.ok().entity(LoggerSummary.INSTANCE.throwables()).type(MediaType.APPLICATION_JSON).build();
+
+        } catch (Exception x) {
+            LOG.warn("Failed to get health.", x);
+            return ResponseHelper.INSTANCE.errorResponse("Failed to get health.", x);
+        }
+    }
+
+    @GET
+    @Path("/resetThrown")
+    public Response resetThrown() {
+        try {
+            LoggerSummary.INSTANCE.reset();
+            return Response.ok("Reset LoggerSummary", MediaType.TEXT_PLAIN).build();
+        } catch (Exception x) {
+            LOG.warn("Failed to reset health.", x);
+            return ResponseHelper.INSTANCE.errorResponse("Failed to reset health checks.", x);
+        }
+    }
+
     class JettyStatus {
 
         public String state;
