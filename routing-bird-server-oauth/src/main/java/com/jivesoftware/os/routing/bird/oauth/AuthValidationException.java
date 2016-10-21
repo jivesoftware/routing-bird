@@ -11,13 +11,13 @@ package com.jivesoftware.os.routing.bird.oauth;
 /**
  *
  */
-public class TenancyValidationException extends Exception {
+public class AuthValidationException extends Exception {
 
-    public TenancyValidationException(String message) {
+    public AuthValidationException(String message) {
         super(message);
     }
 
-    public TenancyValidationException(String message, Throwable cause) {
+    public AuthValidationException(String message, Throwable cause) {
         super(message, cause);
     }
 }

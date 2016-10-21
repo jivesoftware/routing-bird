@@ -15,15 +15,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  *
  */
-public class JsonOAuthSecret {
+public class TenancyJsonOAuthSecret {
     
-    public static JsonOAuthSecret NULL = new JsonOAuthSecret("", 0);
+    public static TenancyJsonOAuthSecret NULL = new TenancyJsonOAuthSecret("", 0);
     
     private final String secret;
     private final long expirationEpochMillis;
    
     @JsonCreator
-    public JsonOAuthSecret(
+    public TenancyJsonOAuthSecret(
             @JsonProperty("secret") String secret,
             @JsonProperty("expirationEpochMillis") long expirationEpochMillis
             ) {
@@ -60,7 +60,7 @@ public class JsonOAuthSecret {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final JsonOAuthSecret other = (JsonOAuthSecret) obj;
+        final TenancyJsonOAuthSecret other = (TenancyJsonOAuthSecret) obj;
         if ((this.secret == null) ? (other.secret != null) : !this.secret.equals(other.secret)) {
             return false;
         }
