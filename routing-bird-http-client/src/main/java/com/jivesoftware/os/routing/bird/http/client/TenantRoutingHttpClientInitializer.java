@@ -26,6 +26,7 @@ import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescripto
 import java.util.ArrayList;
 import java.util.List;
 import javax.net.ssl.SSLContext;
+import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
@@ -126,18 +127,18 @@ public class TenantRoutingHttpClientInitializer<T> {
 
                     }
 
-//                    if (connection.getOauthEnabled()) {
-//                        String consumerKey = connection.getInstanceDescriptor().instanceKey; // instanceKey
-//                        String consumerSecret = connection.getInstanceDescriptor().publicKey; // RSA public key
-//                        String token = consumerKey;
-//                        String tokenSecret = consumerSecret;
-//
-//                        CommonsHttpOAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
-//                        oAuthConsumer.setTokenWithSecret(token, tokenSecret);
-//                        signer = ((request) -> {
-//                            return oAuthConsumer.sign(request);
-//                        });
-//                    }
+                    if (connection.getServiceAuthEnabled()) {
+                        String consumerKey = connection.getInstanceDescriptor().instanceKey; // instanceKey
+                        String consumerSecret = connection.getInstanceDescriptor().publicKey; // RSA public key
+                        String token = consumerKey;
+                        String tokenSecret = consumerSecret;
+
+                        CommonsHttpOAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
+                        oAuthConsumer.setTokenWithSecret(token, tokenSecret);
+                        signer = ((request) -> {
+                            return oAuthConsumer.sign(request);
+                        });
+                    }
                     boolean latentClient = connection.getMonkeys() != null && connection.getMonkeys().containsKey("RANDOM_CONNECTION_LATENCY");
 
                     HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config, latentClient);

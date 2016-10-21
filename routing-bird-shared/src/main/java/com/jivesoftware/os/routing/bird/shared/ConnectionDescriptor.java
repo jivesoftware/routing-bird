@@ -23,6 +23,7 @@ public class ConnectionDescriptor {
 
     private final InstanceDescriptor instanceDescriptor;
     private final boolean sslEnabled;
+    private final boolean serviceAuthEnabled;
     private final HostPort hostPort;
     private final Map<String, String> properties;
     private final Map<String, String> monkeys;
@@ -30,11 +31,13 @@ public class ConnectionDescriptor {
     @JsonCreator
     public ConnectionDescriptor(@JsonProperty("instanceDescriptor") InstanceDescriptor instanceDescriptor,
         @JsonProperty("sslEnabled") boolean sslEnabled,
+        @JsonProperty("serviceAuthEnabled") boolean serviceAuthEnabled,
         @JsonProperty("hostPort") HostPort hostPort,
         @JsonProperty("properties") Map<String, String> properties,
         @JsonProperty("monkeys") Map<String, String> monkeys) {
 
         this.sslEnabled = sslEnabled;
+        this.serviceAuthEnabled = serviceAuthEnabled;
         this.instanceDescriptor = instanceDescriptor;
         this.hostPort = hostPort;
         this.properties = properties;
@@ -43,6 +46,10 @@ public class ConnectionDescriptor {
     
     public boolean getSslEnabled() {
         return sslEnabled;
+    }
+
+    public boolean getServiceAuthEnabled() {
+        return serviceAuthEnabled;
     }
 
     public InstanceDescriptor getInstanceDescriptor() {

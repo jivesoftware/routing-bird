@@ -40,7 +40,7 @@ public class TenantsServiceConnectionDescriptorsProviderTest {
         MockitoAnnotations.initMocks(this);
 
         InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", "pk", 0, true);
-        descriptor = new ConnectionDescriptor(instanceDescriptor, false, new HostPort("localhost", 7776), Collections.EMPTY_MAP, Collections.EMPTY_MAP);
+        descriptor = new ConnectionDescriptor(instanceDescriptor, false, false, new HostPort("localhost", 7776), Collections.EMPTY_MAP, Collections.EMPTY_MAP);
 
         connectionDescriptorsProvider = new ConnectionDescriptorsProvider() {
             @Override

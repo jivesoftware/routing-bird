@@ -57,7 +57,7 @@ public class TenantRoutingClientTest {
 
     private void initDescriptorsPool(long timestamp) throws Exception {
         InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", "pk", 0, true);
-        ConnectionDescriptor descriptor = new ConnectionDescriptor(instanceDescriptor, false, new HostPort("localhost", 7777), Collections.EMPTY_MAP,
+        ConnectionDescriptor descriptor = new ConnectionDescriptor(instanceDescriptor, false, false, new HostPort("localhost", 7777), Collections.EMPTY_MAP,
             Collections.EMPTY_MAP);
         ConnectionDescriptors connectionDescriptors = new ConnectionDescriptors(timestamp, Arrays.asList(descriptor));
         strategy = new TestStrategy();
