@@ -19,36 +19,53 @@ import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.oauth.AuthValidator;
 import com.jivesoftware.os.routing.bird.oauth.AuthValidatorHelper;
-import com.jivesoftware.os.routing.bird.oauth.one.ContainerRequestContextOAuth1Request;
 import java.io.IOException;
+import java.util.List;
+import java.util.regex.Pattern;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import org.glassfish.jersey.oauth1.signature.OAuth1Request;
 import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
+import org.glassfish.jersey.server.oauth1.internal.OAuthServerRequest;
 
-public class AuthRequestFilter implements ContainerRequestFilter {
+public class OAuthRequestFilter implements ContainerRequestFilter {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private static final Response UNAUTHORIZED = Response.status(Status.UNAUTHORIZED).entity("OAuth validation failed").build();
 
-    private final AuthValidator<OAuth1Signature, OAuth1Request> tenancyValidator;
+    private final List<Pattern> patterns;
+    private final AuthValidator<OAuth1Signature, OAuth1Request> authValidator;
     private final OAuth1Signature verifier;
 
-    public AuthRequestFilter(AuthValidator<OAuth1Signature, OAuth1Request> tenancyValidator, OAuth1Signature verifier) {
-        this.tenancyValidator = tenancyValidator;
+    public OAuthRequestFilter(List<Pattern> patterns, AuthValidator<OAuth1Signature, OAuth1Request> authValidator, OAuth1Signature verifier) {
+        this.patterns = patterns;
+        this.authValidator = authValidator;
         this.verifier = verifier;
     }
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         try {
-            if (tenancyValidator != null && verifier != null) {
-                ContainerRequestContextOAuth1Request auth1Request = new ContainerRequestContextOAuth1Request(requestContext);
-                if (AuthValidatorHelper.isValid(tenancyValidator, verifier, auth1Request, null, UNAUTHORIZED) == UNAUTHORIZED) {
-                    requestContext.abortWith(UNAUTHORIZED);
+            if (authValidator != null && verifier != null) {
+                boolean accepted = false;
+                if (patterns == null) {
+                    accepted = true;
+                } else {
+                    for (Pattern pattern : patterns) {
+                        if (pattern.matcher(requestContext.getUriInfo().getPath()).matches()) {
+                            accepted = true;
+                            break;
+                        }
+                    }
+                }
+                if (accepted) {
+                    OAuthServerRequest serverRequest = new OAuthServerRequest(requestContext);
+                    if (AuthValidatorHelper.isValid(authValidator, verifier, serverRequest, null, UNAUTHORIZED) == UNAUTHORIZED) {
+                        requestContext.abortWith(UNAUTHORIZED);
+                    }
                 }
             }
         } catch (Exception e) {

@@ -44,8 +44,8 @@ public class ContainerRequestContextOAuth1Request implements OAuth1Request {
     @Override
     public Set<String> getParameterNames() {
         Set<String> parameterNames = Sets.newHashSet();
-        parameterNames.addAll(request.getUriInfo().getPathParameters().keySet());
         parameterNames.addAll(request.getUriInfo().getQueryParameters().keySet());
+        //TODO form params
         return parameterNames;
     }
 
