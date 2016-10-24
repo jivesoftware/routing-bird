@@ -15,6 +15,7 @@
  */
 package com.jivesoftware.os.routing.bird.server.filter;
 
+import com.google.common.collect.Lists;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.oauth.AuthValidator;
@@ -36,35 +37,31 @@ public class OAuthRequestFilter implements ContainerRequestFilter {
 
     private static final Response UNAUTHORIZED = Response.status(Status.UNAUTHORIZED).entity("OAuth validation failed").build();
 
-    private final List<Pattern> patterns;
     private final AuthValidator<OAuth1Signature, OAuth1Request> authValidator;
     private final OAuth1Signature verifier;
+    private final List<Pattern> patterns;
 
-    public OAuthRequestFilter(List<Pattern> patterns, AuthValidator<OAuth1Signature, OAuth1Request> authValidator, OAuth1Signature verifier) {
-        this.patterns = patterns;
+    public OAuthRequestFilter(AuthValidator<OAuth1Signature, OAuth1Request> authValidator, OAuth1Signature verifier, String... paths) {
         this.authValidator = authValidator;
         this.verifier = verifier;
+        this.patterns = Lists.newArrayListWithCapacity(paths.length);
+
+        for (String path : paths) {
+            patterns.add(Pattern.compile(path));
+        }
     }
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         try {
             if (authValidator != null && verifier != null) {
-                boolean accepted = false;
-                if (patterns == null) {
-                    accepted = true;
-                } else {
-                    for (Pattern pattern : patterns) {
-                        if (pattern.matcher(requestContext.getUriInfo().getPath()).matches()) {
-                            accepted = true;
-                            break;
+                for (Pattern pattern : patterns) {
+                    if (pattern.matcher(requestContext.getUriInfo().getPath()).matches()) {
+                        OAuthServerRequest serverRequest = new OAuthServerRequest(requestContext);
+                        if (AuthValidatorHelper.isValid(authValidator, verifier, serverRequest, null, UNAUTHORIZED) == UNAUTHORIZED) {
+                            requestContext.abortWith(UNAUTHORIZED);
                         }
-                    }
-                }
-                if (accepted) {
-                    OAuthServerRequest serverRequest = new OAuthServerRequest(requestContext);
-                    if (AuthValidatorHelper.isValid(authValidator, verifier, serverRequest, null, UNAUTHORIZED) == UNAUTHORIZED) {
-                        requestContext.abortWith(UNAUTHORIZED);
+                        break;
                     }
                 }
             }
