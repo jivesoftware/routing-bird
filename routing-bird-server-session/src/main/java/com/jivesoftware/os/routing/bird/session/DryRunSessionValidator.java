@@ -1,13 +1,15 @@
 package com.jivesoftware.os.routing.bird.session;
 
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import javax.ws.rs.container.ContainerRequestContext;
-
-import static org.eclipse.jetty.io.SelectChannelEndPoint.LOG;
 
 /**
  *
  */
 public class DryRunSessionValidator implements SessionValidator {
+
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private final SessionValidator delegate;
 
