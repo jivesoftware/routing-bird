@@ -97,13 +97,22 @@ public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAu
         params.readRequest(request);
 
         String consumerKey = params.getConsumerKey();
+        if (consumerKey == null) {
+            LOG.warn("Missing consumerKey");
+            return false;
+        }
 
         // Check that the timestamp has not expired. Note: oauth timestamp is in seconds ...
         String timestampStr = params.getTimestamp();
+        if (timestampStr == null) {
+            LOG.warn("Missing timestamp for request by consumerKey:{}", consumerKey);
+            return false;
+        }
+
         long oauthTimeStamp = Long.parseLong(timestampStr) * 1000L;
         long now = System.currentTimeMillis();
         if (Math.abs(now - oauthTimeStamp) > timestampAgeLimitMillis) {
-            LOG.warn("Timestamp out of range. timestamp:{}msec delta:{}msec", oauthTimeStamp, now - oauthTimeStamp);
+            LOG.warn("Timestamp out of range for request by consumerKey:{} timestamp:{}msec delta:{}msec", consumerKey, oauthTimeStamp, now - oauthTimeStamp);
             LOG.inc("oauth>error>outsideTimeRange");
             LOG.inc("oauth>consumerKey>" + consumerKey + ">error>outsideTimeRange");
             throw new AuthValidationException("The request timestamp is outside the allowable range. Please ensure you are running NTP.");
@@ -111,7 +120,7 @@ public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAu
 
         String secret = secretManager.getSecret(consumerKey);
         if (secret == null) {
-            LOG.warn("secret for consumerKey:{} is null", consumerKey);
+            LOG.warn("Secret for consumerKey:{} is null", consumerKey);
             LOG.inc("oauth>secrets>missing");
             LOG.inc("oauth>consumerKey>" + consumerKey + ">secrets>missing");
             throw new AuthValidationException("Failed to locate secret for consumerKey:" + consumerKey);
@@ -126,18 +135,17 @@ public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAu
             if (verify) {
                 return true;
             } else {
-                LOG.warn("OAuth signature verification failed.");
+                LOG.warn("OAuth signature verification failed for consumerKey:{}", consumerKey);
                 LOG.inc("oauth>error>verificationFailed");
                 LOG.inc("oauth>consumerKey>" + consumerKey + ">error>verificationFailed");
+                return false;
             }
         } catch (OAuth1SignatureException e) {
-            LOG.warn("OAuth signature verification failed. {}", e.getClass().getSimpleName());
+            LOG.warn("OAuth signature verification failed for consumerKey:{} exception:{}", consumerKey, e.getClass().getSimpleName());
             LOG.inc("oauth>error>verificationError");
             LOG.inc("oauth>consumerKey>" + consumerKey + ">error>verificationError");
             throw new AuthValidationException("Oauth signature verification error.");
         }
-
-        return false;
     }
 
     public void expireSecretCacheIfNecessary() throws Exception {

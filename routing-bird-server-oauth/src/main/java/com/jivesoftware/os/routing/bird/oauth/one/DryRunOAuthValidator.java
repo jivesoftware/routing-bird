@@ -36,12 +36,12 @@ public class DryRunOAuthValidator implements AuthValidator<OAuth1Signature, OAut
         try {
             boolean valid = authValidator.isValid(verifier, request);
             if (valid) {
-                LOG.info("Dry run validation passed for {}", consumerKey);
+                LOG.info("Dry run validation passed for consumerKey:{}", consumerKey);
             } else {
-                LOG.info("Dry run validation failed for {}", consumerKey);
+                LOG.info("Dry run validation failed for consumerKey:{}", consumerKey);
             }
         } catch (AuthValidationException x) {
-            LOG.warn("Dry run validation failed for {}", new Object[] { consumerKey }, x);
+            LOG.warn("Dry run validation failed for consumerKey:{}", new Object[] { consumerKey }, x);
         }
         return true;
     }

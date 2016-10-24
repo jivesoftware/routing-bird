@@ -15,6 +15,8 @@
  */
 package com.jivesoftware.os.routing.bird.server.filter;
 
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.oauth.AuthValidator;
 import com.jivesoftware.os.routing.bird.oauth.AuthValidatorHelper;
 import com.jivesoftware.os.routing.bird.oauth.one.ContainerRequestContextOAuth1Request;
@@ -28,6 +30,8 @@ import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
 
 public class AuthRequestFilter implements ContainerRequestFilter {
 
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
+
     private static final Response UNAUTHORIZED = Response.status(Status.UNAUTHORIZED).entity("OAuth validation failed").build();
 
     private final AuthValidator<OAuth1Signature, OAuth1Request> tenancyValidator;
@@ -40,11 +44,16 @@ public class AuthRequestFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        if (tenancyValidator != null && verifier != null) {
-            ContainerRequestContextOAuth1Request auth1Request = new ContainerRequestContextOAuth1Request(requestContext);
-            if (AuthValidatorHelper.isValid(tenancyValidator, verifier, auth1Request, null, UNAUTHORIZED) == UNAUTHORIZED) {
-                requestContext.abortWith(UNAUTHORIZED);
+        try {
+            if (tenancyValidator != null && verifier != null) {
+                ContainerRequestContextOAuth1Request auth1Request = new ContainerRequestContextOAuth1Request(requestContext);
+                if (AuthValidatorHelper.isValid(tenancyValidator, verifier, auth1Request, null, UNAUTHORIZED) == UNAUTHORIZED) {
+                    requestContext.abortWith(UNAUTHORIZED);
+                }
             }
+        } catch (Exception e) {
+            LOG.error("Failed to check authentication", e);
+            throw e;
         }
     }
 }
