@@ -37,7 +37,7 @@ public class SessionRequestFilter implements ContainerRequestFilter {
         try {
             if (sessionValidator != null) {
                 for (Pattern pattern : patterns) {
-                    String path = requestContext.getUriInfo().getPath();
+                    String path = '/' + requestContext.getUriInfo().getPath();
                     if (pattern.matcher(path).matches()) {
                         if (!sessionValidator.isAuthenticated(requestContext)) {
                             requestContext.abortWith(UNAUTHORIZED);

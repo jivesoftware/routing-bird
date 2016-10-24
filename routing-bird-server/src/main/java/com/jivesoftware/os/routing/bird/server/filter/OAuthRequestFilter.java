@@ -56,7 +56,8 @@ public class OAuthRequestFilter implements ContainerRequestFilter {
         try {
             if (authValidator != null && verifier != null) {
                 for (Pattern pattern : patterns) {
-                    if (pattern.matcher(requestContext.getUriInfo().getPath()).matches()) {
+                    String path = '/' + requestContext.getUriInfo().getPath();
+                    if (pattern.matcher(path).matches()) {
                         OAuthServerRequest serverRequest = new OAuthServerRequest(requestContext);
                         if (AuthValidatorHelper.isValid(authValidator, verifier, serverRequest, null, UNAUTHORIZED) == UNAUTHORIZED) {
                             requestContext.abortWith(UNAUTHORIZED);
