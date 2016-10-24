@@ -13,6 +13,7 @@ import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.api.ServiceLocatorState;
 import org.glassfish.hk2.api.Unqualified;
+import org.glassfish.jersey.oauth1.signature.HmaSha1Method;
 import org.glassfish.jersey.oauth1.signature.OAuth1SignatureMethod;
 import org.glassfish.jersey.oauth1.signature.PlaintextMethod;
 
@@ -47,6 +48,7 @@ public class OAuthServiceLocatorShim implements ServiceLocator {
         if (contractOrImpl.equals(OAuth1SignatureMethod.class)) {
             return (List<T>) Arrays.asList(
                 new OAuth1SignatureMethod[]{
+                    new HmaSha1Method(),
                     new SimpleRsaSha1Method(),
                     new PlaintextMethod()
             });

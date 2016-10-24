@@ -54,6 +54,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.ws.rs.container.ContainerRequestFilter;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.merlin.config.Config;
 
@@ -252,6 +253,13 @@ public class Deployable {
             throw new IllegalStateException("Cannot add injectables after the server has been started.");
         }
         jerseyEndpoints.addInjectable(clazz, injectable);
+    }
+
+    public void addContainerRequestFilter(ContainerRequestFilter containerRequestFilter) {
+        if (serverStarted.get()) {
+            throw new IllegalStateException("Cannot add request filters after the server has been started.");
+        }
+        jerseyEndpoints.addContainerRequestFilter(containerRequestFilter);
     }
 
     public void addResource(Resource resource) {

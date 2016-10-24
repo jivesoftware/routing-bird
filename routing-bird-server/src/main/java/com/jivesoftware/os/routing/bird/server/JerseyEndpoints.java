@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.servlet.DispatcherType;
+import javax.ws.rs.container.ContainerRequestFilter;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -52,6 +53,7 @@ public class JerseyEndpoints implements HasServletContextHandler {
     private final Set<Class<?>> allInjectedClasses = new HashSet<>();
     private final Set<Object> allBinders = new HashSet<>();
     private final List<Injectable<?>> allInjectables = Lists.newArrayList();
+    private final List<ContainerRequestFilter> containerRequestFilters = Lists.newArrayList();
     private boolean supportCORS = false;
 
     private final ObjectMapper mapper;
@@ -96,6 +98,11 @@ public class JerseyEndpoints implements HasServletContextHandler {
         return this;
     }
 
+    public JerseyEndpoints addContainerRequestFilter(ContainerRequestFilter containerRequestFilter) {
+        containerRequestFilters.add(containerRequestFilter);
+        return this;
+    }
+
     public JerseyEndpoints enableCORS() {
         supportCORS = true;
         return this;
@@ -134,6 +141,10 @@ public class JerseyEndpoints implements HasServletContextHandler {
 
         if (supportCORS) {
             rc.register(CorsContainerResponseFilter.class);
+        }
+
+        for (ContainerRequestFilter containerRequestFilter : containerRequestFilters) {
+            rc.register(containerRequestFilter);
         }
 
         ServletHolder servletHolder = new ServletHolder(new ServletContainer(rc));

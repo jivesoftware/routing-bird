@@ -14,8 +14,8 @@ package com.jivesoftware.os.routing.bird.oauth;
 public interface AuthValidator<V, R> {
 
     /**
-     * @param id
-     * @param context
+     * @param verifier
+     * @param request
      * @return true if oauth signature verification was applied and passed, false if it was applied and did not pass
      * @throws AuthValidationException on signature verification not passing for any reason different than the oauth library rejecting it.
      * TODO Interface contract revision: there is no good reason for signature verification failure to be communicated
@@ -24,7 +24,7 @@ public interface AuthValidator<V, R> {
      * the exception propagating the full stack trace that is worthless here.
      * The verification failures that currently throw are really not "exceptional" circumstances.
      */
-    boolean isValid(String id, V verifier, R request) throws AuthValidationException;
+    boolean isValid(V verifier, R request) throws AuthValidationException;
 
     void clearSecretCache();
 

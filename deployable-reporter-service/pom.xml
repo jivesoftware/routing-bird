@@ -26,12 +26,12 @@
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>deployable-reporter-shared</artifactId>
-            <version>0.113-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>merlin-config</artifactId>
-            <version>0.113-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
     <name>deployable-reporter-service</name>

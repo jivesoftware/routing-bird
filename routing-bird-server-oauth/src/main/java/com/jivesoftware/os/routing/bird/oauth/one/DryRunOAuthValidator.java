@@ -12,6 +12,7 @@ import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.oauth.AuthValidationException;
 import com.jivesoftware.os.routing.bird.oauth.AuthValidator;
+import org.glassfish.jersey.oauth1.signature.OAuth1Parameters;
 import org.glassfish.jersey.oauth1.signature.OAuth1Request;
 import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
 
@@ -28,16 +29,19 @@ public class DryRunOAuthValidator implements AuthValidator<OAuth1Signature, OAut
     }
 
     @Override
-    public boolean isValid(String id, OAuth1Signature verifier, OAuth1Request request) throws AuthValidationException {
+    public boolean isValid(OAuth1Signature verifier, OAuth1Request request) throws AuthValidationException {
+        OAuth1Parameters params = new OAuth1Parameters();
+        params.readRequest(request);
+        String consumerKey = params.getConsumerKey();
         try {
-            boolean valid = authValidator.isValid(id, verifier, request);
+            boolean valid = authValidator.isValid(verifier, request);
             if (valid) {
-                LOG.info(id + " passed validation.");
+                LOG.info("Dry run validation passed for {}", consumerKey);
             } else {
-                LOG.info(id + " failed validation.");
+                LOG.info("Dry run validation failed for {}", consumerKey);
             }
         } catch (AuthValidationException x) {
-            LOG.warn(id + " failed validation.", x);
+            LOG.warn("Dry run validation failed for {}", new Object[] { consumerKey }, x);
         }
         return true;
     }

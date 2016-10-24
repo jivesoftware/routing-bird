@@ -83,7 +83,7 @@ public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAu
     }
 
     @Override
-    public boolean isValid(String id, OAuth1Signature oAuth1Signature, OAuth1Request request) throws AuthValidationException {
+    public boolean isValid(OAuth1Signature oAuth1Signature, OAuth1Request request) throws AuthValidationException {
         if (doLoadBalancerRejiggering) {
             LOG.trace("request will be rejiggered");
             LOG.inc("oauth>rejiggeredRequest");
@@ -97,12 +97,6 @@ public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAu
         params.readRequest(request);
 
         String consumerKey = params.getConsumerKey();
-        if ((consumerKey == null) || !consumerKey.equals(id)) {
-            LOG.warn("consumerKey:{} is null or not equal to tenantId:{}", consumerKey, id);
-            LOG.inc("oauth>error>consumerKeyNotEqual");
-            LOG.inc("oauth>tenant>" + id + ">error>consumerKeyNotEqual");
-            throw new AuthValidationException("Failed consumer key is not equal to tenantId:" + id);
-        }
 
         // Check that the timestamp has not expired. Note: oauth timestamp is in seconds ...
         String timestampStr = params.getTimestamp();
@@ -111,16 +105,16 @@ public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAu
         if (Math.abs(now - oauthTimeStamp) > timestampAgeLimitMillis) {
             LOG.warn("Timestamp out of range. timestamp:{}msec delta:{}msec", oauthTimeStamp, now - oauthTimeStamp);
             LOG.inc("oauth>error>outsideTimeRange");
-            LOG.inc("oauth>id>" + id + ">error>outsideTimeRange");
+            LOG.inc("oauth>consumerKey>" + consumerKey + ">error>outsideTimeRange");
             throw new AuthValidationException("The request timestamp is outside the allowable range. Please ensure you are running NTP.");
         }
 
-        String secret = secretManager.getSecret(id);
+        String secret = secretManager.getSecret(consumerKey);
         if (secret == null) {
-            LOG.warn("secret for tenantId:{} is null", id);
+            LOG.warn("secret for consumerKey:{} is null", consumerKey);
             LOG.inc("oauth>secrets>missing");
-            LOG.inc("oauth>tenant>" + id + ">secrets>missing");
-            throw new AuthValidationException("Failed to locate secret for tenantId:" + id);
+            LOG.inc("oauth>consumerKey>" + consumerKey + ">secrets>missing");
+            throw new AuthValidationException("Failed to locate secret for consumerKey:" + consumerKey);
         }
 
         OAuth1Secrets secrets = new OAuth1Secrets();
@@ -134,12 +128,12 @@ public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAu
             } else {
                 LOG.warn("OAuth signature verification failed.");
                 LOG.inc("oauth>error>verificationFailed");
-                LOG.inc("oauth>tenant>" + id + ">error>verificationFailed");
+                LOG.inc("oauth>consumerKey>" + consumerKey + ">error>verificationFailed");
             }
         } catch (OAuth1SignatureException e) {
             LOG.warn("OAuth signature verification failed. {}", e.getClass().getSimpleName());
             LOG.inc("oauth>error>verificationError");
-            LOG.inc("oauth>tenant>" + id + ">error>verificationError");
+            LOG.inc("oauth>consumerKey>" + consumerKey + ">error>verificationError");
             throw new AuthValidationException("Oauth signature verification error.");
         }
 
