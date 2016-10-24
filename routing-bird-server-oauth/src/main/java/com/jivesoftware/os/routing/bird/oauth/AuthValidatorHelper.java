@@ -21,16 +21,16 @@ public class AuthValidatorHelper {
     public static <V, R, B> B isValid(AuthValidator<V, R> authValidator, V verifier, R request, B success, B failure) {
         try {
             if (authValidator.isValid(verifier, request)) {
-                LOG.trace("Jive protocol and OAuth signature verification passed for verifier:{} request:{}",
+                LOG.trace("Protocol and OAuth signature verification passed for verifier:{} request:{}",
                     verifier, request);
                 return success;
             } else {
-                LOG.warn("Jive protocol signature passed but OAuth signature did not pass for verifier:{} request:{}",
+                LOG.warn("Protocol signature passed but OAuth signature did not pass for verifier:{} request:{}",
                     verifier, request);
                 return failure;
             }
         } catch (AuthValidationException ex) {
-            LOG.warn("Jive protocol signature did not pass, OAuth signature not attempted for verifier:{} request:{} protocol error:{}",
+            LOG.warn("Protocol signature did not pass, OAuth signature not attempted for verifier:{} request:{} protocol error:{}",
                 verifier, request, ex.toString());
             return failure;
         }

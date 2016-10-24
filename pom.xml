@@ -20,6 +20,7 @@
         <module>routing-bird-health</module>
         <module>routing-bird-server</module>
         <module>routing-bird-server-oauth</module>
+        <module>routing-bird-server-session</module>
         <module>deployable</module>
         <module>deployable-reporter-shared</module>
         <module>deployable-reporter-service</module>

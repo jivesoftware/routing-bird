@@ -8,7 +8,7 @@
         <relativePath>../inheritance-poms/global-build-management/pom.xml</relativePath>
     </parent>
     <groupId>com.jivesoftware.os.routing.bird</groupId>
-    <artifactId>routing-bird-server-oauth</artifactId>
+    <artifactId>routing-bird-server-session</artifactId>
     <properties>
         <module.type>shared_lib</module.type>
     </properties>
@@ -67,10 +67,6 @@
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-server</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.security</groupId>
-            <artifactId>oauth1-signature</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>

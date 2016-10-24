@@ -46,6 +46,11 @@ public interface InstanceConfig extends Config {
 
     void setPasswordsPath(String path);
 
+    @Default("/upena/session/validate")
+    String getSessionValidatorPath();
+
+    void setSessionValidatorPath(String path);
+
     @Default("/upena/request/connections")
     String getRoutesPath();
 
