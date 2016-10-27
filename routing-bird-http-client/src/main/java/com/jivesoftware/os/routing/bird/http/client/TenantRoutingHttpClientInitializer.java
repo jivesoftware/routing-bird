@@ -36,7 +36,9 @@ public class TenantRoutingHttpClientInitializer<T> {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
-    public Builder<T> builder(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider, ClientHealthProvider clientHealthProvider) {
+    public Builder<T> builder(
+        TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
+        ClientHealthProvider clientHealthProvider) {
         return new Builder<>(connectionPoolProvider, clientHealthProvider);
     }
 
@@ -55,6 +57,9 @@ public class TenantRoutingHttpClientInitializer<T> {
 
         private long debugClientCount = -1;
         private long debugClientCountInterval = -1;
+
+        private String instanceKey;
+        private String privateKey;
 
         private Builder(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
             ClientHealthProvider clientHealthProvider) {
@@ -93,6 +98,16 @@ public class TenantRoutingHttpClientInitializer<T> {
             return this;
         }
 
+        public Builder<T> setInstanceKey(String instanceKey) {
+            this.instanceKey = instanceKey;
+            return this;
+        }
+
+        public Builder<T> setPrivateKey(String privateKey) {
+            this.privateKey = privateKey;
+            return this;
+        }
+
         public TenantAwareHttpClient<T> build() {
             ClientConnectionsFactory<HttpClient, HttpClientException> clientConnectionsFactory = (routingGroup, connectionDescriptors) -> {
                 List<ConnectionDescriptor> descriptors = connectionDescriptors.getConnectionDescriptors();
@@ -128,8 +143,8 @@ public class TenantRoutingHttpClientInitializer<T> {
                     }
 
                     if (connection.getServiceAuthEnabled()) {
-                        String consumerKey = connection.getInstanceDescriptor().instanceKey; // instanceKey
-                        String consumerSecret = connection.getInstanceDescriptor().publicKey; // RSA public key
+                        String consumerKey = instanceKey;
+                        String consumerSecret = privateKey; // RSA my private key
                         String token = consumerKey;
                         String tokenSecret = consumerSecret;
 
