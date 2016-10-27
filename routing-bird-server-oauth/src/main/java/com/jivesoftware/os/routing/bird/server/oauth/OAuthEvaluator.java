@@ -15,14 +15,11 @@
  */
 package com.jivesoftware.os.routing.bird.server.oauth;
 
-import com.google.common.collect.Lists;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidator;
 import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidatorHelper;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator;
-import java.util.List;
-import java.util.regex.Pattern;
 import javax.ws.rs.container.ContainerRequestContext;
 import org.glassfish.jersey.oauth1.signature.OAuth1Request;
 import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
@@ -34,32 +31,21 @@ public class OAuthEvaluator implements AuthEvaluator {
 
     private final AuthValidator<OAuth1Signature, OAuth1Request> authValidator;
     private final OAuth1Signature verifier;
-    private final List<Pattern> patterns;
 
-    public OAuthEvaluator(AuthValidator<OAuth1Signature, OAuth1Request> authValidator, OAuth1Signature verifier, String... paths) {
+    public OAuthEvaluator(AuthValidator<OAuth1Signature, OAuth1Request> authValidator, OAuth1Signature verifier) {
         this.authValidator = authValidator;
         this.verifier = verifier;
-        this.patterns = Lists.newArrayListWithCapacity(paths.length);
-
-        for (String path : paths) {
-            patterns.add(Pattern.compile(path));
-        }
     }
 
     @Override
     public AuthStatus authorize(ContainerRequestContext requestContext) {
         try {
             if (authValidator != null && verifier != null) {
-                for (Pattern pattern : patterns) {
-                    String path = '/' + requestContext.getUriInfo().getPath();
-                    if (pattern.matcher(path).matches()) {
-                        OAuthServerRequest serverRequest = new OAuthServerRequest(requestContext);
-                        if (AuthValidatorHelper.isValid(authValidator, verifier, serverRequest, Boolean.TRUE, Boolean.FALSE) == Boolean.TRUE) {
-                            return AuthStatus.authorized;
-                        } else {
-                            return AuthStatus.denied;
-                        }
-                    }
+                OAuthServerRequest serverRequest = new OAuthServerRequest(requestContext);
+                if (AuthValidatorHelper.isValid(authValidator, verifier, serverRequest, Boolean.TRUE, Boolean.FALSE) == Boolean.TRUE) {
+                    return AuthStatus.authorized;
+                } else {
+                    return AuthStatus.denied;
                 }
             }
             return AuthStatus.not_handled;

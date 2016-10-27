@@ -14,7 +14,6 @@ import com.jivesoftware.os.routing.bird.shared.AuthEvaluator;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator.AuthStatus;
 import java.io.IOException;
 import java.util.List;
-import java.util.regex.Pattern;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Response;
@@ -32,7 +31,7 @@ public class AuthValidationFilter implements ContainerRequestFilter {
     private final Deployable deployable;
     private final InstanceConfig instanceConfig;
 
-    private final List<AuthEvaluator> evaluators = Lists.newArrayList();
+    private final List<PathedAuthEvaluator> evaluators = Lists.newArrayList();
     private final OAuth1Signature verifier = new OAuth1Signature(new OAuthServiceLocatorShim());
 
     public AuthValidationFilter(Deployable deployable) {
@@ -49,13 +48,13 @@ public class AuthValidationFilter implements ContainerRequestFilter {
             instanceConfig.getAuthProviderKeyPath(),
             instanceConfig.getAuthProviderRemovalsPath());
         routeOAuthValidator.start();
-        evaluators.add(new OAuthEvaluator(routeOAuthValidator, verifier, paths));
+        evaluators.add(new PathedAuthEvaluator(new OAuthEvaluator(routeOAuthValidator, verifier), paths));
         return this;
     }
 
     public AuthValidationFilter addCustomOAuth(AuthValidator<OAuth1Signature, OAuth1Request> customOAuthValidator, String... paths) {
         customOAuthValidator.start();
-        evaluators.add(new OAuthEvaluator(customOAuthValidator, verifier, paths));
+        evaluators.add(new PathedAuthEvaluator(new OAuthEvaluator(customOAuthValidator, verifier), paths));
         return this;
     }
 
@@ -66,47 +65,74 @@ public class AuthValidationFilter implements ContainerRequestFilter {
             instanceConfig.getRoutesPort(),
             "http", //TODO
             instanceConfig.getSessionValidatorPath());
-        evaluators.add(new SessionEvaluator(routeSessionValidator, paths));
+        evaluators.add(new PathedAuthEvaluator(new SessionEvaluator(routeSessionValidator), paths));
         return this;
     }
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        for (AuthEvaluator evaluator : evaluators) {
-            AuthStatus status = evaluator.authorize(requestContext);
-            if (status == AuthStatus.authorized) {
-                return;
+        String path = '/' + requestContext.getUriInfo().getPath();
+        if (path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        for (PathedAuthEvaluator pathedAuthEvaluator : evaluators) {
+            if (pathedAuthEvaluator.matches(path)) {
+                if (pathedAuthEvaluator.evaluator.authorize(requestContext) == AuthStatus.authorized) {
+                    return;
+                }
             }
         }
         requestContext.abortWith(UNAUTHORIZED);
     }
 
     public AuthValidationFilter addNoAuth(String... paths) {
-        evaluators.add(new NoAuthEvaluator(paths));
+        evaluators.add(new PathedAuthEvaluator(new NoAuthEvaluator(), paths));
         return this;
     }
 
-    private static class NoAuthEvaluator implements AuthEvaluator {
+    static class PathedAuthEvaluator {
+        private final AuthEvaluator evaluator;
+        private final String[] paths;
+        private final boolean[] wildcards;
 
-        private final List<Pattern> patterns;
+        /**
+         * /a matches /a
+         * /a/* matches /a, /a/, /a/b, but NOT /ab
+         */
+        PathedAuthEvaluator(AuthEvaluator evaluator, String... paths) {
+            this.evaluator = evaluator;
+            this.paths = new String[paths.length];
+            this.wildcards = new boolean[paths.length];
 
-        private NoAuthEvaluator(String[] paths) {
-            this.patterns = Lists.newArrayListWithCapacity(paths.length);
-
-            for (String path : paths) {
-                patterns.add(Pattern.compile(path));
+            for (int i = 0; i < paths.length; i++) {
+                boolean wildcard = paths[i].endsWith("/*");
+                if (!wildcard && paths[i].contains("*")) {
+                    throw new IllegalArgumentException("Wildcard paths must end in /*");
+                }
+                this.paths[i] = wildcard ? paths[i].substring(0, paths[i].length() - 2) : paths[i];
+                this.wildcards[i] = wildcard;
             }
         }
 
-        @Override
-        public AuthStatus authorize(ContainerRequestContext requestContext) throws IOException {
-            for (Pattern pattern : patterns) {
-                String path = '/' + requestContext.getUriInfo().getPath();
-                if (pattern.matcher(path).matches()) {
-                    return AuthStatus.authorized;
+        boolean matches(String path) {
+            for (int i = 0; i < paths.length; i++) {
+                if (wildcards[i]) {
+                    if (path.startsWith(paths[i]) && (path.length() == paths[i].length() || path.charAt(paths[i].length()) == '/')) {
+                        return true;
+                    }
+                } else if (path.equals(paths[i])) {
+                    return true;
                 }
             }
-            return AuthStatus.not_handled;
+            return false;
+        }
+    }
+
+    static class NoAuthEvaluator implements AuthEvaluator {
+
+        @Override
+        public AuthStatus authorize(ContainerRequestContext requestContext) throws IOException {
+            return AuthStatus.authorized;
         }
     }
 }
