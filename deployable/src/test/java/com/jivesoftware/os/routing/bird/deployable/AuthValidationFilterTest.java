@@ -31,4 +31,12 @@ public class AuthValidationFilterTest {
         Assert.assertFalse(pathedAuthEvaluator.matches("/ab"));
         Assert.assertFalse(pathedAuthEvaluator.matches("/b"));
     }
+
+    @Test
+    public void testRootWildcard() throws Exception {
+        PathedAuthEvaluator pathedAuthEvaluator = new PathedAuthEvaluator(new NoAuthEvaluator(), "/*");
+        Assert.assertTrue(pathedAuthEvaluator.matches("/"));
+        Assert.assertTrue(pathedAuthEvaluator.matches("/a/"));
+        Assert.assertTrue(pathedAuthEvaluator.matches("/a/b"));
+    }
 }
