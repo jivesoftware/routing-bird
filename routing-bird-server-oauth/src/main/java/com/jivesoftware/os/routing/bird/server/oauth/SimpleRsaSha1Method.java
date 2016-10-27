@@ -1,4 +1,4 @@
-package com.jivesoftware.os.routing.bird.oauth;
+package com.jivesoftware.os.routing.bird.server.oauth;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;

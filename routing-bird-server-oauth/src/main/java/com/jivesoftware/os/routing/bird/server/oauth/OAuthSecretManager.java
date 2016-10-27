@@ -4,13 +4,10 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.routing.bird.oauth.one;
+package com.jivesoftware.os.routing.bird.server.oauth;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
-import com.jivesoftware.os.routing.bird.oauth.AuthRequestException;
-import com.jivesoftware.os.routing.bird.oauth.AuthValidationException;
-import com.jivesoftware.os.routing.bird.oauth.OAuthPublicKeyProvider;
 import com.jivesoftware.os.routing.bird.shared.OAuthPublicKey;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;

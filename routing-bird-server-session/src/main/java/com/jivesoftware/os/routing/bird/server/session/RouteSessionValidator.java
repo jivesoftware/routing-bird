@@ -1,4 +1,4 @@
-package com.jivesoftware.os.routing.bird.session;
+package com.jivesoftware.os.routing.bird.server.session;
 
 import com.google.common.collect.Maps;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
@@ -11,7 +11,7 @@ import javax.ws.rs.core.Cookie;
 /**
  *
  */
-public class RoutesSessionValidator implements SessionValidator {
+public class RouteSessionValidator implements SessionValidator {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
@@ -24,7 +24,7 @@ public class RoutesSessionValidator implements SessionValidator {
 
     private final Map<String, Session> sessions = Maps.newConcurrentMap();
 
-    public RoutesSessionValidator(HttpRequestHelper requestHelper, String validatorPath, long sessionCacheDurationMillis) {
+    public RouteSessionValidator(HttpRequestHelper requestHelper, String validatorPath, long sessionCacheDurationMillis) {
         this.requestHelper = requestHelper;
         this.validatorPath = validatorPath;
         this.sessionCacheDurationMillis = sessionCacheDurationMillis;

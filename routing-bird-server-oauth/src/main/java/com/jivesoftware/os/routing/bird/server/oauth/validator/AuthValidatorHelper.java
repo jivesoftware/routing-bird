@@ -6,10 +6,11 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.routing.bird.oauth;
+package com.jivesoftware.os.routing.bird.server.oauth.validator;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.routing.bird.server.oauth.AuthValidationException;
 
 /**
  *

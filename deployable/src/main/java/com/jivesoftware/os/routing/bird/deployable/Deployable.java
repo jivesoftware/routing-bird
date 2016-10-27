@@ -41,6 +41,11 @@ import com.jivesoftware.os.routing.bird.server.InitializeRestfulServer;
 import com.jivesoftware.os.routing.bird.server.JerseyEndpoints;
 import com.jivesoftware.os.routing.bird.server.RestfulManageServer;
 import com.jivesoftware.os.routing.bird.server.RestfulServer;
+import com.jivesoftware.os.routing.bird.server.oauth.OAuthEvaluator;
+import com.jivesoftware.os.routing.bird.server.oauth.OAuthServiceLocatorShim;
+import com.jivesoftware.os.routing.bird.server.oauth.route.RouteOAuthValidatorInitializer;
+import com.jivesoftware.os.routing.bird.server.oauth.route.RouteOAuthValidatorInitializer.RouteOAuthValidatorConfig;
+import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidator;
 import com.jivesoftware.os.routing.bird.server.util.Resource;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
 import com.jivesoftware.os.routing.bird.shared.TenantRoutingProvider;
@@ -56,6 +61,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.ws.rs.container.ContainerRequestFilter;
 import org.glassfish.hk2.api.ServiceHandle;
+import org.glassfish.jersey.oauth1.signature.OAuth1Request;
+import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
 import org.merlin.config.Config;
 
 public class Deployable {
@@ -135,6 +142,10 @@ public class Deployable {
             instanceConfig.getManageMaxThreads(),
             instanceConfig.getManageMaxQueuedRequests());
 
+        if (instanceConfig.getManageServiceAuthEnabled()) {
+            restfulManageServer.addContainerRequestFilter(new AuthValidationFilter(this).addRouteOAuth("/.*"));
+        }
+
         restfulManageServer.addEndpoint(TenantRoutingRestEndpoints.class);
         restfulManageServer.addInjectable(TenantRoutingProvider.class, tenantRoutingProvider);
         restfulManageServer.addEndpoint(MainPropertiesEndpoints.class);
@@ -150,11 +161,12 @@ public class Deployable {
             instanceConfig.getMainMaxThreads(),
             instanceConfig.getMainMaxQueuedRequests());
     }
-    
+
     /**
-     Needs to be called before buildManageServer().
-     @param statusReportCallback
-     @return
+     * Needs to be called before buildManageServer().
+     *
+     * @param statusReportCallback
+     * @return
      */
     public StatusReportBroadcaster buildStatusReporter(StatusReportCallback statusReportCallback) {
 
@@ -456,7 +468,7 @@ public class Deployable {
                             }
                         }
                     }
-                    return "Recent Errors:\n" + Joiner.on("\n").join(Objects.firstNonNull(errors, new String[]{""}));
+                    return "Recent Errors:\n" + Joiner.on("\n").join(Objects.firstNonNull(errors, new String[] { "" }));
                 }
 
                 @Override

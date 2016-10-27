@@ -23,6 +23,7 @@ import com.jivesoftware.os.routing.bird.health.HealthCheck;
 import com.jivesoftware.os.routing.bird.health.HealthCheckService;
 import java.io.File;
 import java.util.Arrays;
+import javax.ws.rs.container.ContainerRequestFilter;
 
 public class RestfulManageServer {
 
@@ -70,6 +71,10 @@ public class RestfulManageServer {
 
     public boolean isLowOnThreads() {
         return server.isLowOnThreads();
+    }
+
+    public void addContainerRequestFilter(ContainerRequestFilter requestFilter) {
+        jerseyEndpoints.addContainerRequestFilter(requestFilter);
     }
 
     public void addEndpoint(Class clazz) {

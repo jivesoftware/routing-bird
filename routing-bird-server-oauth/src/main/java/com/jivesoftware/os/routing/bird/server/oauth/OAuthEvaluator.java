@@ -13,35 +13,30 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.jivesoftware.os.routing.bird.server.filter;
+package com.jivesoftware.os.routing.bird.server.oauth;
 
 import com.google.common.collect.Lists;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
-import com.jivesoftware.os.routing.bird.oauth.AuthValidator;
-import com.jivesoftware.os.routing.bird.oauth.AuthValidatorHelper;
-import java.io.IOException;
+import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidator;
+import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidatorHelper;
+import com.jivesoftware.os.routing.bird.shared.AuthEvaluator;
 import java.util.List;
 import java.util.regex.Pattern;
 import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import org.glassfish.jersey.oauth1.signature.OAuth1Request;
 import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
 import org.glassfish.jersey.server.oauth1.internal.OAuthServerRequest;
 
-public class OAuthRequestFilter implements ContainerRequestFilter {
+public class OAuthEvaluator implements AuthEvaluator {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
-
-    private static final Response UNAUTHORIZED = Response.status(Status.UNAUTHORIZED).entity("OAuth validation failed").build();
 
     private final AuthValidator<OAuth1Signature, OAuth1Request> authValidator;
     private final OAuth1Signature verifier;
     private final List<Pattern> patterns;
 
-    public OAuthRequestFilter(AuthValidator<OAuth1Signature, OAuth1Request> authValidator, OAuth1Signature verifier, String... paths) {
+    public OAuthEvaluator(AuthValidator<OAuth1Signature, OAuth1Request> authValidator, OAuth1Signature verifier, String... paths) {
         this.authValidator = authValidator;
         this.verifier = verifier;
         this.patterns = Lists.newArrayListWithCapacity(paths.length);
@@ -52,20 +47,22 @@ public class OAuthRequestFilter implements ContainerRequestFilter {
     }
 
     @Override
-    public void filter(ContainerRequestContext requestContext) throws IOException {
+    public AuthStatus authorize(ContainerRequestContext requestContext) {
         try {
             if (authValidator != null && verifier != null) {
                 for (Pattern pattern : patterns) {
                     String path = '/' + requestContext.getUriInfo().getPath();
                     if (pattern.matcher(path).matches()) {
                         OAuthServerRequest serverRequest = new OAuthServerRequest(requestContext);
-                        if (AuthValidatorHelper.isValid(authValidator, verifier, serverRequest, null, UNAUTHORIZED) == UNAUTHORIZED) {
-                            requestContext.abortWith(UNAUTHORIZED);
+                        if (AuthValidatorHelper.isValid(authValidator, verifier, serverRequest, Boolean.TRUE, Boolean.FALSE) == Boolean.TRUE) {
+                            return AuthStatus.authorized;
+                        } else {
+                            return AuthStatus.denied;
                         }
-                        break;
                     }
                 }
             }
+            return AuthStatus.not_handled;
         } catch (Exception e) {
             LOG.error("Failed to check authentication", e);
             throw e;

@@ -1,4 +1,4 @@
-package com.jivesoftware.os.routing.bird.oauth;
+package com.jivesoftware.os.routing.bird.server.oauth;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;

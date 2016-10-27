@@ -1,4 +1,4 @@
-package com.jivesoftware.os.routing.bird.session;
+package com.jivesoftware.os.routing.bird.server.session;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jivesoftware.os.routing.bird.http.client.HttpClient;
@@ -18,9 +18,9 @@ import org.merlin.config.defaults.LongDefault;
 /**
  *
  */
-public class RoutesSessionValidatorInitializer {
+public class RouteSessionValidatorInitializer {
 
-    public interface RoutesSessionValidatorConfig extends Config {
+    public interface RouteSessionValidatorConfig extends Config {
 
         @BooleanDefault(value = true)
         boolean getSessionValidatorIsEnabled();
@@ -36,7 +36,7 @@ public class RoutesSessionValidatorInitializer {
 
     }
 
-    public SessionValidator initialize(RoutesSessionValidatorConfig config,
+    public SessionValidator initialize(RouteSessionValidatorConfig config,
         String routesHost,
         int routesPort,
         String routesScheme,
@@ -63,7 +63,7 @@ public class RoutesSessionValidatorInitializer {
         HttpClient httpClient = clientFactory.createClient(null, routesHost, routesPort);
         HttpRequestHelper client = new HttpRequestHelper(httpClient, new ObjectMapper());
 
-        SessionValidator sessionValidator = new RoutesSessionValidator(client, routesValidatorPath, config.getSessionCacheDurationMillis());
+        SessionValidator sessionValidator = new RouteSessionValidator(client, routesValidatorPath, config.getSessionCacheDurationMillis());
 
         if (config.getSessionValidatorIsDryRun()) {
             sessionValidator = new DryRunSessionValidator(sessionValidator);

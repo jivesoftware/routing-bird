@@ -1,4 +1,4 @@
-package com.jivesoftware.os.routing.bird.oauth;
+package com.jivesoftware.os.routing.bird.server.oauth;
 
 import com.jivesoftware.os.routing.bird.http.client.HttpRequestHelper;
 

@@ -1,4 +1,4 @@
-package com.jivesoftware.os.routing.bird.session;
+package com.jivesoftware.os.routing.bird.server.session;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;

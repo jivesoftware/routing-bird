@@ -1,8 +1,10 @@
-package com.jivesoftware.os.routing.bird.session;
+package com.jivesoftware.os.routing.bird.server.session;
 
 import com.google.common.collect.Lists;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.routing.bird.shared.AuthEvaluator;
+import com.jivesoftware.os.routing.bird.shared.ContainerRequestContextAuthUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -14,16 +16,14 @@ import javax.ws.rs.core.Response.Status;
 /**
  *
  */
-public class SessionRequestFilter implements ContainerRequestFilter {
+public class SessionEvaluator implements AuthEvaluator {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
-
-    private static final Response UNAUTHORIZED = Response.status(Status.UNAUTHORIZED).entity("Session authentication failed").build();
 
     private final SessionValidator sessionValidator;
     private final List<Pattern> patterns;
 
-    public SessionRequestFilter(SessionValidator sessionValidator, String... paths) {
+    public SessionEvaluator(SessionValidator sessionValidator, String... paths) {
         this.sessionValidator = sessionValidator;
         this.patterns = Lists.newArrayListWithCapacity(paths.length);
 
@@ -33,19 +33,21 @@ public class SessionRequestFilter implements ContainerRequestFilter {
     }
 
     @Override
-    public void filter(ContainerRequestContext requestContext) throws IOException {
+    public AuthStatus authorize(ContainerRequestContext requestContext) throws IOException {
         try {
             if (sessionValidator != null) {
                 for (Pattern pattern : patterns) {
                     String path = '/' + requestContext.getUriInfo().getPath();
                     if (pattern.matcher(path).matches()) {
-                        if (!sessionValidator.isAuthenticated(requestContext)) {
-                            requestContext.abortWith(UNAUTHORIZED);
+                        if (sessionValidator.isAuthenticated(requestContext)) {
+                            return AuthStatus.authorized;
+                        } else {
+                            return AuthStatus.denied;
                         }
-                        break;
                     }
                 }
             }
+            return AuthStatus.not_handled;
         } catch (Exception e) {
             LOG.error("Failed to check authentication", e);
             throw new IOException(e);

@@ -6,7 +6,7 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.routing.bird.session;
+package com.jivesoftware.os.routing.bird.server.session;
 
 /**
  *

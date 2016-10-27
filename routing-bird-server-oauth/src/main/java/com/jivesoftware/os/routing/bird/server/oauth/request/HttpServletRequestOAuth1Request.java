@@ -1,4 +1,4 @@
-package com.jivesoftware.os.routing.bird.oauth.one;
+package com.jivesoftware.os.routing.bird.server.oauth.request;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;

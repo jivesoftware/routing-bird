@@ -1,4 +1,4 @@
-package com.jivesoftware.os.routing.bird.session;
+package com.jivesoftware.os.routing.bird.server.session;
 
 import javax.ws.rs.container.ContainerRequestContext;
 
