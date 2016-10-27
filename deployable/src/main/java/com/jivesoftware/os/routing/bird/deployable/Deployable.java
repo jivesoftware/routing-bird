@@ -36,19 +36,18 @@ import com.jivesoftware.os.routing.bird.http.client.HttpClient;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientConfig;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientFactoryProvider;
 import com.jivesoftware.os.routing.bird.http.client.HttpResponse;
+import com.jivesoftware.os.routing.bird.http.client.OAuthSigner;
+import com.jivesoftware.os.routing.bird.http.client.TenantRoutingHttpClientInitializer;
 import com.jivesoftware.os.routing.bird.http.server.endpoints.TenantRoutingRestEndpoints;
 import com.jivesoftware.os.routing.bird.server.InitializeRestfulServer;
 import com.jivesoftware.os.routing.bird.server.JerseyEndpoints;
 import com.jivesoftware.os.routing.bird.server.RestfulManageServer;
 import com.jivesoftware.os.routing.bird.server.RestfulServer;
-import com.jivesoftware.os.routing.bird.server.oauth.OAuthEvaluator;
-import com.jivesoftware.os.routing.bird.server.oauth.OAuthServiceLocatorShim;
-import com.jivesoftware.os.routing.bird.server.oauth.route.RouteOAuthValidatorInitializer;
-import com.jivesoftware.os.routing.bird.server.oauth.route.RouteOAuthValidatorInitializer.RouteOAuthValidatorConfig;
-import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidator;
 import com.jivesoftware.os.routing.bird.server.util.Resource;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
+import com.jivesoftware.os.routing.bird.shared.RSAKeyPairGenerator;
 import com.jivesoftware.os.routing.bird.shared.TenantRoutingProvider;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,10 +58,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.ws.rs.container.ContainerRequestFilter;
+import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
 import org.glassfish.hk2.api.ServiceHandle;
-import org.glassfish.jersey.oauth1.signature.OAuth1Request;
-import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
 import org.merlin.config.Config;
 
 public class Deployable {
@@ -74,6 +73,7 @@ public class Deployable {
     private TenantRoutingProvider tenantRoutingProvider;
     private RestfulManageServer restfulManageServer;
     private final AtomicBoolean manageServerStarted = new AtomicBoolean(false);
+    private final AtomicReference<String> keyStorePassword = new AtomicReference<>();
     //--------------------------------------------------------------------------
     private InitializeRestfulServer restfulServer;
     private JerseyEndpoints jerseyEndpoints;
@@ -112,25 +112,12 @@ public class Deployable {
 
         String applicationName = "manage " + instanceConfig.getServiceName() + " " + instanceConfig.getClusterName();
 
-        String keyManagerPassword = null;
         String keyStorePassword = null;
         String keyStorePath = "./certs/sslKeystore";
 
         if (instanceConfig.getMainSslEnabled() || instanceConfig.getManageSslEnabled()) {
 
-            String routesHost = instanceConfig.getRoutesHost();
-            Integer routesPort = instanceConfig.getRoutesPort();
-            HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder().build();
-            HttpClient httpClient = new HttpClientFactoryProvider()
-                .createHttpClientFactory(Collections.singletonList(httpClientConfig), false)
-                .createClient(null, routesHost, routesPort);
-            HttpResponse response = httpClient.get(instanceConfig.getKeyStorePasswordsPath() + "/" + instanceConfig.getInstanceKey(), null);
-
-            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
-                keyStorePassword = new String(response.getResponseBody(), StandardCharsets.UTF_8);
-            } else {
-                throw new Exception("Failed to access required keystore password. " + response.getStatusCode());
-            }
+            keyStorePassword = keyStorePassword(instanceConfig.getRoutesHost(), instanceConfig.getRoutesPort());
         }
 
         restfulManageServer = new RestfulManageServer(instanceConfig.getManagePort(),
@@ -191,6 +178,46 @@ public class Deployable {
 
     public TenantRoutingProvider getTenantRoutingProvider() {
         return tenantRoutingProvider;
+    }
+
+    public TenantRoutingHttpClientInitializer<String> getTenantRoutingHttpClientInitializer() throws Exception {
+        return new TenantRoutingHttpClientInitializer<>(getServiceOAuthSigner());
+    }
+
+    private String keyStorePassword(String routesHost, Integer routesPort) throws Exception {
+        HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder().build();
+        String password = keyStorePassword.get();
+        if (password == null) {
+            HttpClient httpClient = new HttpClientFactoryProvider()
+                .createHttpClientFactory(Collections.singletonList(httpClientConfig), false)
+                .createClient(null, routesHost, routesPort);
+            HttpResponse response = httpClient.get(instanceConfig.getKeyStorePasswordsPath() + "/" + instanceConfig.getInstanceKey(), null);
+
+            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                password = new String(response.getResponseBody(), StandardCharsets.UTF_8);
+                keyStorePassword.compareAndSet(null, password);
+            } else {
+                throw new Exception("Failed to access required keystore password. " + response.getStatusCode());
+            }
+        }
+        return password;
+    }
+
+    private OAuthSigner getServiceOAuthSigner() throws Exception {
+        String password = keyStorePassword(instanceConfig.getRoutesHost(), instanceConfig.getRoutesPort());
+        File oauthKeystoreFile = new File("./certs/oauthKeystore");
+        RSAKeyPairGenerator generator = new RSAKeyPairGenerator();
+        String consumerKey = instanceConfig.getInstanceKey();
+        String consumerSecret = generator.getPrivateKey(consumerKey, password, oauthKeystoreFile);
+
+        String token = consumerKey;
+        String tokenSecret = consumerSecret;
+
+        CommonsHttpOAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
+        oAuthConsumer.setTokenWithSecret(token, tokenSecret);
+        return (request) -> {
+            return oAuthConsumer.sign(request);
+        };
     }
 
     public <T extends Config> T config(Class<T> clazz) {
@@ -468,7 +495,7 @@ public class Deployable {
                             }
                         }
                     }
-                    return "Recent Errors:\n" + Joiner.on("\n").join(Objects.firstNonNull(errors, new String[] { "" }));
+                    return "Recent Errors:\n" + Joiner.on("\n").join(Objects.firstNonNull(errors, new String[]{""}));
                 }
 
                 @Override

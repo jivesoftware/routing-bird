@@ -258,11 +258,15 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.1</version>
+                    <version>3.3</version>
                     <configuration>
+                        <fork>true</fork>
                         <source>1.8</source>
                         <target>1.8</target>
                         <compilerReuseStrategy>alwaysNew</compilerReuseStrategy>
+                        <compilerArgs>
+                            <arg>-XDignore.symbol.file</arg>
+                        </compilerArgs>
                     </configuration>
                 </plugin>
                 <plugin>

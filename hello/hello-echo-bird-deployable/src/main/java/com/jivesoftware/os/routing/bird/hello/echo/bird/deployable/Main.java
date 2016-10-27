@@ -40,7 +40,7 @@ public class Main {
 
         TenantsServiceConnectionDescriptorProvider connections = deployable.getTenantRoutingProvider().getConnections("hello-echo-bird-deployable", "main",
             10_000);
-        TenantRoutingHttpClientInitializer<String> tenantRoutingHttpClientInitializer = new TenantRoutingHttpClientInitializer<>();
+        TenantRoutingHttpClientInitializer<String> tenantRoutingHttpClientInitializer = deployable.getTenantRoutingHttpClientInitializer();
         HttpDeliveryClientHealthProvider deliveryClientHealthProvider = new HttpDeliveryClientHealthProvider("", null, "", 5000, 100);
         TenantAwareHttpClient<String> client = tenantRoutingHttpClientInitializer.builder(connections, deliveryClientHealthProvider)
             .deadAfterNErrors(10)

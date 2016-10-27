@@ -26,7 +26,6 @@ import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescripto
 import java.util.ArrayList;
 import java.util.List;
 import javax.net.ssl.SSLContext;
-import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
@@ -35,15 +34,21 @@ import org.apache.http.ssl.SSLContexts;
 public class TenantRoutingHttpClientInitializer<T> {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
+    private final OAuthSigner signer;
+
+    public TenantRoutingHttpClientInitializer(OAuthSigner signer) {
+        this.signer = signer;
+    }
 
     public Builder<T> builder(
         TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
         ClientHealthProvider clientHealthProvider) {
-        return new Builder<>(connectionPoolProvider, clientHealthProvider);
+        return new Builder<>(signer, connectionPoolProvider, clientHealthProvider);
     }
 
     public static class Builder<T> {
 
+        private final OAuthSigner signer;
         private final TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider;
         private final ClientHealthProvider clientHealthProvider;
 
@@ -58,11 +63,10 @@ public class TenantRoutingHttpClientInitializer<T> {
         private long debugClientCount = -1;
         private long debugClientCountInterval = -1;
 
-        private String instanceKey;
-        private String privateKey;
-
-        private Builder(TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
+        private Builder(OAuthSigner signer, TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
             ClientHealthProvider clientHealthProvider) {
+
+            this.signer = signer;
             this.connectionPoolProvider = connectionPoolProvider;
             this.clientHealthProvider = clientHealthProvider;
         }
@@ -98,16 +102,6 @@ public class TenantRoutingHttpClientInitializer<T> {
             return this;
         }
 
-        public Builder<T> setInstanceKey(String instanceKey) {
-            this.instanceKey = instanceKey;
-            return this;
-        }
-
-        public Builder<T> setPrivateKey(String privateKey) {
-            this.privateKey = privateKey;
-            return this;
-        }
-
         public TenantAwareHttpClient<T> build() {
             ClientConnectionsFactory<HttpClient, HttpClientException> clientConnectionsFactory = (routingGroup, connectionDescriptors) -> {
                 List<ConnectionDescriptor> descriptors = connectionDescriptors.getConnectionDescriptors();
@@ -126,7 +120,6 @@ public class TenantRoutingHttpClientInitializer<T> {
                         .setSocketTimeoutInMillis(socketTimeoutInMillis)
                         .build());
 
-                    OAuthSigner signer = null;
                     if (connection.getSslEnabled()) {
                         HttpClientSSLConfig.Builder builder = HttpClientSSLConfig.newBuilder();
                         builder.setUseSSL(true);
@@ -142,23 +135,11 @@ public class TenantRoutingHttpClientInitializer<T> {
 
                     }
 
-                    if (connection.getServiceAuthEnabled()) {
-                        String consumerKey = instanceKey;
-                        String consumerSecret = privateKey; // RSA my private key
-                        String token = consumerKey;
-                        String tokenSecret = consumerSecret;
-
-                        CommonsHttpOAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
-                        oAuthConsumer.setTokenWithSecret(token, tokenSecret);
-                        signer = ((request) -> {
-                            return oAuthConsumer.sign(request);
-                        });
-                    }
                     boolean latentClient = connection.getMonkeys() != null && connection.getMonkeys().containsKey("RANDOM_CONNECTION_LATENCY");
 
                     HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config, latentClient);
                     httpClients[i] = createHttpClientFactory.createClient(
-                        signer,
+                        (connection.getServiceAuthEnabled() ? signer : null),
                         connection.getHostPort().getHost(),
                         connection.getHostPort().getPort());
 
