@@ -46,16 +46,6 @@ public interface InstanceConfig extends Config {
 
     void setPasswordsPath(String path);
 
-    @Default("/upena/request/auth/key")
-    String getAuthProviderKeyPath();
-
-    void setAuthProviderKeyPath(String path);
-
-    @Default("/upena/request/auth/removals")
-    String getAuthProviderRemovalsPath();
-
-    void setAuthProviderRemovalsPath(String path);
-
     @Default("/upena/session/validate")
     String getSessionValidatorPath();
 

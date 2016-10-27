@@ -12,6 +12,8 @@ import com.jivesoftware.os.routing.bird.server.session.SessionEvaluator;
 import com.jivesoftware.os.routing.bird.server.session.SessionValidator;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator.AuthStatus;
+import com.jivesoftware.os.routing.bird.shared.TenantRoutingProvider;
+import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescriptorProvider;
 import java.io.IOException;
 import java.util.List;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -40,13 +42,14 @@ public class AuthValidationFilter implements ContainerRequestFilter {
     }
 
     public AuthValidationFilter addRouteOAuth(String... paths) throws Exception {
+        TenantRoutingProvider tenantRoutingProvider = deployable.getTenantRoutingProvider();
+        TenantsServiceConnectionDescriptorProvider connections = tenantRoutingProvider
+            .getConnections(instanceConfig.getServiceName(), "main", 10_000); // TODO config
+
         RouteOAuthValidatorConfig routeOAuthValidatorConfig = deployable.config(RouteOAuthValidatorConfig.class);
         AuthValidator<OAuth1Signature, OAuth1Request> routeOAuthValidator = new RouteOAuthValidatorInitializer().initialize(routeOAuthValidatorConfig,
-            instanceConfig.getRoutesHost(),
-            instanceConfig.getRoutesPort(),
-            "http", //TODO
-            instanceConfig.getAuthProviderKeyPath(),
-            instanceConfig.getAuthProviderRemovalsPath());
+            connections,
+            10_000);
         routeOAuthValidator.start();
         evaluators.add(new PathedAuthEvaluator(new OAuthEvaluator(routeOAuthValidator, verifier), paths));
         return this;
