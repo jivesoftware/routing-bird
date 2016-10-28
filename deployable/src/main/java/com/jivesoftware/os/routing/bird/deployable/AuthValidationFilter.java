@@ -28,8 +28,6 @@ import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
  */
 public class AuthValidationFilter implements ContainerRequestFilter {
 
-    private static final Response UNAUTHORIZED = Response.status(Status.UNAUTHORIZED).entity("Auth validation failed").build();
-
     private final Deployable deployable;
     private final InstanceConfig instanceConfig;
 
@@ -85,7 +83,7 @@ public class AuthValidationFilter implements ContainerRequestFilter {
                 }
             }
         }
-        requestContext.abortWith(UNAUTHORIZED);
+        requestContext.abortWith(Response.status(Status.UNAUTHORIZED).entity("Auth validation failed").build());
     }
 
     public AuthValidationFilter addNoAuth(String... paths) {
