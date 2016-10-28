@@ -25,7 +25,6 @@ import com.jivesoftware.os.routing.bird.shared.TenantRoutingClient;
 import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescriptorProvider;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import javax.net.ssl.SSLContext;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -125,8 +124,7 @@ public class TenantRoutingHttpClientInitializer<T> {
                     if (connection.getSslEnabled()) {
                         HttpClientSSLConfig.Builder builder = HttpClientSSLConfig.newBuilder();
                         builder.setUseSSL(true);
-                        if (true) {
-                            LOG.warn("Need to fix ALWAYS allowing selft sigend cert!");
+                        if (true) { // expose to config? Currently always allowing self signed certs
                             SSLContext sslcontext = SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
                             // Allow TLSv1 protocol only, use NoopHostnameVerifier to trust self-singed cert
                             builder.setUseSslWithCustomSSLSocketFactory(new SSLConnectionSocketFactory(sslcontext,
