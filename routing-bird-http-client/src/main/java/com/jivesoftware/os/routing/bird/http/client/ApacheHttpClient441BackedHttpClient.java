@@ -22,6 +22,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,16 +58,25 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     public static final String APPLICATION_JSON_CONTENT_TYPE = "application/json";
     public static final String APPLICATION_OCTET_STREAM_TYPE = "application/octet-stream";
 
+    private final String scheme;
+    private final String host;
+    private final int port;
     private final OAuthSigner oauthSigner;
     private final CloseableHttpClient client;
     private final Closeable onClose;
     private final Map<String, String> headersForEveryRequest;
     private final AtomicLong activeCount = new AtomicLong(0);
 
-    public ApacheHttpClient441BackedHttpClient(OAuthSigner signer,
+    public ApacheHttpClient441BackedHttpClient(String scheme,
+        String host,
+        int port,
+        OAuthSigner signer,
         CloseableHttpClient client,
         Closeable onClose,
         Map<String, String> headersForEveryRequest) {
+        this.scheme = scheme;
+        this.host = host;
+        this.port = port;
 
         this.oauthSigner = signer;
         this.client = client;
@@ -83,9 +94,17 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         }
     }
 
+    private URI toURI(String path) throws HttpClientException {
+        try {
+            return new URI(scheme + "://" + host + ':' + port + (path.startsWith("/") ? path : '/' + path));
+        } catch (URISyntaxException e) {
+            throw new HttpClientException("Bad URI", e);
+        }
+    }
+
     @Override
     public HttpStreamResponse streamingPost(String path, String postJsonBody, Map<String, String> headers) throws HttpClientException {
-        return executePostJsonStreamingResponse(new HttpPost(path), postJsonBody, headers);
+        return executePostJsonStreamingResponse(new HttpPost(toURI(path)), postJsonBody, headers);
     }
 
     private String clientToString() {
@@ -137,7 +156,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
     @Override
     public HttpResponse get(String path, Map<String, String> headers) throws HttpClientException {
-        HttpGet get = new HttpGet(path);
+        HttpGet get = new HttpGet(toURI(path));
 
         setRequestHeaders(headers, get);
 
@@ -151,7 +170,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
     @Override
     public HttpResponse delete(String path, Map<String, String> headers) throws HttpClientException {
-        HttpDelete delete = new HttpDelete(path);
+        HttpDelete delete = new HttpDelete(toURI(path));
 
         setRequestHeaders(headers, delete);
 
@@ -166,7 +185,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     @Override
     public HttpResponse postJson(String path, String postJsonBody, Map<String, String> headers) throws HttpClientException {
         try {
-            HttpPost post = new HttpPost(path);
+            HttpPost post = new HttpPost(toURI(path));
 
             setRequestHeaders(headers, post);
 
@@ -184,7 +203,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     @Override
     public HttpResponse postBytes(String path, byte[] postBytes, Map<String, String> headers) throws HttpClientException {
         try {
-            HttpPost post = new HttpPost(path);
+            HttpPost post = new HttpPost(toURI(path));
 
             setRequestHeaders(headers, post);
 
@@ -202,7 +221,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         StreamableRequest streamable,
         Map<String, String> headers) throws HttpClientException {
         try {
-            HttpPost post = new HttpPost(path);
+            HttpPost post = new HttpPost(toURI(path));
 
             setRequestHeaders(headers, post);
             post.setEntity(new StreamableEntity(streamable));
@@ -217,7 +236,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     @Override
     public HttpResponse postStreamableRequest(String path, StreamableRequest streamable, Map<String, String> headers) throws HttpClientException {
         try {
-            HttpPost post = new HttpPost(path);
+            HttpPost post = new HttpPost(toURI(path));
 
             setRequestHeaders(headers, post);
             post.setEntity(new StreamableEntity(streamable));

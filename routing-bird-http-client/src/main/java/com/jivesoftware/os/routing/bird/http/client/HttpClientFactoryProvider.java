@@ -87,23 +87,15 @@ public class HttpClientFactoryProvider {
         closeable = poolingHttpClientConnectionManager;
 
         return (OAuthSigner signer, String host, int port) -> {
-            HttpRoutePlanner rp = new DefaultRoutePlanner(DefaultSchemePortResolver.INSTANCE) {
-                @Override
-                public HttpRoute determineRoute(
-                    final HttpHost httpHost,
-                    final HttpRequest request,
-                    final HttpContext context) throws HttpException {
-                    HttpHost target = httpHost != null ? httpHost : new HttpHost(host, port, scheme);
-                    return super.determineRoute(target, request, context);
-                }
-            };
-
             HttpClientBuilder httpClientBuilder = HttpClients.custom()
-                .setConnectionManager(clientConnectionManager)
-                .setRoutePlanner(rp);
+                .setConnectionManager(clientConnectionManager);
 
             CloseableHttpClient client = httpClientBuilder.build();
-            HttpClient httpClient = new ApacheHttpClient441BackedHttpClient(signer, client,
+            HttpClient httpClient = new ApacheHttpClient441BackedHttpClient(scheme,
+                host,
+                port,
+                signer,
+                client,
                 closeable,
                 httpClientConfig.getCopyOfHeadersForEveryRequest());
 
