@@ -62,6 +62,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.ws.rs.container.ContainerRequestFilter;
 import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
+import oauth.signpost.signature.HmacSha1MessageSigner;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.merlin.config.Config;
 
@@ -218,6 +219,7 @@ public class Deployable {
         return (request) -> {
             CommonsHttpOAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
             oAuthConsumer.setTokenWithSecret(token, tokenSecret);
+            oAuthConsumer.setMessageSigner(new RsaSha1MessageSigner());
             return oAuthConsumer.sign(request);
         };
     }
