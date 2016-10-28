@@ -41,22 +41,22 @@ public interface InstanceConfig extends Config {
 
     void setRoutesPort(int port);
 
-    @Default("/upena/request/keyStorePassword")
+    @Default("/request/keyStorePassword")
     String getKeyStorePasswordsPath();
 
     void setPasswordsPath(String path);
 
-    @Default("/upena/session/validate")
+    @Default("/session/validate")
     String getSessionValidatorPath();
 
     void setSessionValidatorPath(String path);
 
-    @Default("/upena/request/connections")
+    @Default("/request/connections")
     String getRoutesPath();
 
     void setRoutesPath(String path);
 
-    @Default("/upena/connections/health")
+    @Default("/connections/health")
     String getConnectionsHealth();
 
     void setConnectionsHealth(String path);
