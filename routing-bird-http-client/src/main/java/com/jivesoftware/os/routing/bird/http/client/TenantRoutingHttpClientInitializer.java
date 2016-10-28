@@ -25,6 +25,7 @@ import com.jivesoftware.os.routing.bird.shared.TenantRoutingClient;
 import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescriptorProvider;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import javax.net.ssl.SSLContext;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -34,21 +35,21 @@ import org.apache.http.ssl.SSLContexts;
 public class TenantRoutingHttpClientInitializer<T> {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
-    private final OAuthSigner signer;
+    private final OAuthSignerProvider signerProvider;
 
-    public TenantRoutingHttpClientInitializer(OAuthSigner signer) {
-        this.signer = signer;
+    public TenantRoutingHttpClientInitializer(OAuthSignerProvider signerProvider) {
+        this.signerProvider = signerProvider;
     }
 
     public Builder<T> builder(
         TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
         ClientHealthProvider clientHealthProvider) {
-        return new Builder<>(signer, connectionPoolProvider, clientHealthProvider);
+        return new Builder<>(signerProvider, connectionPoolProvider, clientHealthProvider);
     }
 
     public static class Builder<T> {
 
-        private final OAuthSigner signer;
+        private final OAuthSignerProvider signerProvider;
         private final TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider;
         private final ClientHealthProvider clientHealthProvider;
 
@@ -63,10 +64,11 @@ public class TenantRoutingHttpClientInitializer<T> {
         private long debugClientCount = -1;
         private long debugClientCountInterval = -1;
 
-        private Builder(OAuthSigner signer, TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
+        private Builder(OAuthSignerProvider signerProvider,
+            TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider,
             ClientHealthProvider clientHealthProvider) {
 
-            this.signer = signer;
+            this.signerProvider = signerProvider;
             this.connectionPoolProvider = connectionPoolProvider;
             this.clientHealthProvider = clientHealthProvider;
         }
@@ -139,7 +141,7 @@ public class TenantRoutingHttpClientInitializer<T> {
 
                     HttpClientFactory createHttpClientFactory = httpClientFactoryProvider.createHttpClientFactory(config, latentClient);
                     httpClients[i] = createHttpClientFactory.createClient(
-                        (connection.getServiceAuthEnabled() ? signer : null),
+                        (connection.getServiceAuthEnabled() ? signerProvider.get() : null),
                         connection.getHostPort().getHost(),
                         connection.getHostPort().getPort());
 

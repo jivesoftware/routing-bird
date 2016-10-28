@@ -37,6 +37,7 @@ import com.jivesoftware.os.routing.bird.http.client.HttpClientConfig;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientFactoryProvider;
 import com.jivesoftware.os.routing.bird.http.client.HttpResponse;
 import com.jivesoftware.os.routing.bird.http.client.OAuthSigner;
+import com.jivesoftware.os.routing.bird.http.client.OAuthSignerProvider;
 import com.jivesoftware.os.routing.bird.http.client.TenantRoutingHttpClientInitializer;
 import com.jivesoftware.os.routing.bird.http.server.endpoints.TenantRoutingRestEndpoints;
 import com.jivesoftware.os.routing.bird.server.InitializeRestfulServer;
@@ -181,7 +182,7 @@ public class Deployable {
     }
 
     public TenantRoutingHttpClientInitializer<String> getTenantRoutingHttpClientInitializer() throws Exception {
-        return new TenantRoutingHttpClientInitializer<>(getServiceOAuthSigner());
+        return new TenantRoutingHttpClientInitializer<>(new OAuthSignerProvider(this::getServiceOAuthSigner));
     }
 
     private String keyStorePassword(String routesHost, Integer routesPort) throws Exception {
@@ -495,7 +496,7 @@ public class Deployable {
                             }
                         }
                     }
-                    return "Recent Errors:\n" + Joiner.on("\n").join(Objects.firstNonNull(errors, new String[]{""}));
+                    return "Recent Errors:\n" + Joiner.on("\n").join(Objects.firstNonNull(errors, new String[] { "" }));
                 }
 
                 @Override
