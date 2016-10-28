@@ -215,9 +215,9 @@ public class Deployable {
         String token = consumerKey;
         String tokenSecret = consumerSecret;
 
-        CommonsHttpOAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
-        oAuthConsumer.setTokenWithSecret(token, tokenSecret);
         return (request) -> {
+            CommonsHttpOAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
+            oAuthConsumer.setTokenWithSecret(token, tokenSecret);
             return oAuthConsumer.sign(request);
         };
     }
