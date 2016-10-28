@@ -49,7 +49,7 @@ public class RestfulServer {
     private final String applicationName;
     private final ContextHandlerCollection handlers;
 
-    public RestfulServer(
+    public RestfulServer(boolean loopback,
         int port,
         String applicationName,
         boolean sslEnabled,
@@ -72,7 +72,7 @@ public class RestfulServer {
         if (sslEnabled) {
             server.addConnector(makeSslConnector(keyStoreAlias, keyStorePassword, keyStorePath, port));
         } else {
-            server.addConnector(makeConnector(port));
+            server.addConnector(makeConnector(loopback, port));
         }
     }
 
@@ -96,8 +96,11 @@ public class RestfulServer {
         return queuedThreadPool.isLowOnThreads();
     }
 
-    private Connector makeConnector(int port) {
+    private Connector makeConnector(boolean loopback, int port) {
         ServerConnector connector = new ServerConnector(server, ACCEPTORS, SELECTORS);
+        if (loopback) {
+            connector.setHost("127.0.0.1");
+        }
         connector.setPort(port);
         connector.setIdleTimeout(30000); // Config
         return connector;

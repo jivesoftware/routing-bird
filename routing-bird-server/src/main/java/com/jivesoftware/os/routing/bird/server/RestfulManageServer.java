@@ -39,7 +39,7 @@ public class RestfulManageServer {
         String keyStorePath,
         int maxNumberOfThreads,
         int maxQueuedRequests) {
-        server = new RestfulServer(port, applicationName, sslEnabled,
+        server = new RestfulServer(false, port, applicationName, sslEnabled,
             keyStoreAlias, keyStorePassword, keyStorePath,
             maxNumberOfThreads, maxQueuedRequests);
 

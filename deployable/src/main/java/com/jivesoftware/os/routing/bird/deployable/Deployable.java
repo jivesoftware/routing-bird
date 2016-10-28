@@ -140,7 +140,8 @@ public class Deployable {
         restfulManageServer.addInjectable(MainProperties.class, mainProperties);
 
         jerseyEndpoints = new JerseyEndpoints();
-        restfulServer = new InitializeRestfulServer(instanceConfig.getMainPort(),
+        restfulServer = new InitializeRestfulServer(false,
+            instanceConfig.getMainPort(),
             applicationName,
             instanceConfig.getMainSslEnabled(),
             instanceConfig.getInstanceKey(),
