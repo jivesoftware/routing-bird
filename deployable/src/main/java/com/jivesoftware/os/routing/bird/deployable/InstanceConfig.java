@@ -103,6 +103,9 @@ public interface InstanceConfig extends Config {
     @BooleanDefault(false)
     boolean getMainServiceAuthEnabled();
 
+    @BooleanDefault(true)
+    boolean getMainServiceAuthDryRun();
+
     @IntDefault(10001)
     Integer getManagePort();
 
