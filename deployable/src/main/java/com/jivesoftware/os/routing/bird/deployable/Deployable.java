@@ -132,7 +132,11 @@ public class Deployable {
             instanceConfig.getManageMaxQueuedRequests());
 
         if (instanceConfig.getManageServiceAuthEnabled()) {
-            restfulManageServer.addContainerRequestFilter(new AuthValidationFilter(this).addRouteOAuth("/*").addSessionAuth("/*"));
+            AuthValidationFilter authValidationFilter = new AuthValidationFilter(this)
+                .addRouteOAuth("/*")
+                .addSessionAuth("/*")
+                .dryRun(instanceConfig.getManageServiceAuthDryRun());
+            restfulManageServer.addContainerRequestFilter(authValidationFilter);
         }
 
         restfulManageServer.addEndpoint(TenantRoutingRestEndpoints.class);

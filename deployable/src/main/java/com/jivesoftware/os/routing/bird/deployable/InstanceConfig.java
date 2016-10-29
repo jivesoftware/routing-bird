@@ -109,8 +109,11 @@ public interface InstanceConfig extends Config {
     @BooleanDefault(false)
     boolean getManageSslEnabled();
 
-     @BooleanDefault(false)
+    @BooleanDefault(false)
     boolean getManageServiceAuthEnabled();
+
+    @BooleanDefault(true)
+    boolean getManageServiceAuthDryRun();
 
     @IntDefault(1024)
     Integer getMainMaxThreads();

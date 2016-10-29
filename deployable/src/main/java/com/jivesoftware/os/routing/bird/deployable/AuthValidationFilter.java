@@ -1,6 +1,8 @@
 package com.jivesoftware.os.routing.bird.deployable;
 
 import com.google.common.collect.Lists;
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.server.oauth.OAuthEvaluator;
 import com.jivesoftware.os.routing.bird.server.oauth.OAuthServiceLocatorShim;
 import com.jivesoftware.os.routing.bird.server.oauth.route.RouteOAuthValidatorInitializer;
@@ -28,11 +30,14 @@ import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
  */
 public class AuthValidationFilter implements ContainerRequestFilter {
 
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
+
     private final Deployable deployable;
     private final InstanceConfig instanceConfig;
 
     private final List<PathedAuthEvaluator> evaluators = Lists.newArrayList();
     private final OAuth1Signature verifier = new OAuth1Signature(new OAuthServiceLocatorShim());
+    private boolean dryRun = false;
 
     public AuthValidationFilter(Deployable deployable) {
         this.deployable = deployable;
@@ -70,20 +75,34 @@ public class AuthValidationFilter implements ContainerRequestFilter {
         return this;
     }
 
+    public AuthValidationFilter dryRun(boolean dryRun) {
+        this.dryRun = dryRun;
+        return this;
+    }
+
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         String path = '/' + requestContext.getUriInfo().getPath();
         if (path.endsWith("/")) {
             path = path.substring(0, path.length() - 1);
         }
+        List<AuthEvaluator> matches = Lists.newArrayList();
+        List<AuthEvaluator> misses = Lists.newArrayList();
         for (PathedAuthEvaluator pathedAuthEvaluator : evaluators) {
             if (pathedAuthEvaluator.matches(path)) {
+                matches.add(pathedAuthEvaluator.evaluator);
                 if (pathedAuthEvaluator.evaluator.authorize(requestContext) == AuthStatus.authorized) {
                     return;
                 }
+            } else {
+                misses.add(pathedAuthEvaluator.evaluator);
             }
         }
-        requestContext.abortWith(Response.status(Status.UNAUTHORIZED).entity("Auth validation failed").build());
+        if (dryRun) {
+            LOG.warn("Dry run validation failed, matches:{} misses:{}");
+        } else {
+            requestContext.abortWith(Response.status(Status.UNAUTHORIZED).entity("Auth validation failed").build());
+        }
     }
 
     public AuthValidationFilter addNoAuth(String... paths) {
