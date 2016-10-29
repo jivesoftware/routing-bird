@@ -133,6 +133,7 @@ public class Deployable {
 
         if (instanceConfig.getManageServiceAuthEnabled()) {
             AuthValidationFilter authValidationFilter = new AuthValidationFilter(this)
+                .addNoAuth("/manage/health")
                 .addRouteOAuth("/*")
                 .addSessionAuth("/*")
                 .dryRun(instanceConfig.getManageServiceAuthDryRun());
