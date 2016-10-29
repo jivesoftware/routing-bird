@@ -24,6 +24,8 @@ import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.server.binding.Injectable;
 import com.jivesoftware.os.routing.bird.server.binding.InjectableBinder;
 import com.jivesoftware.os.routing.bird.server.filter.NewRelicRequestFilter;
+import io.swagger.jaxrs.config.BeanConfig;
+import io.swagger.jaxrs.listing.ApiListingResource;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -55,6 +57,8 @@ public class JerseyEndpoints implements HasServletContextHandler {
     private final List<Injectable<?>> allInjectables = Lists.newArrayList();
     private final List<ContainerRequestFilter> containerRequestFilters = Lists.newArrayList();
     private boolean supportCORS = false;
+    private String resourcePackage;
+    private boolean enableSwagger = false;
 
     private final ObjectMapper mapper;
 
@@ -108,6 +112,12 @@ public class JerseyEndpoints implements HasServletContextHandler {
         return this;
     }
 
+    public JerseyEndpoints enableSwagger(String resourcePackage) {
+        this.resourcePackage = resourcePackage;
+        enableSwagger = true;
+        return this;
+    }
+
     public List<Injectable<?>> getInjectables() {
         return Collections.unmodifiableList(allInjectables);
     }
@@ -123,21 +133,39 @@ public class JerseyEndpoints implements HasServletContextHandler {
 
     @Override
     public Handler getHandler(final Server server, String context, String applicationName) {
-        ResourceConfig rc = new ResourceConfig()
-            .registerClasses(allClasses)
-            .register(HttpMethodOverrideFilter.class)
-            .register(new JacksonFeature().withMapper(mapper))
-            .register(MultiPartFeature.class) // adds support for multi-part API requests
-            .registerInstances(allBinders)
-            .registerInstances(
-                new InjectableBinder(allInjectables),
-                new AbstractBinder() {
-                    @Override
-                    protected void configure() {
-                        bind(server).to(Server.class);
-                    }
-                }
-            );
+
+        ResourceConfig rc = new ResourceConfig();
+
+        if (enableSwagger) {
+            BeanConfig beanConfig = new BeanConfig();
+            beanConfig.setVersion("1.0.0");
+            beanConfig.setResourcePackage(resourcePackage);
+            beanConfig.setScan(true);
+            beanConfig.setBasePath("/");
+            beanConfig.setTitle(applicationName);
+
+            Set<String> packages = new HashSet<>();
+            packages.add(ApiListingResource.class.getPackage().getName());
+            for (Class<?> clazz : allClasses) {
+                packages.add(clazz.getPackage().getName());
+            }
+            rc.packages(packages.toArray(new String[0]));
+        }
+
+        rc.registerClasses(allClasses);
+        rc.register(HttpMethodOverrideFilter.class);
+        rc.register(new JacksonFeature().withMapper(mapper));
+        rc.register(MultiPartFeature.class); // adds support for multi-part API requests
+        rc.registerInstances(allBinders);
+        rc.registerInstances(
+            new InjectableBinder(allInjectables),
+            new AbstractBinder() {
+            @Override
+            protected void configure() {
+                bind(server).to(Server.class);
+            }
+        }
+        );
 
         if (supportCORS) {
             rc.register(CorsContainerResponseFilter.class);
