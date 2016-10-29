@@ -3,12 +3,10 @@ package com.jivesoftware.os.routing.bird.server.oauth.route;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.mlogger.core.ValueType;
+import com.jivesoftware.os.routing.bird.http.client.HttpRequestHelper;
 import com.jivesoftware.os.routing.bird.server.oauth.AuthRequestException;
 import com.jivesoftware.os.routing.bird.server.oauth.OAuthPublicKeyProvider;
-import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
-import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptors;
 import com.jivesoftware.os.routing.bird.shared.OAuthPublicKey;
-import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescriptorProvider;
 
 /**
  * @author jonathan.colt
@@ -20,11 +18,13 @@ public class RouteOAuthPublicKeyProvider implements OAuthPublicKeyProvider {
     private final static String LAST_SUCCESSFUL_ANY_REQUEST = "routeOAuthPublicKeyProvider>lastSuccessfulRequest";
     private final static String LAST_SUCCESSFUL_PUBLIC_KEY_REQUEST = "routeOAuthPublicKeyProvider>lastSuccessfulPublicKeyRequest";
 
-    private final TenantsServiceConnectionDescriptorProvider<String> connectionDescriptorProvider;
+    private final HttpRequestHelper requestHelper;
+    private final String routesValidatorPath;
     private final long publicKeyExpirationMillis;
 
-    public RouteOAuthPublicKeyProvider(TenantsServiceConnectionDescriptorProvider<String> connectionDescriptorProvider, long publicKeyExpirationMillis) {
-        this.connectionDescriptorProvider = connectionDescriptorProvider;
+    public RouteOAuthPublicKeyProvider(HttpRequestHelper requestHelper, String routesValidatorPath, long publicKeyExpirationMillis) {
+        this.requestHelper = requestHelper;
+        this.routesValidatorPath = routesValidatorPath;
         this.publicKeyExpirationMillis = publicKeyExpirationMillis;
     }
 
@@ -34,18 +34,15 @@ public class RouteOAuthPublicKeyProvider implements OAuthPublicKeyProvider {
         LOG.set(ValueType.VALUE, LAST_SUCCESSFUL_PUBLIC_KEY_REQUEST, System.currentTimeMillis());
 
         try {
-            ConnectionDescriptors connectionDescriptors = connectionDescriptorProvider.getConnections("");
-            for (ConnectionDescriptor connectionDescriptor : connectionDescriptors.getConnectionDescriptors()) {
-                if (connectionDescriptor.getInstanceDescriptor().instanceKey.equals(id)) {
-                    LOG.info("Obtained key from routes for id:{}", id);
-                    return new OAuthPublicKey(connectionDescriptor.getInstanceDescriptor().publicKey, System.currentTimeMillis() + publicKeyExpirationMillis);
-                }
+            String publicKey = requestHelper.executeGetRequest(routesValidatorPath + '/' + id, String.class, null);
+            if (publicKey != null) {
+                return new OAuthPublicKey(publicKey, System.currentTimeMillis() + publicKeyExpirationMillis);
             }
 
-            LOG.warn("There is no key in routes for id:{}", id);
+            LOG.warn("Failed to get public key from authority for id:{}", id);
             return null;
         } catch (Exception ex) {
-            throw new AuthRequestException("Failed to get secret from routes", ex);
+            throw new AuthRequestException("Failed to get public key from authority", ex);
         }
     }
 

@@ -51,6 +51,11 @@ public interface InstanceConfig extends Config {
 
     void setSessionValidatorPath(String path);
 
+    @Default("/request/instance/publicKey")
+    String getOauthValidatorPath();
+
+    void setOauthValidatorPath(String path);
+
     @Default("/request/connections")
     String getRoutesPath();
 

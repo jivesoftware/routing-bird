@@ -45,14 +45,12 @@ public class AuthValidationFilter implements ContainerRequestFilter {
     }
 
     public AuthValidationFilter addRouteOAuth(String... paths) throws Exception {
-        TenantRoutingProvider tenantRoutingProvider = deployable.getTenantRoutingProvider();
-        TenantsServiceConnectionDescriptorProvider connections = tenantRoutingProvider
-            .getConnections(instanceConfig.getServiceName(), "main", 10_000); // TODO config
-
         RouteOAuthValidatorConfig routeOAuthValidatorConfig = deployable.config(RouteOAuthValidatorConfig.class);
         AuthValidator<OAuth1Signature, OAuth1Request> routeOAuthValidator = new RouteOAuthValidatorInitializer().initialize(routeOAuthValidatorConfig,
-            connections,
-            10_000);
+            instanceConfig.getRoutesHost(),
+            instanceConfig.getRoutesPort(),
+            "http", //TODO
+            instanceConfig.getOauthValidatorPath());
         routeOAuthValidator.start();
         evaluators.add(new PathedAuthEvaluator(new OAuthEvaluator(routeOAuthValidator, verifier), paths));
         return this;
@@ -99,7 +97,7 @@ public class AuthValidationFilter implements ContainerRequestFilter {
             }
         }
         if (dryRun) {
-            LOG.warn("Dry run validation failed, matches:{} misses:{}");
+            LOG.warn("Dry run validation failed, matches:{} misses:{}", matches, misses);
         } else {
             requestContext.abortWith(Response.status(Status.UNAUTHORIZED).entity("Auth validation failed").build());
         }
