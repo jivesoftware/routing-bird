@@ -62,7 +62,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.ws.rs.container.ContainerRequestFilter;
 import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
-import oauth.signpost.signature.HmacSha1MessageSigner;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.merlin.config.Config;
 
@@ -289,6 +288,10 @@ public class Deployable {
     }
 
     //--------------------------------------------------------------------------
+    public void enableSwagger(String resourcePackage) {
+        jerseyEndpoints.enableSwagger(resourcePackage);
+    }
+
     public void addEndpoints(Class clazz) {
         if (serverStarted.get()) {
             throw new IllegalStateException("Cannot add endpoints after the server has been started.");
@@ -504,7 +507,7 @@ public class Deployable {
                             }
                         }
                     }
-                    return "Recent Errors:\n" + Joiner.on("\n").join(Objects.firstNonNull(errors, new String[] { "" }));
+                    return "Recent Errors:\n" + Joiner.on("\n").join(Objects.firstNonNull(errors, new String[]{""}));
                 }
 
                 @Override
