@@ -22,9 +22,6 @@ import com.jivesoftware.os.mlogger.core.LoggerSummary;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.deployable.config.extractor.ConfigBinder;
-import com.jivesoftware.os.routing.bird.deployable.reporter.service.StatusReportBroadcaster;
-import com.jivesoftware.os.routing.bird.deployable.reporter.service.StatusReportBroadcaster.StatusReportCallback;
-import com.jivesoftware.os.routing.bird.deployable.reporter.service.StatusReportConfig;
 import com.jivesoftware.os.routing.bird.endpoints.configuration.MainProperties;
 import com.jivesoftware.os.routing.bird.endpoints.configuration.MainPropertiesEndpoints;
 import com.jivesoftware.os.routing.bird.health.HealthCheck;
@@ -154,25 +151,6 @@ public class Deployable {
             keyStorePath,
             instanceConfig.getMainMaxThreads(),
             instanceConfig.getMainMaxQueuedRequests());
-    }
-
-    /**
-     * Needs to be called before buildManageServer().
-     *
-     * @param statusReportCallback
-     * @return
-     */
-    public StatusReportBroadcaster buildStatusReporter(StatusReportCallback statusReportCallback) {
-
-        StatusReportConfig config = configBinder.bind(StatusReportConfig.class);
-
-        StatusReportBroadcaster broadcaster = new StatusReportBroadcaster(
-            config.getAnnouceEveryNMills(),
-            statusReportCallback);
-
-        restfulManageServer.addEndpoint(StatusReportEndpoints.class);
-        restfulManageServer.addInjectable(StatusReportBroadcaster.class, broadcaster);
-        return broadcaster;
     }
 
     public ServiceHandle buildMetricPublisher() {
