@@ -371,17 +371,17 @@ public class RestfulBaseEndpoints {
     @Path("/errors")
     public Response executeErrors(@QueryParam("callback") @DefaultValue("") String callback) {
         if (callback.length() > 0) {
-            return ResponseHelper.INSTANCE.jsonpResponse(callback, Long.toString(LoggerSummary.INSTANCE.errors));
+            return ResponseHelper.INSTANCE.jsonpResponse(callback, Long.toString(LoggerSummary.INSTANCE.errors.longValue()));
         }
-        return Response.ok(Long.toString(LoggerSummary.INSTANCE.errors), MediaType.TEXT_PLAIN).build();
+        return Response.ok(Long.toString(LoggerSummary.INSTANCE.errors.longValue()), MediaType.TEXT_PLAIN).build();
     }
 
     @GET
     @Path("/resetErrors")
     public Response resetErrors() {
-        LoggerSummary.INSTANCE.errors = 0;
+        LoggerSummary.INSTANCE.errors.reset();
         LoggerSummary.INSTANCE.lastNErrors.clear("");
-        LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS.errors = 0;
+        LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS.errors.reset();
         LoggerSummary.INSTANCE_EXTERNAL_INTERACTIONS.lastNErrors.clear("");
         return Response.ok("Reset Errors", MediaType.TEXT_PLAIN).build();
     }

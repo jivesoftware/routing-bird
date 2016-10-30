@@ -451,7 +451,7 @@ public class Deployable {
 
         @Override
         public void run() {
-            long errors = loggerSummary.errors;
+            long errors = loggerSummary.errors.longValue();
             long delta = errors - lastErrorCount.getAndSet(errors);
             lastErrorDelta.set(delta);
             if (delta > 0) {

@@ -23,7 +23,6 @@
         <module>routing-bird-server-session</module>
         <module>deployable</module>
         <module>deployable-reporter-shared</module>
-        <module>deployable-reporter-service</module>
         <module>deployable-scripts</module>
         <module>deployable-config-shared</module>
         <module>deployable-config-extractor</module>
