@@ -15,13 +15,13 @@ JAVA_MAIN=`grep "java.main" $APP_ROOT/lib/build.properties | sed -e 's/[^=]*=//'
 JMX_PORT=`grep InstanceConfig_default_jmxPort $APP_ROOT/config/instance.properties | sed -e 's/[^=]*=//'`
 DEBUG_PORT=`grep InstanceConfig_default_debugPort $APP_ROOT/config/instance.properties | sed -e 's/[^=]*=//'`
 
-JAVA_XMX=echo "-Xmx"`grep JavaStartupConfig_default_xmx $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`"m"
+JAVA_XMX="-Xmx"`grep JavaStartupConfig_default_xmx $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`"m"
 if [ "$JAVA_XMX" = "-Xmx0m" ];
 then
     JAVA_XMX="";
 fi
 
-JAVA_XMS=echo "-Xms"`grep JavaStartupConfig_default_xms $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`"m"
+JAVA_XMS="-Xms"`grep JavaStartupConfig_default_xms $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`"m"
 if [ "$JAVA_XMS" = "-Xms0m" ]; then
     JAVA_XMS="";
 fi
