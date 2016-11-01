@@ -31,7 +31,8 @@ public class RestfulManageServer {
     private final HealthCheckService healthCheckService = new HealthCheckService();
     private final JerseyEndpoints jerseyEndpoints;
 
-    public RestfulManageServer(int port,
+    public RestfulManageServer(boolean loopback,
+        int port,
         String applicationName,
         boolean sslEnabled,
         String keyStoreAlias,
@@ -39,7 +40,7 @@ public class RestfulManageServer {
         String keyStorePath,
         int maxNumberOfThreads,
         int maxQueuedRequests) {
-        server = new RestfulServer(false, port, applicationName, sslEnabled,
+        server = new RestfulServer(loopback, port, applicationName, sslEnabled,
             keyStoreAlias, keyStorePassword, keyStorePath,
             maxNumberOfThreads, maxQueuedRequests);
 

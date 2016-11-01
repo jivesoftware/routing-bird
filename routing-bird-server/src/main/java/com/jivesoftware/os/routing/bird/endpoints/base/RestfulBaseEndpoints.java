@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -292,6 +294,143 @@ public class RestfulBaseEndpoints {
         }
     }
 
+    @GET
+    @Path("/metrics/ui")
+    public Response metricsUI(@Context UriInfo uriInfo) {
+        try {
+            final HtmlCanvas canvas = new HtmlCanvas();
+            canvas.html();
+            canvas.body();
+
+            canvas.h1().content("Service:" + resfulServiceName.name + ":" + resfulServiceName.port);
+
+            canvas.hr();
+            canvas.h1().content("Counters: ");
+            canvas.table();
+            canvas.tr();
+            canvas.td().content("Count");
+            canvas.td().content("Name");
+            canvas._tr();
+
+            MetricsHelper.INSTANCE.getCounters("").getAll((v) -> {
+                if (v != null) {
+                    canvas.tr();
+                    canvas.td().content(String.valueOf(v.getValue()));
+                    canvas.td().content(v.getKey());
+                    canvas._tr();
+                }
+            });
+
+            canvas._table();
+
+            canvas.hr();
+            canvas.h1().content("Timers: ");
+            canvas.table();
+            canvas.tr();
+            canvas.td().content("Timer");
+            canvas.td().content("Name");
+            canvas._tr();
+
+            MetricsHelper.INSTANCE.getTimers("").getAll((v) -> {
+                if (v != null) {
+                    canvas.tr();
+                    canvas.td().content(String.valueOf(v.getValue()));
+                    canvas.td().content(v.getKey());
+                    canvas._tr();
+                }
+            });
+
+            canvas._table();
+
+            canvas._body();
+            canvas._html();
+            return Response.ok(canvas.toHtml(), MediaType.TEXT_HTML).build();
+        } catch (Exception x) {
+            LOG.warn("Failed build UI html.", x);
+            return ResponseHelper.INSTANCE.errorResponse("Failed build UI html.", x);
+        }
+    }
+
+    @GET
+    @Path("/health/ui")
+    public Response healthUI(@Context UriInfo uriInfo) {
+        try {
+
+            NumberFormat numberFormat = NumberFormat.getNumberInstance();
+            HtmlCanvas canvas = new HtmlCanvas();
+            canvas.html();
+            canvas.body();
+
+            canvas.h1().content("Service:" + resfulServiceName.name + ":" + resfulServiceName.port);
+            List<HealthCheckResponse> checkHealth = healthCheckService.checkHealth();
+
+            HtmlAttributes border = HtmlAttributesFactory.style("border: 1px solid  gray;");
+            canvas.table(border);
+            canvas.tr(HtmlAttributesFactory.style("background-color:#bbbbbb;"));
+            canvas.td(border).content(String.valueOf("Health"));
+            canvas.td(border).content(String.valueOf("Name"));
+            canvas.td(border).content(String.valueOf("Status"));
+            canvas.td(border).content(String.valueOf("Description"));
+            canvas.td(border).content(String.valueOf("Resolution"));
+            canvas.td(border).content(String.valueOf("Age in millis"));
+            canvas._tr();
+
+            long now = System.currentTimeMillis();
+            for (HealthCheckResponse response : checkHealth) {
+                if (-Double.MAX_VALUE != response.getHealth()) {
+                    canvas.tr();
+                    canvas.td(HtmlAttributesFactory.style("background-color:#" + getHEXTrafficlightColor(response.getHealth()) + ";"))
+                        .content(String.valueOf(numberFormat.format(response.getHealth())));
+                    canvas.td(border).content(String.valueOf(response.getName()));
+                    canvas.td(border).content(String.valueOf(response.getStatus()));
+                    canvas.td(border).content(String.valueOf(response.getDescription()));
+                    canvas.td(border).content(String.valueOf(response.getResolution()));
+                    canvas.td(border).content(String.valueOf(humanReadableUptime(now - response.getTimestamp())));
+                    canvas._tr();
+                }
+            }
+            canvas._table();
+
+            canvas._body();
+            canvas._html();
+            return Response.ok(canvas.toHtml(), MediaType.TEXT_HTML).build();
+        } catch (Exception x) {
+            LOG.warn("Failed build UI html.", x);
+            return ResponseHelper.INSTANCE.errorResponse("Failed build UI html.", x);
+        }
+    }
+
+    public static String humanReadableUptime(long millis) {
+        if (millis < 0) {
+            return String.valueOf(millis);
+        }
+
+        long hours = TimeUnit.MILLISECONDS.toHours(millis);
+        millis -= TimeUnit.HOURS.toMillis(hours);
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+        millis -= TimeUnit.MINUTES.toMillis(minutes);
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+        millis -= TimeUnit.SECONDS.toMillis(seconds);
+
+        StringBuilder sb = new StringBuilder(64);
+        if (hours < 10) {
+            sb.append('0');
+        }
+        sb.append(hours);
+        sb.append(":");
+        if (minutes < 10) {
+            sb.append('0');
+        }
+        sb.append(minutes);
+        sb.append(":");
+        if (seconds < 10) {
+            sb.append('0');
+        }
+        sb.append(seconds);
+
+        return (sb.toString());
+    }
+
     String getHEXTrafficlightColor(double value) {
         String s = Integer.toHexString(Color.HSBtoRGB((float) value / 3f, 1f, 1f) & 0xffffff);
         return "000000".substring(s.length()) + s;
@@ -463,14 +602,21 @@ public class RestfulBaseEndpoints {
      */
     @GET
     @Path("/tail")
-    public Response tail(@QueryParam("lastNLines") @DefaultValue("100") int nLines,
+    public Response tail(@QueryParam("format") @DefaultValue("text") String format,
+        @QueryParam("lastNLines") @DefaultValue("1000") int nLines,
         @QueryParam("callback") @DefaultValue("") String callback) {
         if (callback.length() > 0) {
             return ResponseHelper.INSTANCE.jsonpResponse(callback, tailLogFile(logFile, 80 * nLines));
         } else {
-            StringBuilder sb = new StringBuilder();
-            sb.append(tailLogFile(logFile, 80 * nLines));
-            return Response.ok(sb.toString(), MediaType.TEXT_PLAIN).build();
+            if (format.equals("text")) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(tailLogFile(logFile, 80 * nLines));
+                return Response.ok(sb.toString(), MediaType.TEXT_PLAIN).build();
+            } else {
+                StringBuilder sb = new StringBuilder();
+                sb.append(tailLogFile(logFile, 80 * nLines));
+                return ResponseHelper.INSTANCE.jsonResponse(sb.toString());
+            }
         }
     }
 

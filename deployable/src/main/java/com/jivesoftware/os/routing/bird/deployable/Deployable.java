@@ -118,7 +118,8 @@ public class Deployable {
             keyStorePassword = keyStorePassword(instanceConfig.getRoutesHost(), instanceConfig.getRoutesPort());
         }
 
-        restfulManageServer = new RestfulManageServer(instanceConfig.getManagePort(),
+        restfulManageServer = new RestfulManageServer(instanceConfig.getManageLoopback(),
+            instanceConfig.getManagePort(),
             applicationName,
             instanceConfig.getManageSslEnabled(),
             instanceConfig.getInstanceKey(),

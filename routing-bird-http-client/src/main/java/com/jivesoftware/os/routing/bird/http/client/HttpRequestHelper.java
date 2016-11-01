@@ -38,6 +38,10 @@ public class HttpRequestHelper {
         this.mapper = mapper;
     }
 
+    public byte[] executeGet(String endpointUrl) {
+        return executeGet(httpClient, endpointUrl);
+    }
+
     /**
      * Sends the request to the server and returns the deserialized results.
      * <p>
@@ -51,7 +55,7 @@ public class HttpRequestHelper {
      */
     public <T> T executeGetRequest(String endpointUrl, Class<T> resultClass, T emptyResult) {
 
-        byte[] responseBody = executeGetJson(httpClient, endpointUrl);
+        byte[] responseBody = executeGet(httpClient, endpointUrl);
 
         if (responseBody.length == 0) {
             LOG.warn("Received empty response from http call. The endpoint posted to was " + endpointUrl + "\".");
@@ -69,6 +73,26 @@ public class HttpRequestHelper {
         } else {
             return this.extractResultFromResponse(responseBody, resultClass);
         }
+    }
+
+    public byte[] executeRequest(Object requestParamsObject, String endpointUrl, byte[] emptyResult) {
+
+        String postEntity;
+        try {
+            postEntity = mapper.writeValueAsString(requestParamsObject);
+        } catch (IOException e) {
+            throw new RuntimeException("Error serializing request parameters object to a string.  Object "
+                + "was " + requestParamsObject, e);
+        }
+
+        byte[] responseBody = executePostJson(httpClient, endpointUrl, postEntity);
+
+        if (responseBody.length == 0) {
+            LOG.warn("Received empty response from http call.  Posted request body was: " + postEntity);
+            return emptyResult;
+        }
+
+        return responseBody;
     }
 
     /**
@@ -149,7 +173,7 @@ public class HttpRequestHelper {
         return httpClient.streamingPost(endpointUrl, postEntity, null);
     }
 
-    private byte[] executeGetJson(HttpClient httpClient, String endpointUrl) {
+    public byte[] executeGet(HttpClient httpClient, String endpointUrl) {
         HttpResponse response;
         try {
             response = httpClient.get(endpointUrl, null);
@@ -187,9 +211,9 @@ public class HttpRequestHelper {
 
         if (!this.isSuccessStatusCode(response.getStatusCode())) {
             throw new NonSuccessStatusCodeException(response.getStatusCode(),
-                "Received non success status code (" + response.getStatusCode() + ") " + "from the server.  The reason phrase on the response was \"" +
-                    response.getStatusReasonPhrase() + "\" " + "and the body of the response was \"" + new String(
-                    responseBody, UTF_8) + "\".");
+                "Received non success status code (" + response.getStatusCode() + ") " + "from the server.  The reason phrase on the response was \""
+                + response.getStatusReasonPhrase() + "\" " + "and the body of the response was \"" + new String(
+                responseBody, UTF_8) + "\".");
         } else {
             return responseBody;
         }
@@ -219,7 +243,7 @@ public class HttpRequestHelper {
         return responseBody;
     }
 
-    private <T> T extractResultFromResponse(byte[] responseBody, Class<T> resultClass) {
+    public <T> T extractResultFromResponse(byte[] responseBody, Class<T> resultClass) {
         T result;
         try {
             result = mapper.readValue(responseBody, 0, responseBody.length, resultClass);
@@ -232,7 +256,7 @@ public class HttpRequestHelper {
         return result;
     }
 
-    private <T> T extractResultFromResponse(byte[] responseBody, JavaType type) {
+    public <T> T extractResultFromResponse(byte[] responseBody, JavaType type) {
         T result;
         try {
             result = mapper.readValue(responseBody, 0, responseBody.length, type);

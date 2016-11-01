@@ -111,6 +111,10 @@ public interface InstanceConfig extends Config {
     @BooleanDefault(true)
     boolean getMainServiceAuthDryRun();
 
+
+    @BooleanDefault(true)
+    boolean getManageLoopback();
+
     @IntDefault(10001)
     Integer getManagePort();
 
