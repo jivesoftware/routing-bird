@@ -13,7 +13,7 @@ public interface DeployableMainAuthHealthCheckConfig extends PercentileHealthChe
     @Override
     String getName();
 
-    @StringDefault("Success rate of auths agains manage port")
+    @StringDefault("Success rate of auths agains main port")
     @Override
     String getDescription();
 }

@@ -17,6 +17,7 @@
         <module>routing-bird-http-client</module>
         <module>routing-bird-http-server-endpoints</module>
         <module>routing-bird-shared</module>
+        <module>routing-bird-authentication</module>
         <module>routing-bird-health</module>
         <module>routing-bird-server</module>
         <module>routing-bird-server-oauth</module>

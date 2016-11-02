@@ -9,7 +9,7 @@
         <relativePath>../inheritance-poms/global-build-management/pom.xml</relativePath>
     </parent>
     <groupId>com.jivesoftware.os.routing.bird</groupId>
-    <artifactId>routing-bird-shared</artifactId>
+    <artifactId>routing-bird-authentication</artifactId>
     <properties>
         <module.type>shared_lib</module.type>
     </properties>
@@ -41,6 +41,23 @@
             <scope>test</scope>
             <type>jar</type>
         </dependency>
-        
+        <dependency>
+            <groupId>com.jivesoftware.os.routing.bird</groupId>
+            <artifactId>routing-bird-health</artifactId>
+            <version>${project.version}</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.routing.bird</groupId>
+            <artifactId>routing-bird-server-oauth</artifactId>
+            <version>${project.version}</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.routing.bird</groupId>
+            <artifactId>routing-bird-server-session</artifactId>
+            <version>${project.version}</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
 </project>

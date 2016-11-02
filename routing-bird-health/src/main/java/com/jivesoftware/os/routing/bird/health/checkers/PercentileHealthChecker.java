@@ -6,6 +6,7 @@ import com.jivesoftware.os.routing.bird.health.api.HealthCheckUtil;
 import com.jivesoftware.os.routing.bird.health.api.HealthChecker;
 import com.jivesoftware.os.routing.bird.health.api.PercentileHealthCheckConfig;
 import com.jivesoftware.os.routing.bird.health.api.ResettableHealthCheck;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
 
 /**
@@ -15,10 +16,12 @@ public class PercentileHealthChecker implements HealthChecker<Double>, Resettabl
 
     private final PercentileHealthCheckConfig config;
     private final DescriptiveStatistics dstat;
+    private final LongAdder total;
 
     public PercentileHealthChecker(PercentileHealthCheckConfig config) {
         this.config = config;
         this.dstat = new DescriptiveStatistics(config.getSampleWindowSize());
+        this.total = new LongAdder();
     }
 
     @Override
@@ -32,7 +35,7 @@ public class PercentileHealthChecker implements HealthChecker<Double>, Resettabl
     public HealthCheckResponse checkHealth() throws Exception {
 
         double health = 1.0f;
-        if (dstat.getN() > 0) {
+        if (total.longValue()> 0) {
             health = Math.min(health, HealthCheckUtil.zeroToOne(config.getMeanMax(), 0, dstat.getMean()));
             health = Math.min(health, HealthCheckUtil.zeroToOne(config.getVarianceMax(), 0, Math.abs(dstat.getVariance())));
             health = Math.min(health, HealthCheckUtil.zeroToOne(config.get50ThPecentileMax(), 0, dstat.getPercentile(50)));
@@ -53,12 +56,13 @@ public class PercentileHealthChecker implements HealthChecker<Double>, Resettabl
     @Override
     public void reset() {
         dstat.clear();
+        total.reset();
     }
 
     private String status(DescriptiveStatistics dstats) {
         StringBuilder sb = new StringBuilder();
-        sb.append(" samples:").append(dstats.getN());
-        if (dstats.getN() > 0) {
+        sb.append(" samples:").append(total.longValue());
+        if (total.longValue()> 0) {
             sb.append(" mean:").append(dstats.getMean());
             sb.append(" 50th:").append(dstats.getPercentile(50));
             sb.append(" 75th:").append(dstats.getPercentile(75));

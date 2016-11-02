@@ -21,6 +21,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.jivesoftware.os.mlogger.core.LoggerSummary;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.routing.bird.authentication.AuthValidationFilter;
+import com.jivesoftware.os.routing.bird.authentication.NoAuthEvaluator;
 import com.jivesoftware.os.routing.bird.deployable.config.extractor.ConfigBinder;
 import com.jivesoftware.os.routing.bird.endpoints.configuration.MainProperties;
 import com.jivesoftware.os.routing.bird.endpoints.configuration.MainPropertiesEndpoints;
@@ -42,6 +44,13 @@ import com.jivesoftware.os.routing.bird.server.InitializeRestfulServer;
 import com.jivesoftware.os.routing.bird.server.JerseyEndpoints;
 import com.jivesoftware.os.routing.bird.server.RestfulManageServer;
 import com.jivesoftware.os.routing.bird.server.RestfulServer;
+import com.jivesoftware.os.routing.bird.server.oauth.OAuthEvaluator;
+import com.jivesoftware.os.routing.bird.server.oauth.OAuthServiceLocatorShim;
+import com.jivesoftware.os.routing.bird.server.oauth.route.RouteOAuthValidatorInitializer;
+import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidator;
+import com.jivesoftware.os.routing.bird.server.session.RouteSessionValidatorInitializer;
+import com.jivesoftware.os.routing.bird.server.session.SessionEvaluator;
+import com.jivesoftware.os.routing.bird.server.session.SessionValidator;
 import com.jivesoftware.os.routing.bird.server.util.Resource;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
 import com.jivesoftware.os.routing.bird.shared.RSAKeyPairGenerator;
@@ -61,9 +70,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.ws.rs.container.ContainerRequestFilter;
 import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
 import org.glassfish.hk2.api.ServiceHandle;
+import org.glassfish.jersey.oauth1.signature.OAuth1Request;
+import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
 import org.merlin.config.Config;
+import org.merlin.config.ConfigProvider;
 
-public class Deployable {
+public class Deployable implements ConfigProvider {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final MainProperties mainProperties;
@@ -132,11 +144,11 @@ public class Deployable {
             DeployableManageAuthHealthCheckConfig authHealthCheckConfig = configBinder.bind(DeployableManageAuthHealthCheckConfig.class);
             PercentileHealthChecker healthChecker = new PercentileHealthChecker(authHealthCheckConfig);
 
-            AuthValidationFilter authValidationFilter = new AuthValidationFilter(healthChecker, this)
-                .addNoAuth("/manage/health")
-                .addRouteOAuth("/*")
-                .addSessionAuth("/*")
-                .dryRun(instanceConfig.getManageServiceAuthDryRun());
+            AuthValidationFilter authValidationFilter = new AuthValidationFilter(healthChecker);
+            authValidationFilter.addEvaluator(new NoAuthEvaluator(), "/manage/health");
+            authValidationFilter.addEvaluator(routeOAuth(), "/*");
+            authValidationFilter.addEvaluator(sessionAuth(), "/*");
+            authValidationFilter.dryRun(instanceConfig.getManageServiceAuthDryRun());
             restfulManageServer.addContainerRequestFilter(authValidationFilter);
             restfulManageServer.addHealthCheck(healthChecker);
         }
@@ -211,6 +223,7 @@ public class Deployable {
         };
     }
 
+    @Override
     public <T extends Config> T config(Class<T> clazz) {
         return configBinder.bind(clazz);
     }
@@ -518,6 +531,64 @@ public class Deployable {
                 config.getExternalUnhealthyForNMillisEveryError(),
                 config.getExternalHealthWhenErrorsExceeded()),
             oomHealthCheck);
+    }
+
+    private final OAuth1Signature verifier = new OAuth1Signature(new OAuthServiceLocatorShim());
+    private AuthValidationFilter authValidationFilter;
+
+    synchronized private AuthValidationFilter authValidationFilter() {
+        if (authValidationFilter == null) {
+            DeployableMainAuthHealthCheckConfig dmahcc = config(DeployableMainAuthHealthCheckConfig.class);
+            PercentileHealthChecker authFilterHealthCheck = new PercentileHealthChecker(dmahcc);
+            addHealthCheck(authFilterHealthCheck);
+            authValidationFilter = new AuthValidationFilter(authFilterHealthCheck);
+            jerseyEndpoints.addContainerRequestFilter(authValidationFilter);
+        }
+        return authValidationFilter;
+    }
+
+    public Deployable addRouteOAuth(String... paths) throws Exception {
+        authValidationFilter().addEvaluator(routeOAuth(), paths);
+        return this;
+    }
+
+    private OAuthEvaluator routeOAuth() throws Exception {
+        RouteOAuthValidatorInitializer.RouteOAuthValidatorConfig routeOAuthValidatorConfig = config(
+            RouteOAuthValidatorInitializer.RouteOAuthValidatorConfig.class);
+        AuthValidator<OAuth1Signature, OAuth1Request> routeOAuthValidator = new RouteOAuthValidatorInitializer().initialize(routeOAuthValidatorConfig,
+            instanceConfig.getRoutesHost(),
+            instanceConfig.getRoutesPort(),
+            "http", //TODO
+            instanceConfig.getOauthValidatorPath());
+        routeOAuthValidator.start();
+        return new OAuthEvaluator(routeOAuthValidator, verifier);
+    }
+
+    public Deployable addSessionAuth(String... paths) throws Exception {
+        authValidationFilter().addEvaluator(sessionAuth(), paths);
+        return this;
+    }
+
+    public SessionEvaluator sessionAuth() {
+        RouteSessionValidatorInitializer.RouteSessionValidatorConfig sessionValidatorConfig = config(
+            RouteSessionValidatorInitializer.RouteSessionValidatorConfig.class);
+        SessionValidator routeSessionValidator = new RouteSessionValidatorInitializer().initialize(sessionValidatorConfig,
+            instanceConfig.getRoutesHost(),
+            instanceConfig.getRoutesPort(),
+            "http", //TODO
+            instanceConfig.getSessionValidatorPath());
+        return new SessionEvaluator(routeSessionValidator);
+    }
+
+    public Deployable addCustomOAuth(AuthValidator<OAuth1Signature, OAuth1Request> customOAuthValidator, String... paths) {
+        customOAuthValidator.start();
+        authValidationFilter().addEvaluator(new OAuthEvaluator(customOAuthValidator, verifier), paths);
+        return this;
+    }
+
+    public Deployable addNoAuth(String... paths) {
+        authValidationFilter().addEvaluator(new NoAuthEvaluator(), paths);
+        return this;
     }
 
     public RestfulServer buildServer() throws Exception {

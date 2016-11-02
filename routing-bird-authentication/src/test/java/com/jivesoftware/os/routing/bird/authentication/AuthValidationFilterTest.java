@@ -1,7 +1,7 @@
-package com.jivesoftware.os.routing.bird.deployable;
+package com.jivesoftware.os.routing.bird.authentication;
 
-import com.jivesoftware.os.routing.bird.deployable.AuthValidationFilter.NoAuthEvaluator;
-import com.jivesoftware.os.routing.bird.deployable.AuthValidationFilter.PathedAuthEvaluator;
+import com.jivesoftware.os.routing.bird.authentication.NoAuthEvaluator;
+import com.jivesoftware.os.routing.bird.authentication.AuthValidationFilter.PathedAuthEvaluator;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

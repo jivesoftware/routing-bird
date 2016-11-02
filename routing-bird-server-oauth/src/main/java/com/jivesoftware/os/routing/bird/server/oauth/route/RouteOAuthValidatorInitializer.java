@@ -9,7 +9,7 @@ import com.jivesoftware.os.routing.bird.http.client.HttpClientFactoryProvider;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientSSLConfig;
 import com.jivesoftware.os.routing.bird.http.client.HttpRequestHelper;
 import com.jivesoftware.os.routing.bird.server.oauth.OAuthPublicKeyProvider;
-import com.jivesoftware.os.routing.bird.server.oauth.OAuthSecretManager;
+import com.jivesoftware.os.routing.bird.server.oauth.OAuthPublicKeyProviderSecretManager;
 import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidator;
 import com.jivesoftware.os.routing.bird.server.oauth.validator.DefaultOAuthValidator;
 import com.jivesoftware.os.routing.bird.server.oauth.validator.NoOpAuthValidator;
@@ -87,7 +87,7 @@ public class RouteOAuthValidatorInitializer {
         List<OAuthPublicKeyProvider> oAuthPublicKeyProviders = Lists.newArrayList();
         oAuthPublicKeyProviders.add(new RouteOAuthPublicKeyProvider(client, routesValidatorPath, config.getOauthPublicKeyExpirationMillis()));
 
-        OAuthSecretManager authSecretManager = new OAuthSecretManager("routes",
+        OAuthPublicKeyProviderSecretManager authSecretManager = new OAuthPublicKeyProviderSecretManager("routes",
             oAuthPublicKeyProviders,
             config.getOauthValidatorSecretTimeoutHardMillis(),
             config.getOauthValidatorSecretTimeoutSoftMillis(),

@@ -1,18 +1,9 @@
-package com.jivesoftware.os.routing.bird.deployable;
+package com.jivesoftware.os.routing.bird.authentication;
 
-import com.google.common.collect.Lists;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.health.checkers.PercentileHealthChecker;
-import com.jivesoftware.os.routing.bird.server.oauth.OAuthEvaluator;
 import com.jivesoftware.os.routing.bird.server.oauth.OAuthServiceLocatorShim;
-import com.jivesoftware.os.routing.bird.server.oauth.route.RouteOAuthValidatorInitializer;
-import com.jivesoftware.os.routing.bird.server.oauth.route.RouteOAuthValidatorInitializer.RouteOAuthValidatorConfig;
-import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidator;
-import com.jivesoftware.os.routing.bird.server.session.RouteSessionValidatorInitializer;
-import com.jivesoftware.os.routing.bird.server.session.RouteSessionValidatorInitializer.RouteSessionValidatorConfig;
-import com.jivesoftware.os.routing.bird.server.session.SessionEvaluator;
-import com.jivesoftware.os.routing.bird.server.session.SessionValidator;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator.AuthStatus;
 import java.io.IOException;
@@ -21,7 +12,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import org.glassfish.jersey.oauth1.signature.OAuth1Request;
+import jersey.repackaged.com.google.common.collect.Lists;
 import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
 
 /**
@@ -32,45 +23,16 @@ public class AuthValidationFilter implements ContainerRequestFilter {
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final PercentileHealthChecker successRate;
 
-    private final Deployable deployable;
-    private final InstanceConfig instanceConfig;
-
     private final List<PathedAuthEvaluator> evaluators = Lists.newArrayList();
     private final OAuth1Signature verifier = new OAuth1Signature(new OAuthServiceLocatorShim());
     private boolean dryRun = false;
 
-    public AuthValidationFilter(PercentileHealthChecker successRate, Deployable deployable) {
+    public AuthValidationFilter(PercentileHealthChecker successRate) {
         this.successRate = successRate;
-        this.deployable = deployable;
-        this.instanceConfig = deployable.config(InstanceConfig.class);
     }
 
-    public AuthValidationFilter addRouteOAuth(String... paths) throws Exception {
-        RouteOAuthValidatorConfig routeOAuthValidatorConfig = deployable.config(RouteOAuthValidatorConfig.class);
-        AuthValidator<OAuth1Signature, OAuth1Request> routeOAuthValidator = new RouteOAuthValidatorInitializer().initialize(routeOAuthValidatorConfig,
-            instanceConfig.getRoutesHost(),
-            instanceConfig.getRoutesPort(),
-            "http", //TODO
-            instanceConfig.getOauthValidatorPath());
-        routeOAuthValidator.start();
-        evaluators.add(new PathedAuthEvaluator(new OAuthEvaluator(routeOAuthValidator, verifier), paths));
-        return this;
-    }
-
-    public AuthValidationFilter addCustomOAuth(AuthValidator<OAuth1Signature, OAuth1Request> customOAuthValidator, String... paths) {
-        customOAuthValidator.start();
-        evaluators.add(new PathedAuthEvaluator(new OAuthEvaluator(customOAuthValidator, verifier), paths));
-        return this;
-    }
-
-    public AuthValidationFilter addSessionAuth(String... paths) throws Exception {
-        RouteSessionValidatorConfig sessionValidatorConfig = deployable.config(RouteSessionValidatorConfig.class);
-        SessionValidator routeSessionValidator = new RouteSessionValidatorInitializer().initialize(sessionValidatorConfig,
-            instanceConfig.getRoutesHost(),
-            instanceConfig.getRoutesPort(),
-            "http", //TODO
-            instanceConfig.getSessionValidatorPath());
-        evaluators.add(new PathedAuthEvaluator(new SessionEvaluator(routeSessionValidator), paths));
+    public AuthValidationFilter addEvaluator(AuthEvaluator authEvaluator, String... paths) {
+        evaluators.add(new PathedAuthEvaluator(authEvaluator, paths));
         return this;
     }
 
@@ -114,11 +76,6 @@ public class AuthValidationFilter implements ContainerRequestFilter {
         }
     }
 
-    public AuthValidationFilter addNoAuth(String... paths) {
-        evaluators.add(new PathedAuthEvaluator(new NoAuthEvaluator(), paths));
-        return this;
-    }
-
     static class PathedAuthEvaluator {
 
         private final AuthEvaluator evaluator;
@@ -158,11 +115,4 @@ public class AuthValidationFilter implements ContainerRequestFilter {
         }
     }
 
-    static class NoAuthEvaluator implements AuthEvaluator {
-
-        @Override
-        public AuthStatus authorize(ContainerRequestContext requestContext) throws IOException {
-            return AuthStatus.authorized;
-        }
-    }
 }

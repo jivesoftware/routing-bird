@@ -40,6 +40,11 @@
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.routing.bird</groupId>
+            <artifactId>routing-bird-authentication</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>routing-bird-server-session</artifactId>
             <version>${project.version}</version>
         </dependency>
