@@ -11,13 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class MinMaxHealthChecker implements HealthChecker<Counter> {
 
-    public static HealthFactory.HealthCheckerConstructor<Counter, MinMaxHealthCheckConfig> FACTORY =
-        new HealthFactory.HealthCheckerConstructor<Counter, MinMaxHealthCheckConfig>() {
-            @Override
-            public HealthChecker<Counter> construct(MinMaxHealthCheckConfig config) {
-                return new MinMaxHealthChecker(config);
-            }
-        };
+    public static HealthFactory.HealthCheckerConstructor<Counter, MinMaxHealthCheckConfig> FACTORY = MinMaxHealthChecker::new;
 
     private final MinMaxHealthCheckConfig config;
     private final AtomicReference<Callable<HealthCheckResponse>> check = new AtomicReference<>();

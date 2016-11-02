@@ -121,7 +121,7 @@ public class DefaultJerseyMapperTest {
                 "z=" + z +
                 ", b=" + b +
                 ", s=" + s +
-                ", c=" + (long) c + // cast char to long, otherwise results in invalid UTF-8
+                ", c=" + (int) c + // cast char to long, otherwise results in invalid UTF-8
                 ", i=" + i +
                 ", j=" + j +
                 ", f=" + f +

@@ -5,7 +5,6 @@ import com.jivesoftware.os.mlogger.core.ValueType;
 import com.jivesoftware.os.routing.bird.health.api.MinMaxHealthCheckConfig;
 import com.jivesoftware.os.routing.bird.health.api.MinMaxHealthChecker;
 import com.jivesoftware.os.routing.bird.health.api.ScheduledHealthCheck;
-import com.sun.management.UnixOperatingSystemMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import org.merlin.config.defaults.LongDefault;

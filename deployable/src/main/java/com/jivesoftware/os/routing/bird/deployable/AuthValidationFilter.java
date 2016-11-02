@@ -3,6 +3,7 @@ package com.jivesoftware.os.routing.bird.deployable;
 import com.google.common.collect.Lists;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.routing.bird.health.checkers.PercentileHealthChecker;
 import com.jivesoftware.os.routing.bird.server.oauth.OAuthEvaluator;
 import com.jivesoftware.os.routing.bird.server.oauth.OAuthServiceLocatorShim;
 import com.jivesoftware.os.routing.bird.server.oauth.route.RouteOAuthValidatorInitializer;
@@ -14,8 +15,6 @@ import com.jivesoftware.os.routing.bird.server.session.SessionEvaluator;
 import com.jivesoftware.os.routing.bird.server.session.SessionValidator;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator.AuthStatus;
-import com.jivesoftware.os.routing.bird.shared.TenantRoutingProvider;
-import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescriptorProvider;
 import java.io.IOException;
 import java.util.List;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -31,6 +30,7 @@ import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
 public class AuthValidationFilter implements ContainerRequestFilter {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
+    private final PercentileHealthChecker successRate;
 
     private final Deployable deployable;
     private final InstanceConfig instanceConfig;
@@ -39,7 +39,8 @@ public class AuthValidationFilter implements ContainerRequestFilter {
     private final OAuth1Signature verifier = new OAuth1Signature(new OAuthServiceLocatorShim());
     private boolean dryRun = false;
 
-    public AuthValidationFilter(Deployable deployable) {
+    public AuthValidationFilter(PercentileHealthChecker successRate, Deployable deployable) {
+        this.successRate = successRate;
         this.deployable = deployable;
         this.instanceConfig = deployable.config(InstanceConfig.class);
     }
@@ -90,15 +91,25 @@ public class AuthValidationFilter implements ContainerRequestFilter {
             if (pathedAuthEvaluator.matches(path)) {
                 matches.add(pathedAuthEvaluator.evaluator);
                 if (pathedAuthEvaluator.evaluator.authorize(requestContext) == AuthStatus.authorized) {
+                    if (successRate != null) {
+                        successRate.check(1d, "", "");
+                    }
+                    LOG.inc("auth>authorized");
+                    LOG.inc("auth>authorized>" + pathedAuthEvaluator.evaluator.getClass().getSimpleName());
                     return;
                 }
             } else {
                 misses.add(pathedAuthEvaluator.evaluator);
             }
         }
+        if (successRate != null) {
+            successRate.check(0d, "", "");
+        }
         if (dryRun) {
+            LOG.inc("auth>unauthorize>dryRun");
             LOG.warn("Dry run validation failed, matches:{} misses:{}", matches, misses);
         } else {
+            LOG.inc("auth>unauthorized");
             requestContext.abortWith(Response.status(Status.UNAUTHORIZED).entity("Auth validation failed").build());
         }
     }
@@ -109,6 +120,7 @@ public class AuthValidationFilter implements ContainerRequestFilter {
     }
 
     static class PathedAuthEvaluator {
+
         private final AuthEvaluator evaluator;
         private final String[] paths;
         private final boolean[] wildcards;

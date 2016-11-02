@@ -64,13 +64,13 @@ public class GCLoadHealthChecker extends MinMaxHealthChecker implements Schedule
 
             long timeSpendInGC = totalTimeInGC - lastGCTotalTime;
             long cpuTimeSinceLastSample = (System.currentTimeMillis() - lastTime) * availableProcessors;
-            double percentageOfCPUTimeInGC = ((float) (timeSpendInGC) / (float) cpuTimeSinceLastSample);
+            double percentageOfCPUTimeInGC = ((timeSpendInGC) / (float) cpuTimeSinceLastSample);
 
             lastGCTotalTime = totalTimeInGC;
             lastTime = System.currentTimeMillis();
 
             Counter counter = new Counter(ValueType.RATE);
-            counter.set((int) (percentageOfCPUTimeInGC * 100));
+            counter.set((long) (percentageOfCPUTimeInGC * 100));
             check(counter, config.getDescription(), "Consider tuning GC parameters.");
         } catch (Exception x) {
             // TODO what?

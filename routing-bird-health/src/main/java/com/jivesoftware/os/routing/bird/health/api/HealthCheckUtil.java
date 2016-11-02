@@ -34,7 +34,7 @@ public class HealthCheckUtil {
             }
             return -Double.MAX_VALUE;
         }
-        return (double) (_value - _min) / (double) (_max - _min);
+        return (_value - _min) / (double) (_max - _min);
     }
 
     public static double zeroToOne(double _min, double _max, double _value) {
@@ -47,6 +47,6 @@ public class HealthCheckUtil {
             }
             return -Double.MAX_VALUE;
         }
-        return (double) (_value - _min) / (double) (_max - _min);
+        return (_value - _min) / (_max - _min);
     }
 }

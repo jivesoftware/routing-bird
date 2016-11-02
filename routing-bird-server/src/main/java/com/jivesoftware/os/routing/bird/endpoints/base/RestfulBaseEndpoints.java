@@ -299,14 +299,16 @@ public class RestfulBaseEndpoints {
     public Response metricsUI(@Context UriInfo uriInfo) {
         try {
             final HtmlCanvas canvas = new HtmlCanvas();
-            canvas.html();
-            canvas.body();
-
-            canvas.h1().content("Service:" + resfulServiceName.name + ":" + resfulServiceName.port);
-
-            canvas.hr();
+            
             canvas.h1().content("Counters: ");
-            canvas.table();
+            HtmlAttributes tableAttributes = HtmlAttributesFactory
+                .class_("table")
+                .class_("table-striped")
+                .class_("table-bordered")
+                .class_("table-hover")
+                .class_("table-condensed");
+
+            canvas.table(tableAttributes);
             canvas.tr();
             canvas.td().content("Count");
             canvas.td().content("Name");
@@ -325,7 +327,14 @@ public class RestfulBaseEndpoints {
 
             canvas.hr();
             canvas.h1().content("Timers: ");
-            canvas.table();
+             tableAttributes = HtmlAttributesFactory
+                .class_("table")
+                .class_("table-striped")
+                .class_("table-bordered")
+                .class_("table-hover")
+                .class_("table-condensed");
+
+            canvas.table(tableAttributes);
             canvas.tr();
             canvas.td().content("Timer");
             canvas.td().content("Name");
@@ -342,8 +351,6 @@ public class RestfulBaseEndpoints {
 
             canvas._table();
 
-            canvas._body();
-            canvas._html();
             return Response.ok(canvas.toHtml(), MediaType.TEXT_HTML).build();
         } catch (Exception x) {
             LOG.warn("Failed build UI html.", x);
@@ -358,41 +365,45 @@ public class RestfulBaseEndpoints {
 
             NumberFormat numberFormat = NumberFormat.getNumberInstance();
             HtmlCanvas canvas = new HtmlCanvas();
-            canvas.html();
-            canvas.body();
-
-            canvas.h1().content("Service:" + resfulServiceName.name + ":" + resfulServiceName.port);
             List<HealthCheckResponse> checkHealth = healthCheckService.checkHealth();
+            //table table-striped table-bordered table-hover table-condensed
 
-            HtmlAttributes border = HtmlAttributesFactory.style("border: 1px solid  gray;");
-            canvas.table(border);
-            canvas.tr(HtmlAttributesFactory.style("background-color:#bbbbbb;"));
-            canvas.td(border).content(String.valueOf("Health"));
-            canvas.td(border).content(String.valueOf("Name"));
-            canvas.td(border).content(String.valueOf("Status"));
-            canvas.td(border).content(String.valueOf("Description"));
-            canvas.td(border).content(String.valueOf("Resolution"));
-            canvas.td(border).content(String.valueOf("Age in millis"));
+            HtmlAttributes tableAttributes = HtmlAttributesFactory
+                .class_("table")
+                .class_("table-striped")
+                .class_("table-bordered")
+                .class_("table-hover")
+                .class_("table-condensed");
+
+            canvas.table(tableAttributes);
+            canvas.th();
+            canvas.tr();
+            canvas.td().content(String.valueOf("Health"));
+            canvas.td().content(String.valueOf("Name"));
+            canvas.td().content(String.valueOf("Status"));
+            canvas.td().content(String.valueOf("Description"));
+            canvas.td().content(String.valueOf("Resolution"));
+            canvas.td().content(String.valueOf("Age"));
             canvas._tr();
+            canvas._th();
 
+            canvas.tbody();
             long now = System.currentTimeMillis();
             for (HealthCheckResponse response : checkHealth) {
                 if (-Double.MAX_VALUE != response.getHealth()) {
                     canvas.tr();
                     canvas.td(HtmlAttributesFactory.style("background-color:#" + getHEXTrafficlightColor(response.getHealth()) + ";"))
                         .content(String.valueOf(numberFormat.format(response.getHealth())));
-                    canvas.td(border).content(String.valueOf(response.getName()));
-                    canvas.td(border).content(String.valueOf(response.getStatus()));
-                    canvas.td(border).content(String.valueOf(response.getDescription()));
-                    canvas.td(border).content(String.valueOf(response.getResolution()));
-                    canvas.td(border).content(String.valueOf(humanReadableUptime(now - response.getTimestamp())));
+                    canvas.td().content(String.valueOf(response.getName()));
+                    canvas.td().content(String.valueOf(response.getStatus()));
+                    canvas.td().content(String.valueOf(response.getDescription()));
+                    canvas.td().content(String.valueOf(response.getResolution()));
+                    canvas.td().content(String.valueOf(shortHumanReadableUptime(now - response.getTimestamp())));
                     canvas._tr();
                 }
             }
+            canvas._tbody();
             canvas._table();
-
-            canvas._body();
-            canvas._html();
             return Response.ok(canvas.toHtml(), MediaType.TEXT_HTML).build();
         } catch (Exception x) {
             LOG.warn("Failed build UI html.", x);
@@ -400,11 +411,13 @@ public class RestfulBaseEndpoints {
         }
     }
 
-    public static String humanReadableUptime(long millis) {
+    public static String shortHumanReadableUptime(long millis) {
         if (millis < 0) {
             return String.valueOf(millis);
         }
 
+        long days = TimeUnit.MILLISECONDS.toDays(millis);
+        millis -= TimeUnit.DAYS.toMillis(days);
         long hours = TimeUnit.MILLISECONDS.toHours(millis);
         millis -= TimeUnit.HOURS.toMillis(hours);
         long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
@@ -413,22 +426,19 @@ public class RestfulBaseEndpoints {
         millis -= TimeUnit.SECONDS.toMillis(seconds);
 
         StringBuilder sb = new StringBuilder(64);
-        if (hours < 10) {
-            sb.append('0');
+        if (days > 0) {
+            sb.append(days + "d ");
         }
-        sb.append(hours);
-        sb.append(":");
-        if (minutes < 10) {
-            sb.append('0');
+        if (hours > 0) {
+            sb.append(hours + "h ");
         }
-        sb.append(minutes);
-        sb.append(":");
-        if (seconds < 10) {
-            sb.append('0');
+        if (minutes > 0) {
+            sb.append(minutes + "m ");
         }
-        sb.append(seconds);
-
-        return (sb.toString());
+        if (seconds > 0) {
+            sb.append(seconds + "s");
+        }
+        return sb.toString();
     }
 
     String getHEXTrafficlightColor(double value) {

@@ -29,6 +29,7 @@ import com.jivesoftware.os.routing.bird.health.HealthCheckResponse;
 import com.jivesoftware.os.routing.bird.health.HealthCheckResponseImpl;
 import com.jivesoftware.os.routing.bird.health.api.ResettableHealthCheck;
 import com.jivesoftware.os.routing.bird.health.api.ScheduledHealthCheck;
+import com.jivesoftware.os.routing.bird.health.checkers.PercentileHealthChecker;
 import com.jivesoftware.os.routing.bird.http.client.HttpClient;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientConfig;
 import com.jivesoftware.os.routing.bird.http.client.HttpClientFactoryProvider;
@@ -72,7 +73,6 @@ public class Deployable {
     private RestfulManageServer restfulManageServer;
     private final AtomicBoolean manageServerStarted = new AtomicBoolean(false);
     private final AtomicReference<String> keyStorePassword = new AtomicReference<>();
-    //--------------------------------------------------------------------------
     private InitializeRestfulServer restfulServer;
     private JerseyEndpoints jerseyEndpoints;
     private final AtomicBoolean serverStarted = new AtomicBoolean(false);
@@ -129,12 +129,16 @@ public class Deployable {
             instanceConfig.getManageMaxQueuedRequests());
 
         if (instanceConfig.getManageServiceAuthEnabled()) {
-            AuthValidationFilter authValidationFilter = new AuthValidationFilter(this)
+            DeployableManageAuthHealthCheckConfig authHealthCheckConfig = configBinder.bind(DeployableManageAuthHealthCheckConfig.class);
+            PercentileHealthChecker healthChecker = new PercentileHealthChecker(authHealthCheckConfig);
+
+            AuthValidationFilter authValidationFilter = new AuthValidationFilter(healthChecker, this)
                 .addNoAuth("/manage/health")
                 .addRouteOAuth("/*")
                 .addSessionAuth("/*")
                 .dryRun(instanceConfig.getManageServiceAuthDryRun());
             restfulManageServer.addContainerRequestFilter(authValidationFilter);
+            restfulManageServer.addHealthCheck(healthChecker);
         }
 
         restfulManageServer.addEndpoint(TenantRoutingRestEndpoints.class);
@@ -243,7 +247,7 @@ public class Deployable {
                 RestfulManageServer server = restfulManageServer.initialize();
                 healthCheck.setHealthy("'" + applicationName + "' service is initialized.");
                 banneredOneLiner("'" + applicationName + "' service started. Elapse:" + (System.currentTimeMillis() - time));
-                server.addHealthCheck((HealthCheck) () -> {
+                server.addHealthCheck(() -> {
                     String status = "Service on port:" + instanceConfig.getManagePort() + " has"
                         + " current:" + server.getThreads()
                         + " idle:" + server.getIdleThreads()
@@ -266,7 +270,6 @@ public class Deployable {
         }
     }
 
-    //--------------------------------------------------------------------------
     public void enableSwagger(String resourcePackage) {
         jerseyEndpoints.enableSwagger(resourcePackage);
     }
@@ -297,16 +300,12 @@ public class Deployable {
     }
 
     private void initializeMemoryExceptionsHandler(OOMHealthCheck oomhc, UncaughtExceptionHealthCheck uehc) {
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-
-            @Override
-            public void uncaughtException(Thread t, Throwable e) {
-                if (e instanceof OutOfMemoryError) {
-                    oomhc.oomed.set(true);
-                } else {
-                    LOG.error("UncaughtException", e);
-                    uehc.unhandled.add(t.getName() + " throwable:" + e + " cause:" + e.getCause());
-                }
+        Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> {
+            if (e instanceof OutOfMemoryError) {
+                oomhc.oomed.set(true);
+            } else {
+                LOG.error("UncaughtException", e);
+                uehc.unhandled.add(t.getName() + " throwable:" + e + " cause:" + e.getCause());
             }
         });
     }

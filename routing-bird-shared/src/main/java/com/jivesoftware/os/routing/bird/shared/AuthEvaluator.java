@@ -2,7 +2,6 @@ package com.jivesoftware.os.routing.bird.shared;
 
 import java.io.IOException;
 import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
 
 /**
  *

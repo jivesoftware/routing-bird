@@ -4,8 +4,6 @@ import com.jivesoftware.os.routing.bird.health.HealthCheckResponse;
 import com.jivesoftware.os.routing.bird.health.api.HealthCheckConfig;
 import com.jivesoftware.os.routing.bird.health.api.ScheduledHealthCheck;
 import java.lang.management.ManagementFactory;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.concurrent.TimeUnit;
 import javax.management.Attribute;
 import javax.management.AttributeList;
