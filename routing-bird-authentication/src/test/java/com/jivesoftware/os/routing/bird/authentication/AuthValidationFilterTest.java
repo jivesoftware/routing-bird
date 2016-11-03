@@ -11,6 +11,16 @@ import org.testng.annotations.Test;
 public class AuthValidationFilterTest {
 
     @Test
+    public void testRootPath() throws Exception {
+        PathedAuthEvaluator pathedAuthEvaluator = new PathedAuthEvaluator(new NoAuthEvaluator(), "/");
+        Assert.assertTrue(pathedAuthEvaluator.matches("/"));
+        Assert.assertFalse(pathedAuthEvaluator.matches("/a"));
+        Assert.assertFalse(pathedAuthEvaluator.matches("/a/"));
+        Assert.assertFalse(pathedAuthEvaluator.matches("/a/b/"));
+        Assert.assertFalse(pathedAuthEvaluator.matches("/a/b/c"));
+    }
+
+    @Test
     public void testNoWildcard() throws Exception {
         PathedAuthEvaluator pathedAuthEvaluator = new PathedAuthEvaluator(new NoAuthEvaluator(), "/a/b");
         Assert.assertTrue(pathedAuthEvaluator.matches("/a/b"));

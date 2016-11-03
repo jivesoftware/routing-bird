@@ -44,7 +44,7 @@ public class AuthValidationFilter implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         String path = '/' + requestContext.getUriInfo().getPath();
-        if (path.endsWith("/")) {
+        if (path.endsWith("/") && path.length() > 1) {
             path = path.substring(0, path.length() - 1);
         }
         List<AuthEvaluator> matches = Lists.newArrayList();
