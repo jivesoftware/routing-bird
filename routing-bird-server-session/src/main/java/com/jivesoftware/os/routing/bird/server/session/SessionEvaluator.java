@@ -23,7 +23,7 @@ public class SessionEvaluator implements AuthEvaluator {
     public AuthStatus authorize(ContainerRequestContext requestContext) throws IOException {
         try {
             if (sessionValidator != null) {
-                if (sessionValidator.isAuthenticated(requestContext)) {
+                if (sessionValidator.isAuthenticated(requestContext) || sessionValidator.exchangeAccessToken(requestContext)) {
                     return AuthStatus.authorized;
                 } else {
                     return AuthStatus.denied;
