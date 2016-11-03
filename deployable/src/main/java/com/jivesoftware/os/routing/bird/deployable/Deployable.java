@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.jivesoftware.os.mlogger.core.LoggerSummary;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.routing.bird.authentication.AuthRoutingBirdSessionFilter;
 import com.jivesoftware.os.routing.bird.authentication.AuthValidationFilter;
 import com.jivesoftware.os.routing.bird.authentication.NoAuthEvaluator;
 import com.jivesoftware.os.routing.bird.deployable.config.extractor.ConfigBinder;
@@ -558,25 +559,37 @@ public class Deployable implements ConfigProvider {
         AuthValidator<OAuth1Signature, OAuth1Request> routeOAuthValidator = new RouteOAuthValidatorInitializer().initialize(routeOAuthValidatorConfig,
             instanceConfig.getRoutesHost(),
             instanceConfig.getRoutesPort(),
-            "http", //TODO
+            "http",
             instanceConfig.getOauthValidatorPath());
         routeOAuthValidator.start();
         return new OAuthEvaluator(routeOAuthValidator, verifier);
     }
 
+    private AuthRoutingBirdSessionFilter authRoutingBirdSessionFilter;
+
     public Deployable addSessionAuth(String... paths) throws Exception {
         authValidationFilter().addEvaluator(sessionAuth(), paths);
+
+        synchronized (this) {
+            if (authRoutingBirdSessionFilter == null) {
+                authRoutingBirdSessionFilter = new AuthRoutingBirdSessionFilter();
+                jerseyEndpoints.addContainerResponseFilter(authRoutingBirdSessionFilter);
+            }
+        }
         return this;
     }
 
     public SessionEvaluator sessionAuth() {
         RouteSessionValidatorInitializer.RouteSessionValidatorConfig sessionValidatorConfig = config(
             RouteSessionValidatorInitializer.RouteSessionValidatorConfig.class);
-        SessionValidator routeSessionValidator = new RouteSessionValidatorInitializer().initialize(sessionValidatorConfig,
+        SessionValidator routeSessionValidator = new RouteSessionValidatorInitializer().initialize(
+            sessionValidatorConfig,
+            instanceConfig.getInstanceKey(),
             instanceConfig.getRoutesHost(),
             instanceConfig.getRoutesPort(),
-            "http", //TODO
-            instanceConfig.getSessionValidatorPath());
+            "http",
+            instanceConfig.getSessionValidatorPath(),
+            instanceConfig.getSessionExchangePath());
         return new SessionEvaluator(routeSessionValidator);
     }
 

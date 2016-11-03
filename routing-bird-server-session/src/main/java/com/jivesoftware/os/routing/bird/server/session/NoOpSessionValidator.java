@@ -21,4 +21,10 @@ public class NoOpSessionValidator implements SessionValidator {
     public String getId(ContainerRequestContext requestContext) {
         return null;
     }
+
+    @Override
+    public boolean exchangeAccessToken(ContainerRequestContext requestContext) {
+        return false;
+    }
+
 }

@@ -46,6 +46,11 @@ public interface InstanceConfig extends Config {
 
     void setPasswordsPath(String path);
 
+    @Default("/session/exchangeAccessToken")
+    String getSessionExchangePath();
+
+    void setSessionExchangePath(String path);
+
     @Default("/session/validate")
     String getSessionValidatorPath();
 
@@ -110,7 +115,6 @@ public interface InstanceConfig extends Config {
 
     @BooleanDefault(true)
     boolean getMainServiceAuthDryRun();
-
 
     @BooleanDefault(true)
     boolean getManageLoopback();

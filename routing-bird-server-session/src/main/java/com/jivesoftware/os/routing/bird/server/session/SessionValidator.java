@@ -10,4 +10,6 @@ public interface SessionValidator {
     boolean isAuthenticated(ContainerRequestContext requestContext) throws SessionValidationException;
 
     String getId(ContainerRequestContext requestContext);
+
+    boolean exchangeAccessToken(ContainerRequestContext requestContext);
 }

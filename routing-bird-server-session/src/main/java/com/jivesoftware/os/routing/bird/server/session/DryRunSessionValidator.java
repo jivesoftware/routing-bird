@@ -37,4 +37,10 @@ public class DryRunSessionValidator implements SessionValidator {
     public String getId(ContainerRequestContext requestContext) {
         return delegate.getId(requestContext);
     }
+
+    @Override
+    public boolean exchangeAccessToken(ContainerRequestContext requestContext) {
+        return delegate.exchangeAccessToken(requestContext);
+    }
+
 }

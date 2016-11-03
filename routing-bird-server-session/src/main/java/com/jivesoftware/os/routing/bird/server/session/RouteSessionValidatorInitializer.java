@@ -37,10 +37,13 @@ public class RouteSessionValidatorInitializer {
     }
 
     public SessionValidator initialize(RouteSessionValidatorConfig config,
+        String instanceKey,
         String routesHost,
         int routesPort,
         String routesScheme,
-        String routesValidatorPath) {
+        String routesValidatorPath,
+        String routesExchangePath
+    ) {
 
         if (!config.getSessionValidatorIsEnabled()) {
             return NoOpSessionValidator.SINGLETON;
@@ -63,7 +66,8 @@ public class RouteSessionValidatorInitializer {
         HttpClient httpClient = clientFactory.createClient(null, routesHost, routesPort);
         HttpRequestHelper client = new HttpRequestHelper(httpClient, new ObjectMapper());
 
-        SessionValidator sessionValidator = new RouteSessionValidator(client, routesValidatorPath, config.getSessionCacheDurationMillis());
+        SessionValidator sessionValidator = new RouteSessionValidator(instanceKey, client, routesValidatorPath, routesExchangePath,
+            config.getSessionCacheDurationMillis());
 
         if (config.getSessionValidatorIsDryRun()) {
             sessionValidator = new DryRunSessionValidator(sessionValidator);

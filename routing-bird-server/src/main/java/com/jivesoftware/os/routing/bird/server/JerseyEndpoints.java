@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Set;
 import javax.servlet.DispatcherType;
 import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseFilter;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -56,6 +57,7 @@ public class JerseyEndpoints implements HasServletContextHandler {
     private final Set<Object> allBinders = new HashSet<>();
     private final List<Injectable<?>> allInjectables = Lists.newArrayList();
     private final List<ContainerRequestFilter> containerRequestFilters = Lists.newArrayList();
+    private final List<ContainerResponseFilter> containerResponseFilters = Lists.newArrayList();
     private boolean supportCORS = false;
     private String resourcePackage;
     private boolean enableSwagger = false;
@@ -104,6 +106,11 @@ public class JerseyEndpoints implements HasServletContextHandler {
 
     public JerseyEndpoints addContainerRequestFilter(ContainerRequestFilter containerRequestFilter) {
         containerRequestFilters.add(containerRequestFilter);
+        return this;
+    }
+
+     public JerseyEndpoints addContainerResponseFilter(ContainerResponseFilter containerResponseFilter) {
+        containerResponseFilters.add(containerResponseFilter);
         return this;
     }
 
@@ -174,6 +181,11 @@ public class JerseyEndpoints implements HasServletContextHandler {
         for (ContainerRequestFilter containerRequestFilter : containerRequestFilters) {
             rc.register(containerRequestFilter);
         }
+        
+         for (ContainerResponseFilter containerResponseFilter : containerResponseFilters) {
+            rc.register(containerResponseFilter);
+        }
+
 
         ServletHolder servletHolder = new ServletHolder(new ServletContainer(rc));
         ServletContextHandler servletContextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
