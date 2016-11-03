@@ -9,6 +9,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 public interface AuthEvaluator {
 
     enum AuthStatus {
+        expired,
         authorized,
         denied,
         not_handled

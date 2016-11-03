@@ -15,14 +15,13 @@ public class AuthRoutingBirdSessionFilter implements ContainerResponseFilter {
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException {
 
-        Object rbSessionId = requestContext.getProperty("rb_session_id");
-        Object rbSessionToken = requestContext.getProperty("rb_session_token");
-        if (rbSessionId == null || rbSessionToken == null) {
-            return;
-        }
         MultivaluedMap<String, Object> headers = responseContext.getHeaders();
-        headers.add("Set-Cookie", new NewCookie("rb_session_id", rbSessionId.toString()));
-        headers.add("Set-Cookie", new NewCookie("rb_session_token", rbSessionToken.toString()));
+        for (String name : requestContext.getPropertyNames()) {
+            if (name.startsWith("rb_session_token")) {
+                Object rbSessionToken = requestContext.getProperty(name);
+                headers.add("Set-Cookie", new NewCookie(name, rbSessionToken.toString()));
+            }
+        }
     }
 
 }

@@ -13,8 +13,8 @@ public class NoOpSessionValidator implements SessionValidator {
     }
 
     @Override
-    public boolean isAuthenticated(ContainerRequestContext requestContext) throws SessionValidationException {
-        return true;
+    public SessionStatus isAuthenticated(ContainerRequestContext requestContext) throws SessionValidationException {
+        return SessionStatus.valid;
     }
 
     @Override

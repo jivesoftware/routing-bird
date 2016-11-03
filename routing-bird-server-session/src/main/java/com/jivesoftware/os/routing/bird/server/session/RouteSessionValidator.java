@@ -43,46 +43,43 @@ public class RouteSessionValidator implements SessionValidator {
     }
 
     @Override
-    public boolean isAuthenticated(ContainerRequestContext requestContext) throws SessionValidationException {
-        Cookie sessionIdCookie = requestContext.getCookies().get(SESSION_ID);
-        String sessionId = sessionIdCookie == null ? null : sessionIdCookie.getValue();
+    public SessionStatus isAuthenticated(ContainerRequestContext requestContext) throws SessionValidationException {
 
-        Cookie sessionTokenCookie = requestContext.getCookies().get(SESSION_TOKEN);
+        String sessionTokenKey = SESSION_TOKEN + "_" + instanceKey;
+        Cookie sessionTokenCookie = requestContext.getCookies().get(sessionTokenKey);
         String sessionToken = sessionTokenCookie == null ? null : sessionTokenCookie.getValue();
 
         Boolean result = null;
-        if (sessionId != null && sessionToken != null) {
+        if (sessionToken != null) {
             Session session = sessions.get(sessionToken);
             if (session == null || session.timestamp < System.currentTimeMillis() - sessionCacheDurationMillis) {
                 Map<String, String> cookies = Maps.newHashMap();
-                cookies.put(SESSION_ID, sessionId);
+                cookies.put(SESSION_ID, instanceKey);
                 cookies.put(SESSION_TOKEN, sessionToken);
                 result = requestHelper.executeRequest(cookies, validatorPath, Boolean.class, null);
-
                 if (result == null) {
-                    throw new SessionValidationException("Routes failed to respond to validation request for id:" + sessionId);
+                    throw new SessionValidationException("Routes failed to respond to validation request for id:" + instanceKey);
                 } else if (result) {
                     Session got = sessions.compute(sessionToken, (key, value) -> {
                         long timestamp = System.currentTimeMillis();
                         if (value == null || timestamp > value.timestamp) {
-                            value = new Session(sessionId, timestamp);
+                            value = new Session(instanceKey, timestamp);
                         }
                         return value;
                     });
-                    if (!got.id.equals(sessionId)) {
-                        LOG.warn("Invalid session for token: {} != {}", sessionId, got.id);
-                        result = false;
+                    if (!got.id.equals(instanceKey)) {
+                        LOG.warn("Invalid session for token: {} != {}", instanceKey, got.id);
+                        return SessionStatus.invalid;
                     }
                 } else {
                     sessions.remove(sessionToken);
+                    return SessionStatus.expired;
                 }
-            } else {
-                result = true;
             }
+            return SessionStatus.valid;
         }
+        return SessionStatus.invalid;
 
-        LOG.info("Session validator for id:{} returned result:{}", sessionId, result);
-        return result != null && result;
     }
 
     @Override
@@ -93,21 +90,17 @@ public class RouteSessionValidator implements SessionValidator {
 
     @Override
     public boolean exchangeAccessToken(ContainerRequestContext requestContext) {
-        String sessionId = (String) requestContext.getProperty("rb_session_id");
-        if (sessionId == null) {
-            List<String> accessToken = requestContext.getUriInfo().getQueryParameters().get("rb_access_token");
-            if (accessToken != null && !accessToken.isEmpty()) {
-                try {
-                    byte[] sessionToken = requestHelper.executeGet(exchangePath + "/" + instanceKey + "/" + accessToken.get(0));
-                    if (sessionToken != null) {
-                        requestContext.setProperty("rb_session_id", instanceKey);
-                        requestContext.setProperty("rb_session_token", new String(sessionToken, StandardCharsets.UTF_8));
-                        return true;
-                    }
-                } catch (NonSuccessStatusCodeException e) {
-                    LOG.warn("access token rejected.", e);
-                    return false;
+        List<String> accessToken = requestContext.getUriInfo().getQueryParameters().get("rb_access_token");
+        if (accessToken != null && !accessToken.isEmpty()) {
+            try {
+                byte[] sessionToken = requestHelper.executeGet(exchangePath + "/" + instanceKey + "/" + accessToken.get(0));
+                if (sessionToken != null) {
+                    requestContext.setProperty("rb_session_token_" + instanceKey, new String(sessionToken, StandardCharsets.UTF_8));
+                    return true;
                 }
+            } catch (NonSuccessStatusCodeException e) {
+                LOG.warn("access token rejected.", e);
+                return false;
             }
         }
         return false;

@@ -18,11 +18,11 @@ public class DryRunSessionValidator implements SessionValidator {
     }
 
     @Override
-    public boolean isAuthenticated(ContainerRequestContext requestContext) throws SessionValidationException {
+    public SessionStatus isAuthenticated(ContainerRequestContext requestContext) throws SessionValidationException {
         String id = delegate.getId(requestContext);
         try {
-            boolean valid = delegate.isAuthenticated(requestContext);
-            if (valid) {
+            SessionStatus status = delegate.isAuthenticated(requestContext);
+            if (SessionStatus.valid == status) {
                 LOG.info("Dry run validation passed for id:{}", id);
             } else {
                 LOG.info("Dry run validation failed for id:{}", id);
@@ -30,7 +30,7 @@ public class DryRunSessionValidator implements SessionValidator {
         } catch (Exception x) {
             LOG.warn("Dry run validation failed for id:{}", new Object[] { id }, x);
         }
-        return true;
+        return SessionStatus.valid;
     }
 
     @Override

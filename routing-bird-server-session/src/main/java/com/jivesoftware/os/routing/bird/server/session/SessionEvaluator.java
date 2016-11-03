@@ -23,10 +23,11 @@ public class SessionEvaluator implements AuthEvaluator {
     public AuthStatus authorize(ContainerRequestContext requestContext) throws IOException {
         try {
             if (sessionValidator != null) {
-                if (sessionValidator.isAuthenticated(requestContext) || sessionValidator.exchangeAccessToken(requestContext)) {
+                SessionStatus status = sessionValidator.isAuthenticated(requestContext);
+                if (status == SessionStatus.valid || sessionValidator.exchangeAccessToken(requestContext)) {
                     return AuthStatus.authorized;
                 } else {
-                    return AuthStatus.denied;
+                    return status == SessionStatus.expired ? AuthStatus.expired : AuthStatus.denied;
                 }
             }
             return AuthStatus.not_handled;
