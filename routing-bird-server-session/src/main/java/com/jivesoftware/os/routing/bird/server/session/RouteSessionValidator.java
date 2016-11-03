@@ -76,10 +76,12 @@ public class RouteSessionValidator implements SessionValidator {
                 } else {
                     sessions.remove(sessionToken);
                 }
+            } else {
+                result = true;
             }
         }
 
-        LOG.info("Session validator for id:{} returned result:{}", result, sessionId);
+        LOG.info("Session validator for id:{} returned result:{}", sessionId, result);
         return result != null && result;
     }
 
