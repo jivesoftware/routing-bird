@@ -38,7 +38,7 @@ public class RouteOAuthValidatorInitializer {
         long getOauthValidatorCheckForRemovedSecretsEveryNMillis();
 
         // Will reject requests more than five seconds old ...
-        @LongDefault(5 * 1000)
+        @LongDefault(60 * 1000)
         long getOauthValidatorRequestTimestampAgeLimitMillis();
 
         @LongDefault(72 * 60 * 60 * 1000)
