@@ -218,8 +218,8 @@ public class Deployable implements ConfigProvider {
 
         return (request) -> {
             CommonsHttpOAuthConsumer oAuthConsumer = new CommonsHttpOAuthConsumer(consumerKey, consumerSecret);
-            oAuthConsumer.setTokenWithSecret(token, tokenSecret);
             oAuthConsumer.setMessageSigner(new RsaSha1MessageSigner());
+            oAuthConsumer.setTokenWithSecret(token, tokenSecret);
             return oAuthConsumer.sign(request);
         };
     }
