@@ -25,7 +25,7 @@ public class RouteSessionValidatorInitializer {
         @BooleanDefault(value = true)
         boolean getSessionValidatorIsEnabled();
 
-        @BooleanDefault(value = true)
+        @BooleanDefault(value = false)
         boolean getSessionValidatorIsDryRun();
 
         @IntDefault(value = 60 * 1000)

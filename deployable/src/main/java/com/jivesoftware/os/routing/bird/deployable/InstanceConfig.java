@@ -113,7 +113,7 @@ public interface InstanceConfig extends Config {
     @BooleanDefault(false)
     boolean getMainServiceAuthEnabled();
 
-    @BooleanDefault(true)
+    @BooleanDefault(false)
     boolean getMainServiceAuthDryRun();
 
     @BooleanDefault(true)
@@ -128,7 +128,7 @@ public interface InstanceConfig extends Config {
     @BooleanDefault(false)
     boolean getManageServiceAuthEnabled();
 
-    @BooleanDefault(true)
+    @BooleanDefault(false)
     boolean getManageServiceAuthDryRun();
 
     @IntDefault(1024)

@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.http.client.HttpRequestHelper;
+import com.jivesoftware.os.routing.bird.http.client.NonSuccessStatusCodeException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -94,11 +95,16 @@ public class RouteSessionValidator implements SessionValidator {
         if (sessionId == null) {
             List<String> accessToken = requestContext.getUriInfo().getQueryParameters().get("rb_access_token");
             if (accessToken != null && !accessToken.isEmpty()) {
-                byte[] sessionToken = requestHelper.executeGet(exchangePath + "/" + instanceKey + "/" + accessToken.get(0));
-                if (sessionToken != null) {
-                    requestContext.setProperty("rb_session_id", instanceKey);
-                    requestContext.setProperty("rb_session_token", new String(sessionToken, StandardCharsets.UTF_8));
-                    return true;
+                try {
+                    byte[] sessionToken = requestHelper.executeGet(exchangePath + "/" + instanceKey + "/" + accessToken.get(0));
+                    if (sessionToken != null) {
+                        requestContext.setProperty("rb_session_id", instanceKey);
+                        requestContext.setProperty("rb_session_token", new String(sessionToken, StandardCharsets.UTF_8));
+                        return true;
+                    }
+                } catch (NonSuccessStatusCodeException e) {
+                    LOG.warn("access token rejected.", e);
+                    return false;
                 }
             }
         }
