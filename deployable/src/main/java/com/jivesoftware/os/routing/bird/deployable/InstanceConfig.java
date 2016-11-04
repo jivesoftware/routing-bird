@@ -22,6 +22,12 @@ import org.merlin.config.defaults.IntDefault;
 
 public interface InstanceConfig extends Config {
 
+    @Default("")
+    String getDebuggerAddress();
+
+    @Default("")
+    String getJMXAddress();
+
     @Default("defaultDatacenter")
     String getDatacenter();
 
