@@ -28,21 +28,23 @@ public class DryRunOAuthValidator implements AuthValidator<OAuth1Signature, OAut
     }
 
     @Override
-    public boolean isValid(OAuth1Signature verifier, OAuth1Request request) throws AuthValidationException {
+    public AuthValidationResult isValid(OAuth1Signature verifier, OAuth1Request request) throws AuthValidationException {
         OAuth1Parameters params = new OAuth1Parameters();
         params.readRequest(request);
         String consumerKey = params.getConsumerKey();
         try {
-            boolean valid = authValidator.isValid(verifier, request);
-            if (valid) {
+            AuthValidationResult result = authValidator.isValid(verifier, request);
+            if (result.authorized) {
                 LOG.info("Dry run validation passed for consumerKey:{}", consumerKey);
+                return result;
             } else {
                 LOG.info("Dry run validation failed for consumerKey:{}", consumerKey);
+                return new AuthValidationResult(consumerKey, true);
             }
         } catch (AuthValidationException x) {
             LOG.warn("Dry run validation failed for consumerKey:{}", new Object[] { consumerKey }, x);
+            return new AuthValidationResult(consumerKey, true);
         }
-        return true;
     }
 
     @Override

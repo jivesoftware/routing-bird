@@ -84,7 +84,7 @@ public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAu
     }
 
     @Override
-    public boolean isValid(OAuth1Signature oAuth1Signature, OAuth1Request request) throws AuthValidationException {
+    public AuthValidationResult isValid(OAuth1Signature oAuth1Signature, OAuth1Request request) throws AuthValidationException {
         if (doLoadBalancerRejiggering) {
             LOG.trace("request will be rejiggered");
             LOG.inc("oauth>rejiggeredRequest");
@@ -100,14 +100,14 @@ public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAu
         String consumerKey = params.getConsumerKey();
         if (consumerKey == null) {
             LOG.warn("Missing consumerKey");
-            return false;
+            return new AuthValidationResult(null, false);
         }
 
         // Check that the timestamp has not expired. Note: oauth timestamp is in seconds ...
         String timestampStr = params.getTimestamp();
         if (timestampStr == null) {
             LOG.warn("Missing timestamp for request by consumerKey:{}", consumerKey);
-            return false;
+            return new AuthValidationResult(null, false);
         }
 
         long oauthTimeStamp = Long.parseLong(timestampStr) * 1000L;
@@ -134,12 +134,12 @@ public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAu
         try {
             boolean verify = oAuth1Signature.verify(request, params, secrets);
             if (verify) {
-                return true;
+                return new AuthValidationResult(consumerKey, true);
             } else {
                 LOG.warn("OAuth signature verification failed for consumerKey:{}", consumerKey);
                 LOG.inc("oauth>error>verificationFailed");
                 LOG.inc("oauth>consumerKey>" + consumerKey + ">error>verificationFailed");
-                return false;
+                return new AuthValidationResult(null, false);
             }
         } catch (OAuth1SignatureException e) {
             LOG.warn("OAuth signature verification failed for consumerKey:{} exception:{}", consumerKey, e.getClass().getSimpleName());

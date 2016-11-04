@@ -17,6 +17,7 @@ package com.jivesoftware.os.routing.bird.server.oauth;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidationResult;
 import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidator;
 import com.jivesoftware.os.routing.bird.server.oauth.validator.AuthValidatorHelper;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator;
@@ -42,7 +43,12 @@ public class OAuthEvaluator implements AuthEvaluator {
         try {
             if (authValidator != null && verifier != null) {
                 OAuthServerRequest serverRequest = new OAuthServerRequest(requestContext);
-                if (AuthValidatorHelper.isValid(authValidator, verifier, serverRequest, Boolean.TRUE, Boolean.FALSE) == Boolean.TRUE) {
+                AuthValidationResult result = AuthValidatorHelper.isValid(authValidator, verifier, serverRequest);
+                if (result != null && result.authorized) {
+                    if (result.consumerKey != null) {
+                        requestContext.setProperty("oauthConsumerKey", result.consumerKey);
+                    }
+                    requestContext.setProperty("oauthAuthorized", true);
                     return AuthStatus.authorized;
                 } else {
                     return AuthStatus.denied;

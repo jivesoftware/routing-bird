@@ -19,21 +19,22 @@ public class AuthValidatorHelper {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
-    public static <V, R, B> B isValid(AuthValidator<V, R> authValidator, V verifier, R request, B success, B failure) {
+    public static <V, R> AuthValidationResult isValid(AuthValidator<V, R> authValidator, V verifier, R request) {
         try {
-            if (authValidator.isValid(verifier, request)) {
+            AuthValidationResult result = authValidator.isValid(verifier, request);
+            if (result != null && result.authorized) {
                 LOG.trace("Protocol and OAuth signature verification passed for verifier:{} request:{}",
                     verifier, request);
-                return success;
+                return result;
             } else {
                 LOG.warn("Protocol signature passed but OAuth signature did not pass for verifier:{} request:{}",
                     verifier, request);
-                return failure;
+                return result;
             }
         } catch (AuthValidationException ex) {
             LOG.warn("Protocol signature did not pass, OAuth signature not attempted for verifier:{} request:{} protocol error:{}",
                 verifier, request, ex.toString());
-            return failure;
+            return new AuthValidationResult(null, false);
         }
     }
 

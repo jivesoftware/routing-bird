@@ -21,8 +21,8 @@ public class NoOpAuthValidator<V, R> implements AuthValidator<V, R> {
     }
 
     @Override
-    public boolean isValid(V verifier, R request) throws AuthValidationException {
-        return true;
+    public AuthValidationResult isValid(V verifier, R request) throws AuthValidationException {
+        return new AuthValidationResult(null, true);
     }
 
     @Override
