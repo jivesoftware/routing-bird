@@ -12,16 +12,16 @@ CLASSPATH=`grep classpath $APP_ROOT/lib/build.properties | sed -e 's/[^=]*=//' |
 DEPLOYABLE_ARTIFACT=`grep deployable.artifact $APP_ROOT/lib/build.properties | sed -e 's/[^=]*=//'`
 JAVA_MAIN=`grep "java.main" $APP_ROOT/lib/build.properties | sed -e 's/[^=]*=//'`
 
-JMX_ADDRESS=`grep InstanceConfig_default_jmxAddress $APP_ROOT/config/instance.properties | sed -e 's/[^=]*=//'`
-JMX_PORT=`grep InstanceConfig_default_jmxPort $APP_ROOT/config/instance.properties | sed -e 's/[^=]*=//'`
+JMX_ADDRESS=`grep InstanceConfig_default_jmxAddress $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`
+JMX_PORT=`grep InstanceConfig_default_jmxPort $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`
 
 JMX=""
 if [ "$JMX_ADDRESS" != "" ]; then
     JMX="-Dcom.sun.management.jmxremote.port=${JMX_PORT} -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false  -Dcom.sun.management.jmxremote.host=${JMX_ADDRESS}"
 fi
 
-DEBUG_ADDRESS=`grep InstanceConfig_default_debugAddress $APP_ROOT/config/instance.properties | sed -e 's/[^=]*=//'`
-DEBUG_PORT=`grep InstanceConfig_default_debugPort $APP_ROOT/config/instance.properties | sed -e 's/[^=]*=//'`
+DEBUG_ADDRESS=`grep InstanceConfig_default_debugAddress $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`
+DEBUG_PORT=`grep InstanceConfig_default_debugPort $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`
 
 DEBUG=""
 if [ "$DEBUG_ADDRESS" != "" ]; then
