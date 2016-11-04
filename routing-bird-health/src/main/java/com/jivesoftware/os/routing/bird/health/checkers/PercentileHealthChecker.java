@@ -6,8 +6,9 @@ import com.jivesoftware.os.routing.bird.health.api.HealthCheckUtil;
 import com.jivesoftware.os.routing.bird.health.api.HealthChecker;
 import com.jivesoftware.os.routing.bird.health.api.PercentileHealthCheckConfig;
 import com.jivesoftware.os.routing.bird.health.api.ResettableHealthCheck;
-import java.util.concurrent.atomic.LongAdder;
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
+
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * @author jonathan.colt
@@ -28,6 +29,7 @@ public class PercentileHealthChecker implements HealthChecker<Double>, Resettabl
     public void check(Double sample, String description, String resolution) {
         if (sample != null && sample >= 0) {
             dstat.addValue(sample);
+            total.increment();
         }
     }
 
