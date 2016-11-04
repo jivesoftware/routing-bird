@@ -25,7 +25,7 @@ DEBUG_PORT=`grep InstanceConfig_default_debugPort $APP_ROOT/config/instance.prop
 
 DEBUG=""
 if [ "$DEBUG_ADDRESS" != "" ]; then
-    DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,address=${DEBUG_ADDRESS}:${DEBUG_PORT},server=y,suspend=n \"
+    DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,address=${DEBUG_ADDRESS}:${DEBUG_PORT},server=y,suspend=n"
 fi
 
 JAVA_XMX="-Xmx"`grep JavaStartupConfig_default_xmx $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`"m"
