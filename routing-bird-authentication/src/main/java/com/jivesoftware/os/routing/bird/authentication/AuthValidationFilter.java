@@ -49,7 +49,7 @@ public class AuthValidationFilter implements ContainerRequestFilter {
         }
         List<AuthEvaluator> matches = Lists.newArrayList();
         List<AuthEvaluator> misses = Lists.newArrayList();
-        AuthStatus failedAuthStatus = null;
+        AuthStatus failedAuthStatus = AuthStatus.not_handled;
         for (PathedAuthEvaluator pathedAuthEvaluator : evaluators) {
             if (pathedAuthEvaluator.matches(path)) {
                 matches.add(pathedAuthEvaluator.evaluator);
@@ -76,7 +76,7 @@ public class AuthValidationFilter implements ContainerRequestFilter {
             LOG.warn("Dry run validation failed, matches:{} misses:{}", matches, misses);
         } else {
             LOG.inc("auth>unauthorized");
-            requestContext.abortWith(Response.status(Status.UNAUTHORIZED).entity("Auth "+failedAuthStatus.name()).build());
+            requestContext.abortWith(Response.status(Status.UNAUTHORIZED).entity(failedAuthStatus.description()).build());
         }
     }
 
