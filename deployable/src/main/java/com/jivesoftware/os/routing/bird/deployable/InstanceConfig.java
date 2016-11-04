@@ -23,7 +23,7 @@ import org.merlin.config.defaults.IntDefault;
 public interface InstanceConfig extends Config {
 
     @Default("")
-    String getDebuggerAddress();
+    String getDebugAddress();
 
     @Default("")
     String getJMXAddress();
