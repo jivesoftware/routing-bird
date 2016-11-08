@@ -20,10 +20,12 @@ public class OAuthHttpRequestRejiggering implements OAuth1Request {
 
     private final OAuth1Request oAuth1Request;
     private final String originalProtocol;
+    private final int originalPort;
 
-    public OAuthHttpRequestRejiggering(OAuth1Request oAuth1Request, String originalProtocol) {
+    public OAuthHttpRequestRejiggering(OAuth1Request oAuth1Request, String originalProtocol, int originalPort) {
         this.oAuth1Request = oAuth1Request;
         this.originalProtocol = originalProtocol;
+        this.originalPort = originalPort;
     }
 
     @Override
@@ -35,7 +37,10 @@ public class OAuthHttpRequestRejiggering implements OAuth1Request {
     public URL getRequestURL() {
         try {
             URL url = oAuth1Request.getRequestURL();
-            return new URL(originalProtocol, url.getHost(), url.getPort(), url.getPath());
+            return new URL(originalProtocol,
+                url.getHost(),
+                originalPort == -1 ? url.getPort() : originalPort,
+                url.getPath());
         } catch (Exception x) {
             throw new RuntimeException("Failed to rejigger url", x);
         }

@@ -97,6 +97,7 @@ public class RouteOAuthValidatorInitializer {
             config.getOauthValidatorCheckForRemovedSecretsEveryNMillis(),
             authSecretManager,
             config.getOauthValidatorRequestTimestampAgeLimitMillis(),
+            false,
             false);
     }
 }

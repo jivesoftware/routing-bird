@@ -41,25 +41,29 @@ import org.glassfish.jersey.oauth1.signature.OAuth1SignatureException;
 public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAuth1Request> {
 
     public final static String LB_PROTO_HEADER = "x-forwarded-proto";
+    public final static String LB_PORT_HEADER = "x-forwarded-port";
     private final static MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private final ScheduledExecutorService newScheduledThreadPool;
     private final long validatorCheckForRemovedSecretsEveryNMillis;
     private final OAuthSecretManager secretManager;
     private final long timestampAgeLimitMillis;
-    private final Boolean doLoadBalancerRejiggering;
+    private final boolean doLoadBalancerRejiggering;
+    private final boolean doLoadBalancerPortRejiggering;
 
     public DefaultOAuthValidator(ScheduledExecutorService newScheduledThreadPool,
         long validatorCheckForRemovedSecretsEveryNMillis,
         OAuthSecretManager secretManager,
         long timestampAgeLimitMillis,
-        Boolean loadBalancerRejiggering) {
+        boolean doLoadBalancerRejiggering,
+        boolean doLoadBalancerPortRejiggering) {
 
         this.newScheduledThreadPool = newScheduledThreadPool;
         this.validatorCheckForRemovedSecretsEveryNMillis = validatorCheckForRemovedSecretsEveryNMillis;
         this.secretManager = secretManager;
         this.timestampAgeLimitMillis = timestampAgeLimitMillis;
-        this.doLoadBalancerRejiggering = (loadBalancerRejiggering == null) ? Boolean.FALSE : loadBalancerRejiggering;
+        this.doLoadBalancerRejiggering = doLoadBalancerRejiggering;
+        this.doLoadBalancerPortRejiggering = doLoadBalancerPortRejiggering;
     }
 
     @Override
@@ -90,7 +94,13 @@ public class DefaultOAuthValidator implements AuthValidator<OAuth1Signature, OAu
             LOG.inc("oauth>rejiggeredRequest");
             List<String> originalProtocol = request.getHeaderValues(LB_PROTO_HEADER);
             if (originalProtocol != null && !originalProtocol.isEmpty()) {
-                request = new OAuthHttpRequestRejiggering(request, originalProtocol.get(0));
+                try {
+                    List<String> originalPort = doLoadBalancerPortRejiggering ? request.getHeaderValues(LB_PORT_HEADER) : null;
+                    int lbPort = (originalPort == null || originalPort.isEmpty()) ? -1 : Integer.parseInt(originalPort.get(0));
+                    request = new OAuthHttpRequestRejiggering(request, originalProtocol.get(0), lbPort);
+                } catch (NumberFormatException e) {
+                    throw new AuthValidationException("Bad loadbalancer forwarded port", e);
+                }
             }
         }
 
