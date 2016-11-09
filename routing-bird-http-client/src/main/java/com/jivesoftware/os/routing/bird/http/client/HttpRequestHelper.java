@@ -225,7 +225,7 @@ public class HttpRequestHelper {
             response = httpClient.postJson(endpointUrl, postEntity, null);
         } catch (HttpClientException e) {
             throw new RuntimeException("Error posting query request to server.  The entity posted "
-                + "was \"" + postEntity + "\" and the endpoint posted to was \"" + endpointUrl + "\".", e);
+                + "was length \"" + postEntity.length() + "\" and the endpoint posted to was \"" + endpointUrl + "\".", e);
         }
 
         byte[] responseBody = response.getResponseBody();
@@ -237,7 +237,7 @@ public class HttpRequestHelper {
         if (!isSuccessStatusCode(response.getStatusCode())) {
             throw new NonSuccessStatusCodeException(response.getStatusCode(), "Received non success status code (" + response.getStatusCode() + ") "
                 + "from the server.  The reason phrase on the response was \"" + response.getStatusReasonPhrase() + "\" "
-                + "and the body of the response was \"" + new String(responseBody, UTF_8) + "\".");
+                + "and the body of the response was length \"" + responseBody.length + "\".");
         }
 
         return responseBody;
@@ -249,7 +249,7 @@ public class HttpRequestHelper {
             result = mapper.readValue(responseBody, 0, responseBody.length, resultClass);
         } catch (Exception e) {
             throw new RuntimeException("Error deserializing response body into result "
-                + "object.  Response body was \"" + (responseBody != null ? new String(responseBody, UTF_8) : "null")
+                + "object.  Response body was length \"" + responseBody.length
                 + "\".", e);
         }
 
@@ -262,7 +262,7 @@ public class HttpRequestHelper {
             result = mapper.readValue(responseBody, 0, responseBody.length, type);
         } catch (IOException e) {
             throw new RuntimeException("Error deserializing response body into result "
-                + "object.  Response body was \"" + (responseBody != null ? new String(responseBody, UTF_8) : "null")
+                + "object.  Response body was \"" + responseBody.length
                 + "\".", e);
         }
 
