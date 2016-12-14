@@ -504,8 +504,7 @@ public class Deployable implements ConfigProvider {
 
                 @Override
                 public String getResolution() {
-                    return "Look confirn errors are benign. Click/Curl/Hit to clear reset. http://" + instanceConfig.getHost() + ":" + instanceConfig
-                        .getManagePort() + "/manage/resetErrors";
+                    return "Investigate any errors. Let errors expire or manually reset.";
                 }
 
                 @Override
