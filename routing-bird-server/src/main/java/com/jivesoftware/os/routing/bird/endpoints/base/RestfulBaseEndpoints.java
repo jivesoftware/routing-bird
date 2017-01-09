@@ -97,18 +97,21 @@ public class RestfulBaseEndpoints {
     private final HealthCheckService healthCheckService;
     private final File logFile;
     private final HasUI hasUI;
+    private final FullyOnlineVersion fullyOnlineVersion;
 
     public RestfulBaseEndpoints(@Context ResfulServiceName resfulServiceName,
         @Context Server server,
         @Context HealthCheckService healthCheckService,
         @Context File logFile,
-        @Context HasUI hasUI) {
+        @Context HasUI hasUI,
+        @Context FullyOnlineVersion fullyOnlineVersion) {
 
         this.resfulServiceName = resfulServiceName;
         this.server = server;
         this.healthCheckService = healthCheckService;
         this.logFile = logFile;
         this.hasUI = hasUI;
+        this.fullyOnlineVersion = fullyOnlineVersion;
     }
 
     @GET
@@ -661,11 +664,12 @@ public class RestfulBaseEndpoints {
         } else {
             return ResponseHelper.INSTANCE.jsonResponse(LoggerSummary.INSTANCE.lastNErrors.get());
         }
-
     }
 
     class Health {
 
+        public String version = "unknown";
+        public boolean fullyOnline = false;
         public double health = 1.0d;
         public List<HealthCheckResponse> healthChecks = new ArrayList<>();
     }
@@ -681,6 +685,20 @@ public class RestfulBaseEndpoints {
     public Response health(@QueryParam("callback") @DefaultValue("") String callback) {
         try {
             Health health = new Health();
+            if (health == null) {
+                health.fullyOnline = true;
+                health.version = "unsupported";
+            } else {
+                String version = fullyOnlineVersion.getFullyOnlineVersion();
+                if (version == null) {
+                    health.fullyOnline = false;
+                    health.version = "still in startup";
+                } else {
+                    health.fullyOnline = true;
+                    health.version = version;
+                }
+            }
+
             health.healthChecks = healthCheckService.checkHealth();
             for (HealthCheckResponse response : health.healthChecks) {
                 if (-Double.MAX_VALUE != response.getHealth()) {
