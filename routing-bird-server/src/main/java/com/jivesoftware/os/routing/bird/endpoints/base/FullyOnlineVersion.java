@@ -8,5 +8,5 @@ public interface FullyOnlineVersion {
      *
      * @return null if not fully online else return version of fully online service
      */
-    String getFullyOnlineVersion();
+    String getFullyOnlineVersion() throws Exception;
 }
