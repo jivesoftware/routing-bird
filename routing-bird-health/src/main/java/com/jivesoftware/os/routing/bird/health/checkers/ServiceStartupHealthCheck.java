@@ -76,6 +76,10 @@ public class ServiceStartupHealthCheck implements HealthCheck {
         }
     }
 
+    public boolean startupHasSucceeded() {
+        return healthy.get();
+    }
+
     public void info(String message, Throwable t) {
         if (t != null) {
             LOG.info(message, t);
