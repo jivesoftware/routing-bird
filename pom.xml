@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.jivesoftware.os.routing.bird</groupId>
     <artifactId>routing-bird</artifactId>
-    <version>0.172</version>
+    <version>0.173-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>com.jivesoftware.os.routing.bird.inheritance.poms</groupId>
         <artifactId>global-repo-management</artifactId>
-        <version>0.172</version>
+        <version>0.173-SNAPSHOT</version>
         <relativePath>inheritance-poms/global-repo-management/pom.xml</relativePath>
     </parent>
     <modules>
