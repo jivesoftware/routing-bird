@@ -1,6 +1,9 @@
 package com.jivesoftware.os.routing.bird.http.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.net.ssl.SSLContext;
@@ -31,6 +34,16 @@ public class HttpRequestHelperUtils {
         int port,
         int socketTimeoutInMillis) throws Exception {
 
+        HttpClient httpClient = buildHttpClient(sslEnable, allowSelfSigendCerts, signer, host, port, socketTimeoutInMillis);
+        return new HttpRequestHelper(httpClient, new ObjectMapper());
+    }
+
+    public static HttpClient buildHttpClient(boolean sslEnable,
+        boolean allowSelfSigendCerts,
+        OAuthSigner signer,
+        String host,
+        int port,
+        int socketTimeoutInMillis) throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
         List<HttpClientConfiguration> configs = new ArrayList<>();
         HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder().setSocketTimeoutInMillis(socketTimeoutInMillis).build();
         configs.add(httpClientConfig);
@@ -48,9 +61,7 @@ public class HttpRequestHelperUtils {
         }
 
         HttpClientFactory httpClientFactory = new HttpClientFactoryProvider().createHttpClientFactory(configs, false);
-        HttpClient httpClient = httpClientFactory.createClient(signer, host, port);
-        HttpRequestHelper requestHelper = new HttpRequestHelper(httpClient, new ObjectMapper());
-        return requestHelper;
+        return httpClientFactory.createClient(signer, host, port);
     }
 
 }
