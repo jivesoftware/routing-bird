@@ -97,7 +97,10 @@ public class RestfulServer {
     }
 
     private Connector makeConnector(boolean loopback, int port) {
-        ServerConnector connector = new ServerConnector(server, ACCEPTORS, SELECTORS);
+
+        HttpConfiguration httpConfig = buildHttpConfiguration(port);
+
+        ServerConnector connector = new ServerConnector(server, ACCEPTORS, SELECTORS, new HttpConnectionFactory(httpConfig));
         if (loopback) {
             connector.setHost("127.0.0.1");
         }
@@ -111,16 +114,7 @@ public class RestfulServer {
         String keyStorePath,
         int port) {
 
-        // HTTP Configuration
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
-        http_config.setSecurePort(port);
-        http_config.setOutputBufferSize(32768);
-        http_config.setRequestHeaderSize(8192);
-        http_config.setResponseHeaderSize(8192);
-        http_config.setSendServerVersion(true);
-        http_config.setSendDateHeader(false);
-        // httpConfig.addCustomizer(new ForwardedRequestCustomizer());
+        HttpConfiguration httpConfig = buildHttpConfiguration(port);
 
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setCertAlias(keyStoreAlias);
@@ -138,15 +132,31 @@ public class RestfulServer {
             "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
 
         // SSL HTTP Configuration
-        HttpConfiguration https_config = new HttpConfiguration(http_config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
+        HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+        httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
         // SSL Connector
         ServerConnector sslConnector = new ServerConnector(server,
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-            new HttpConnectionFactory(https_config));
+            new HttpConnectionFactory(httpsConfig));
         sslConnector.setPort(port);
+        sslConnector.setIdleTimeout(30000); // Config
         return sslConnector;
+    }
+
+    private HttpConfiguration buildHttpConfiguration(int port) {
+        // HTTP Configuration
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSecureScheme("https");
+        httpConfig.setSecurePort(port);
+        httpConfig.setOutputBufferSize(32768);
+        httpConfig.setRequestHeaderSize(8192);
+        httpConfig.setResponseHeaderSize(8192);
+        httpConfig.setSendServerVersion(true);
+        httpConfig.setSendDateHeader(false);
+        httpConfig.setBlockingTimeout(30000); // Config
+        // httpConfig.addCustomizer(new ForwardedRequestCustomizer());
+        return httpConfig;
     }
 
     public void addContextHandler(String context, HasServletContextHandler contextHandler) {
