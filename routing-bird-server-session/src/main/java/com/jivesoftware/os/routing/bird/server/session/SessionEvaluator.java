@@ -36,4 +36,9 @@ public class SessionEvaluator implements AuthEvaluator {
             throw new IOException(e);
         }
     }
+
+    @Override
+    public String name() {
+        return "SessionEvaluator";
+    }
 }

@@ -59,7 +59,7 @@ public class AuthValidationFilter implements ContainerRequestFilter {
                         successRate.check(1d, "", "");
                     }
                     LOG.inc("auth>authorized");
-                    LOG.inc("auth>authorized>" + pathedAuthEvaluator.evaluator.getClass().getSimpleName());
+                    LOG.inc("auth>authorized>" + pathedAuthEvaluator.evaluator.name());
                     return;
                 } else if (authStatus != AuthStatus.not_handled) {
                     failedAuthStatus = authStatus;

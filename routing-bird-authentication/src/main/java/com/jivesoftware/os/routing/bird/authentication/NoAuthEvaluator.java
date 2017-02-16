@@ -15,4 +15,8 @@ public class NoAuthEvaluator implements AuthEvaluator {
         return AuthStatus.authorized;
     }
 
+    @Override
+    public String name() {
+        return "NoAuthEvaluator";
+    }
 }

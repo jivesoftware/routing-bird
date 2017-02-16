@@ -26,4 +26,6 @@ public interface AuthEvaluator {
     }
 
     AuthStatus authorize(ContainerRequestContext requestContext) throws IOException;
+
+    String name();
 }

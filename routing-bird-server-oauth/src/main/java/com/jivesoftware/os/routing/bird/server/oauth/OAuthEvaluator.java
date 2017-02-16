@@ -60,4 +60,9 @@ public class OAuthEvaluator implements AuthEvaluator {
             throw e;
         }
     }
+
+    @Override
+    public String name() {
+        return "OAuthEvaluator";
+    }
 }
