@@ -19,7 +19,7 @@ public class HealthFactory {
         healthCheckRegistry = _healthCheckRegistry;
     }
 
-    static public interface HealthCheckerConstructor<T, C> {
+    public interface HealthCheckerConstructor<T, C> {
 
         HealthChecker<T> construct(C config);
     }

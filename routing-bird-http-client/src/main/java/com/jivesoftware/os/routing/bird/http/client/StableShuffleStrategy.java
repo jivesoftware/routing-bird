@@ -16,12 +16,9 @@
 package com.jivesoftware.os.routing.bird.http.client;
 
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
-import com.jivesoftware.os.routing.bird.shared.HostPort;
 import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
-import java.util.Arrays;
-import java.util.Random;
 
-import static org.apache.commons.lang.math.RandomUtils.nextLong;
+import java.util.Random;
 
 public class StableShuffleStrategy implements NextClientStrategy {
 
