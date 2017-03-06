@@ -84,6 +84,9 @@ public class ConfigHandler implements InvocationHandler {
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        if (method.getName().equals("toString")) {
+            return _instanceName;
+        }
         ConfigMethod configMethod = ConfigMethod.getInstance(_configInterface, method);
         return configMethod.invoke(this, args);
     }
