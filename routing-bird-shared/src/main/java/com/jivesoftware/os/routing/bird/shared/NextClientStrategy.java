@@ -1,11 +1,23 @@
 package com.jivesoftware.os.routing.bird.shared;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  *
  */
 public interface NextClientStrategy {
 
-    int[] getClients(ConnectionDescriptor[] connectionDescriptors);
+    <C, R> R call(String family,
+        ClientCall<C, R, HttpClientException> httpCall,
+        ConnectionDescriptor[] connectionDescriptors,
+        long connectionDescriptorsVersion,
+        C[] clients,
+        ClientHealth[] clientHealths,
+        int deadAfterNErrors,
+        long checkDeadEveryNMillis,
+        AtomicInteger[] clientsErrors,
+        AtomicLong[] clientsDeathTimestamp
+    ) throws HttpClientException;
 
-    void usedClientAtIndex(int index);
 }

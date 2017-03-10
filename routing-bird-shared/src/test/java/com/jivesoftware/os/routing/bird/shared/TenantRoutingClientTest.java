@@ -19,6 +19,8 @@ import com.jivesoftware.os.routing.bird.shared.ClientCall.ClientResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.mockito.Matchers;
 import org.mockito.Mock;
@@ -40,7 +42,7 @@ public class TenantRoutingClientTest {
     @Mock
     private ClientConnectionsFactory<TestClient, IOException> clientConnectionsFactory;
     private String tenantId = "testTenant";
-    private TestClient[] testClients = new TestClient[]{new TestClient()};
+    private TestClient[] testClients = new TestClient[] { new TestClient() };
     private NextClientStrategy strategy;
 
     @BeforeMethod
@@ -56,7 +58,8 @@ public class TenantRoutingClientTest {
     }
 
     private void initDescriptorsPool(long timestamp) throws Exception {
-        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", "pk", 0, true);
+        InstanceDescriptor instanceDescriptor = new InstanceDescriptor("dc", "rk", "ph", "ck", "cn", "sk", "sn", "rgk", "rgn", "ik", 1, "vn", "r", "pk", 0,
+            true);
         ConnectionDescriptor descriptor = new ConnectionDescriptor(instanceDescriptor, false, false, new HostPort("localhost", 7777), Collections.EMPTY_MAP,
             Collections.EMPTY_MAP);
         ConnectionDescriptors connectionDescriptors = new ConnectionDescriptors(timestamp, Arrays.asList(descriptor));
@@ -86,7 +89,32 @@ public class TenantRoutingClientTest {
     private static class TestClient {
     }
 
-    private static class TestStrategy implements NextClientStrategy {
+    private static class TestStrategy implements NextClientStrategy, IndexedClientStrategy {
+        private final ReturnFirstNonFailure returnFirstNonFailure = new ReturnFirstNonFailure();
+
+        @Override
+        public <C, R> R call(String family,
+            ClientCall<C, R, HttpClientException> httpCall,
+            ConnectionDescriptor[] connectionDescriptors,
+            long connectionDescriptorsVersion,
+            C[] clients,
+            ClientHealth[] clientHealths,
+            int deadAfterNErrors,
+            long checkDeadEveryNMillis,
+            AtomicInteger[] clientsErrors,
+            AtomicLong[] clientsDeathTimestamp) throws HttpClientException {
+            return returnFirstNonFailure.call(this,
+                family,
+                httpCall,
+                connectionDescriptors,
+                connectionDescriptorsVersion,
+                clients,
+                clientHealths,
+                deadAfterNErrors,
+                checkDeadEveryNMillis,
+                clientsErrors,
+                clientsDeathTimestamp);
+        }
 
         @Override
         public int[] getClients(ConnectionDescriptor[] connectionDescriptors) {

@@ -17,10 +17,11 @@ package com.jivesoftware.os.routing.bird.http.client;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
-import com.jivesoftware.os.routing.bird.http.client.ClientHealthProvider.ClientHealth;
 import com.jivesoftware.os.routing.bird.shared.ClientConnectionsFactory;
+import com.jivesoftware.os.routing.bird.shared.ClientHealth;
 import com.jivesoftware.os.routing.bird.shared.ClientsCloser;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
+import com.jivesoftware.os.routing.bird.shared.HttpClientException;
 import com.jivesoftware.os.routing.bird.shared.TenantRoutingClient;
 import com.jivesoftware.os.routing.bird.shared.TenantsServiceConnectionDescriptorProvider;
 import java.util.ArrayList;

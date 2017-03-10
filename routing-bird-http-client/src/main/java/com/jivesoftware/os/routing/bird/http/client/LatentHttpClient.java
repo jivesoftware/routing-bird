@@ -17,6 +17,7 @@ package com.jivesoftware.os.routing.bird.http.client;
 
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.routing.bird.shared.HttpClientException;
 import java.util.Map;
 
 public class LatentHttpClient implements HttpClient {

@@ -15,6 +15,7 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
+import com.jivesoftware.os.routing.bird.shared.HttpClientException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
