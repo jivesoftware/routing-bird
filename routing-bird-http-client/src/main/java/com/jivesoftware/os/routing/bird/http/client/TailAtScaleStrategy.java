@@ -1,11 +1,16 @@
 package com.jivesoftware.os.routing.bird.http.client;
 
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.shared.ClientCall;
 import com.jivesoftware.os.routing.bird.shared.ClientHealth;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
 import com.jivesoftware.os.routing.bird.shared.HttpClientException;
 import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
 import com.jivesoftware.os.routing.bird.shared.ReturnFirstNonFailure;
+
+import java.io.InterruptedIOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -27,7 +32,8 @@ import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistic
 
 public class TailAtScaleStrategy implements NextClientStrategy {
 
-    private final AtomicInteger stickyIndex = new AtomicInteger(0);
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
+
     private volatile AtomicLong versions = new AtomicLong();
     private final AtomicReference<Map<String, Map<String, Tail>>> familyTails = new AtomicReference<>();
     private final ReturnFirstNonFailure returnFirstNonFailure = new ReturnFirstNonFailure();
@@ -55,8 +61,9 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         AtomicLong[] clientsDeathTimestamp) throws HttpClientException {
 
         long v = versions.get();
-        boolean won = true;
+        boolean won = false;
         if (v < connectionDescriptorsVersion) {
+            won = true;
             while (!versions.compareAndSet(v, connectionDescriptorsVersion)) {
                 v = versions.get();
                 if (v >= connectionDescriptorsVersion) {
@@ -69,10 +76,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         if (won) {
             Map<String, Map<String, Tail>> newTails = new ConcurrentHashMap<>();
             Map<String, Map<String, Tail>> currentTails = familyTails.get();
-            if (currentTails == null) {
-                familyTails.set(newTails);
-            } else {
-
+            if (currentTails != null) {
                 Set<String> retainTheseConnections = new HashSet<>();
                 for (ConnectionDescriptor connectionDescriptor : connectionDescriptors) {
                     retainTheseConnections.add(connectionDescriptor.getInstanceDescriptor().instanceKey);
@@ -89,7 +93,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                         Tail tail;
                         if (retainTheseConnections.contains(instanceKey)) {
                             Tail oldTail = oldConnectionTails.get(instanceKey);
-                            tail = new Tail(oldTail.statistics, windowSize, i);
+                            tail = new Tail(oldTail.statistics, percentile, i);
 
                         } else {
                             tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i);
@@ -99,6 +103,8 @@ public class TailAtScaleStrategy implements NextClientStrategy {
 
                 }
             }
+
+            familyTails.set(newTails);
         }
 
         Map<String, Tail> connectionTails = familyTails.get().computeIfAbsent(family, f -> {
@@ -114,35 +120,61 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         Tail[] tails = connectionTails.values().toArray(new Tail[0]);
         Arrays.sort(tails);
 
-
         int maxNumberOfClient = clients.length;
         long tryAnotherInNMillis = (long) tails[0].statistics.getPercentile(percentile);
 
-        ExecutorCompletionService<R> completionService = new ExecutorCompletionService<>(executor);
-        List<Future<R>> futures = new ArrayList<>(maxNumberOfClient);
+        ExecutorCompletionService<CompletionResults<R>> executorCompletionService = new ExecutorCompletionService<>(executor);
+        List<Future<CompletionResults<R>>> futures = new ArrayList<>(maxNumberOfClient);
         try {
             for (int submitted = 0; submitted < maxNumberOfClient; submitted++) {
-
-                int i = submitted;
-                futures.add(completionService.submit(() -> returnFirstNonFailure._call(null,
-                    family,
-                    System.currentTimeMillis(),
-                    httpCall,
-                    tails[i].index,
-                    clients,
-                    clientHealths,
-                    deadAfterNErrors,
-                    checkDeadEveryNMillis,
-                    clientsErrors,
-                    clientsDeathTimestamp)));
+                int idx = submitted;
+                futures.add(executorCompletionService.submit(() -> {
+                    long now = System.currentTimeMillis();
+                    return new CompletionResults<>(idx, now, returnFirstNonFailure._call(null,
+                        family,
+                        now,
+                        httpCall,
+                        tails[idx].index,
+                        clients,
+                        clientHealths,
+                        deadAfterNErrors,
+                        checkDeadEveryNMillis,
+                        clientsErrors,
+                        clientsDeathTimestamp));
+                }));
 
                 try {
-                    Future<R> got = completionService.poll(tryAnotherInNMillis, TimeUnit.MILLISECONDS);
-                    if (got != null) {
+                    Future<CompletionResults<R>> polled = executorCompletionService.poll(tryAnotherInNMillis, TimeUnit.MILLISECONDS);
+                    if (polled != null) {
                         try {
-                            return got.get();
-                        } catch (ExecutionException ex) {
+                            CompletionResults<R> got = polled.get();
+                            if (got.result != null) {
+                                tails[got.index].completed(System.currentTimeMillis() - got.start);
+                                return got.result;
+                            }
+                        } catch (ExecutionException e) {
+                            boolean interrupted = false;
+                            Throwable cause = e;
+                            for (int i = 0; i < 10 && cause != null; i++) {
+                                if (cause instanceof InterruptedException
+                                    || cause instanceof InterruptedIOException
+                                    || cause instanceof ClosedByInterruptException) {
+                                    interrupted = true;
+                                    break;
+                                }
+                                cause = cause.getCause();
+                            }
 
+                            // todo disambiguate stat (i.e. requestName, queryKey)
+                            if (interrupted) {
+                                LOG.inc("solve>request>>solvableInterrupted");
+                            } else {
+                                LOG.inc("solve>request>>solvableError>" + e.getCause().getClass().getSimpleName());
+                            }
+
+                            LOG.debug("Solver failed to execute", e.getCause());
+                            LOG.incBucket("solve>throughput>failure", 1_000L, 100);
+                            LOG.incBucket("solve>throughput>failure>", 1_000L, 100);
                         }
                     }
                 } catch (InterruptedException x) {
@@ -150,11 +182,10 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                 }
             }
         } finally {
-            for (Future<R> f : futures) {
+            for (Future<CompletionResults<R>> f : futures) {
                 f.cancel(true);
             }
         }
-
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < connectionDescriptors.length; i++) {
@@ -169,11 +200,24 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(tails));
     }
 
+    private static class CompletionResults<R> {
+        private final int index;
+        private final long start;
+        private final R result;
+
+        CompletionResults(int index, long start, R result) {
+            this.index = index;
+            this.start = start;
+            this.result = result;
+        }
+    }
 
     private static class Tail implements Comparable<Tail> {
         private final DescriptiveStatistics statistics;
         private final float percentile;
         private final int index;
+
+        private volatile double percentileLatency;
 
         private Tail(DescriptiveStatistics statistics, float percentile, int index) {
             this.statistics = statistics;
@@ -181,9 +225,14 @@ public class TailAtScaleStrategy implements NextClientStrategy {
             this.index = index;
         }
 
+        public void completed(long latency) {
+            statistics.addValue(latency);
+            percentileLatency = statistics.getPercentile(percentile);
+        }
+
         @Override
         public int compareTo(Tail o) {
-            int c = Double.compare(statistics.getPercentile(percentile), o.statistics.getPercentile(percentile));
+            int c = Double.compare(percentileLatency, o.percentileLatency);
             if (c != 0) {
                 return c;
             }
