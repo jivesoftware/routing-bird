@@ -3,6 +3,7 @@ package com.jivesoftware.os.routing.bird.http.client;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.shared.ClientCall;
+import com.jivesoftware.os.routing.bird.shared.ClientCall.ClientResponse;
 import com.jivesoftware.os.routing.bird.shared.ClientHealth;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
 import com.jivesoftware.os.routing.bird.shared.HttpClientException;
@@ -130,7 +131,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                 int idx = submitted;
                 futures.add(executorCompletionService.submit(() -> {
                     long now = System.currentTimeMillis();
-                    return new CompletionResults<>(idx, now, returnFirstNonFailure._call(null,
+                    ClientResponse<R> clientResponse = returnFirstNonFailure._call(null,
                         family,
                         now,
                         httpCall,
@@ -140,7 +141,8 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                         deadAfterNErrors,
                         checkDeadEveryNMillis,
                         clientsErrors,
-                        clientsDeathTimestamp));
+                        clientsDeathTimestamp);
+                    return new CompletionResults<>(idx, now, clientResponse);
                 }));
 
                 try {
@@ -148,9 +150,9 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                     if (polled != null) {
                         try {
                             CompletionResults<R> got = polled.get();
-                            if (got.result != null) {
+                            if (got.clientResponse != null) {
                                 tails[got.index].completed(System.currentTimeMillis() - got.start);
-                                return got.result;
+                                return got.clientResponse.response;
                             }
                         } catch (ExecutionException e) {
                             boolean interrupted = false;
@@ -203,12 +205,12 @@ public class TailAtScaleStrategy implements NextClientStrategy {
     private static class CompletionResults<R> {
         private final int index;
         private final long start;
-        private final R result;
+        private final ClientResponse<R> clientResponse;
 
-        CompletionResults(int index, long start, R result) {
+        CompletionResults(int index, long start, ClientResponse<R> clientResponse) {
             this.index = index;
             this.start = start;
-            this.result = result;
+            this.clientResponse = clientResponse;
         }
     }
 

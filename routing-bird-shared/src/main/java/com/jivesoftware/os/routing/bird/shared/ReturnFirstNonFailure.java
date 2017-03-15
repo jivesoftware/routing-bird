@@ -36,8 +36,12 @@ public class ReturnFirstNonFailure {
             if (clientIndex < 0) {
                 continue;
             }
-            _call(strategy, family, now, httpCall, clientIndex, clients, clientHealths, deadAfterNErrors, checkDeadEveryNMillis, clientsErrors,
+            ClientResponse<R> clientResponse = _call(strategy, family, now, httpCall, clientIndex, clients, clientHealths, deadAfterNErrors,
+                checkDeadEveryNMillis, clientsErrors,
                 clientsDeathTimestamp);
+            if (clientResponse != null) {
+                return clientResponse.response;
+            }
         }
 
         StringBuilder sb = new StringBuilder();
@@ -54,7 +58,7 @@ public class ReturnFirstNonFailure {
         throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(clientIndexes));
     }
 
-    public <C, R> R _call(IndexedClientStrategy strategy,
+    public <C, R> ClientResponse<R> _call(IndexedClientStrategy strategy,
         String family,
         long now,
         ClientCall<C, R, HttpClientException> httpCall,
@@ -77,7 +81,7 @@ public class ReturnFirstNonFailure {
                 clientsDeathTimestamp[clientIndex].set(0);
                 clientsErrors[clientIndex].set(0);
                 if (clientResponse.responseComplete) {
-                    return clientResponse.response;
+                    return clientResponse;
                 }
             } catch (HttpClientException e) {
                 Throwable cause = e;
