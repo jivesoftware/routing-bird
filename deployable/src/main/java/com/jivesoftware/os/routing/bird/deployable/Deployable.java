@@ -23,6 +23,7 @@ import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.authentication.AuthRoutingBirdSessionFilter;
 import com.jivesoftware.os.routing.bird.authentication.AuthValidationFilter;
+import com.jivesoftware.os.routing.bird.authentication.BasicAuthEvaluator;
 import com.jivesoftware.os.routing.bird.authentication.NoAuthEvaluator;
 import com.jivesoftware.os.routing.bird.deployable.config.extractor.ConfigBinder;
 import com.jivesoftware.os.routing.bird.endpoints.configuration.MainProperties;
@@ -53,6 +54,7 @@ import com.jivesoftware.os.routing.bird.server.session.RouteSessionValidatorInit
 import com.jivesoftware.os.routing.bird.server.session.SessionEvaluator;
 import com.jivesoftware.os.routing.bird.server.session.SessionValidator;
 import com.jivesoftware.os.routing.bird.server.util.Resource;
+import com.jivesoftware.os.routing.bird.shared.AuthEvaluator;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
 import com.jivesoftware.os.routing.bird.shared.RSAKeyPairGenerator;
 import com.jivesoftware.os.routing.bird.shared.TenantRoutingProvider;
@@ -61,6 +63,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -545,6 +548,15 @@ public class Deployable implements ConfigProvider {
             jerseyEndpoints.addContainerRequestFilter(authValidationFilter);
         }
         return authValidationFilter;
+    }
+
+    public Deployable addBasicAuth(Set<String> usernamesAndPasswords, String... paths) throws Exception {
+        authValidationFilter().addEvaluator(basicAuth(usernamesAndPasswords), paths);
+        return this;
+    }
+
+    private AuthEvaluator basicAuth(Set<String> usernamesAndPasswords) {
+        return new BasicAuthEvaluator(usernamesAndPasswords);
     }
 
     public Deployable addRouteOAuth(String... paths) throws Exception {
