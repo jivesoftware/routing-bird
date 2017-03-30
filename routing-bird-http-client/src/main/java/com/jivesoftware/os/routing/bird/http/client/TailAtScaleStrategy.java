@@ -122,13 +122,16 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         Arrays.sort(tails);
 
         int maxNumberOfClient = clients.length;
-        long tryAnotherInNMillis = (long) tails[0].statistics.getPercentile(percentile);
+        double percentile = tails[0].statistics.getPercentile(this.percentile);
+        long tryAnotherInNMillis = Double.isNaN(percentile) ? 1 : (long) percentile;
 
         ExecutorCompletionService<CompletionResults<R>> executorCompletionService = new ExecutorCompletionService<>(executor);
         List<Future<CompletionResults<R>>> futures = new ArrayList<>(maxNumberOfClient);
         try {
+            int remaining = 0;
             for (int submitted = 0; submitted < maxNumberOfClient; submitted++) {
                 int idx = submitted;
+                remaining++;
                 futures.add(executorCompletionService.submit(() -> {
                     long now = System.currentTimeMillis();
                     ClientResponse<R> clientResponse = returnFirstNonFailure._call(null,
@@ -145,44 +148,25 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                     return new CompletionResults<>(idx, now, clientResponse);
                 }));
 
-                try {
-                    Future<CompletionResults<R>> polled = executorCompletionService.poll(tryAnotherInNMillis, TimeUnit.MILLISECONDS);
-                    if (polled != null) {
-                        try {
-                            CompletionResults<R> got = polled.get();
-                            if (got.clientResponse != null) {
-                                tails[got.index].completed(System.currentTimeMillis() - got.start);
-                                return got.clientResponse.response;
-                            }
-                        } catch (ExecutionException e) {
-                            boolean interrupted = false;
-                            Throwable cause = e;
-                            for (int i = 0; i < 10 && cause != null; i++) {
-                                if (cause instanceof InterruptedException
-                                    || cause instanceof InterruptedIOException
-                                    || cause instanceof ClosedByInterruptException) {
-                                    interrupted = true;
-                                    break;
-                                }
-                                cause = cause.getCause();
-                            }
-
-                            // todo disambiguate stat (i.e. requestName, queryKey)
-                            if (interrupted) {
-                                LOG.inc("solve>request>>solvableInterrupted");
-                            } else {
-                                LOG.inc("solve>request>>solvableError>" + e.getCause().getClass().getSimpleName());
-                            }
-
-                            LOG.debug("Solver failed to execute", e.getCause());
-                            LOG.incBucket("solve>throughput>failure", 1_000L, 100);
-                            LOG.incBucket("solve>throughput>failure>", 1_000L, 100);
-                        }
+                CompletionResults<R> got = waitForSolution(family, tails, tryAnotherInNMillis, executorCompletionService);
+                if (got != null) {
+                    remaining--;
+                    if (got.clientResponse != null) {
+                        return got.clientResponse.response;
                     }
-                } catch (InterruptedException x) {
-                    throw new HttpClientException("InterruptedException", x);
                 }
             }
+
+            while (remaining > 0) {
+                CompletionResults<R> got = waitForSolution(family, tails, -1, executorCompletionService);
+                if (got != null) {
+                    remaining--;
+                    if (got.clientResponse != null) {
+                        return got.clientResponse.response;
+                    }
+                }
+            }
+
         } finally {
             for (Future<CompletionResults<R>> f : futures) {
                 f.cancel(true);
@@ -200,6 +184,53 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         }
 
         throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(tails));
+    }
+
+    private <R> CompletionResults<R> waitForSolution(String family,
+        Tail[] tails,
+        long tryAnotherInNMillis,
+        ExecutorCompletionService<CompletionResults<R>> executorCompletionService) throws HttpClientException {
+        try {
+            Future<CompletionResults<R>> future = tryAnotherInNMillis < 0
+                ? executorCompletionService.take()
+                : executorCompletionService.poll(tryAnotherInNMillis, TimeUnit.MILLISECONDS);
+
+            if (future != null) {
+                try {
+                    CompletionResults<R> got = future.get();
+                    if (got.clientResponse != null) {
+                        tails[got.index].completed(System.currentTimeMillis() - got.start);
+                        return got;
+                    }
+                } catch (ExecutionException e) {
+                    boolean interrupted = false;
+                    Throwable cause = e;
+                    for (int i = 0; i < 10 && cause != null; i++) {
+                        if (cause instanceof InterruptedException
+                            || cause instanceof InterruptedIOException
+                            || cause instanceof ClosedByInterruptException) {
+                            interrupted = true;
+                            break;
+                        }
+                        cause = cause.getCause();
+                    }
+
+                    // todo disambiguate stat (i.e. requestName, queryKey)
+                    if (interrupted) {
+                        LOG.inc("solve>" + family + "request>>solvableInterrupted");
+                    } else {
+                        LOG.inc("solve>" + family + "request>>solvableError>" + e.getCause().getClass().getSimpleName());
+                    }
+
+                    LOG.debug("Solver failed to execute", e.getCause());
+                    LOG.incBucket("solve>" + family + "throughput>failure", 1_000L, 100);
+                    LOG.incBucket("solve>" + family + "throughput>failure>", 1_000L, 100);
+                }
+            }
+        } catch (InterruptedException x) {
+            throw new HttpClientException("InterruptedException", x);
+        }
+        return null;
     }
 
     private static class CompletionResults<R> {
