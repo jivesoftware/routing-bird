@@ -9,7 +9,6 @@ import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
 import com.jivesoftware.os.routing.bird.shared.HttpClientException;
 import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
 import com.jivesoftware.os.routing.bird.shared.ReturnFirstNonFailure;
-
 import java.io.InterruptedIOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
@@ -17,7 +16,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -36,7 +34,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private volatile AtomicLong versions = new AtomicLong();
-    private final AtomicReference<Map<String, Map<String, Tail>>> familyTails = new AtomicReference<>();
+    private final AtomicReference<Map<String, Tail>> familyTails = new AtomicReference<>();
     private final ReturnFirstNonFailure returnFirstNonFailure = new ReturnFirstNonFailure();
 
     private final Executor executor;
@@ -75,49 +73,40 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         }
 
         if (won) {
-            Map<String, Map<String, Tail>> newTails = new ConcurrentHashMap<>();
-            Map<String, Map<String, Tail>> currentTails = familyTails.get();
+            Map<String, Tail> newTails = new ConcurrentHashMap<>();
+            Map<String, Tail> currentTails = familyTails.get();
             if (currentTails != null) {
                 Set<String> retainTheseConnections = new HashSet<>();
                 for (ConnectionDescriptor connectionDescriptor : connectionDescriptors) {
                     retainTheseConnections.add(connectionDescriptor.getInstanceDescriptor().instanceKey);
                 }
 
-                for (Entry<String, Map<String, Tail>> e : currentTails.entrySet()) {
-                    String oldFamily = e.getKey();
-                    Map<String, Tail> oldConnectionTails = e.getValue();
+                for (int i = 0; i < connectionDescriptors.length; i++) {
+                    ConnectionDescriptor connectionDescriptor = connectionDescriptors[i];
+                    String instanceKey = connectionDescriptor.getInstanceDescriptor().instanceKey;
+                    Tail tail;
+                    if (retainTheseConnections.contains(instanceKey)) {
+                        Tail oldTail = currentTails.get(instanceKey);
+                        tail = new Tail(oldTail.statistics, percentile, i);
 
-                    Map<String, Tail> newConnectionTails = newTails.computeIfAbsent(oldFamily, k -> new ConcurrentHashMap<>());
-                    for (int i = 0; i < connectionDescriptors.length; i++) {
-                        ConnectionDescriptor connectionDescriptor = connectionDescriptors[i];
-                        String instanceKey = connectionDescriptor.getInstanceDescriptor().instanceKey;
-                        Tail tail;
-                        if (retainTheseConnections.contains(instanceKey)) {
-                            Tail oldTail = oldConnectionTails.get(instanceKey);
-                            tail = new Tail(oldTail.statistics, percentile, i);
-
-                        } else {
-                            tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i);
-                        }
-                        newConnectionTails.put(instanceKey, tail);
+                    } else {
+                        tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i);
                     }
+                    newTails.put(instanceKey, tail);
+                }
 
+            } else {
+                for (int i = 0; i < connectionDescriptors.length; i++) {
+                    ConnectionDescriptor connectionDescriptor = connectionDescriptors[i];
+                    Tail tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i);
+                    newTails.put(connectionDescriptor.getInstanceDescriptor().instanceKey, tail);
                 }
             }
 
             familyTails.set(newTails);
         }
 
-        Map<String, Tail> connectionTails = familyTails.get().computeIfAbsent(family, f -> {
-            Map<String, Tail> tails = new ConcurrentHashMap<>();
-            for (int i = 0; i < connectionDescriptors.length; i++) {
-                ConnectionDescriptor connectionDescriptor = connectionDescriptors[i];
-                Tail tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i);
-                tails.put(connectionDescriptor.getInstanceDescriptor().instanceKey, tail);
-            }
-            return tails;
-        });
-
+        Map<String, Tail> connectionTails = familyTails.get();
         Tail[] tails = connectionTails.values().toArray(new Tail[0]);
         Arrays.sort(tails);
 
@@ -125,14 +114,15 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         double percentile = tails[0].statistics.getPercentile(this.percentile);
         long tryAnotherInNMillis = Double.isNaN(percentile) ? 1 : (long) percentile;
 
-        ExecutorCompletionService<CompletionResults<R>> executorCompletionService = new ExecutorCompletionService<>(executor);
-        List<Future<CompletionResults<R>>> futures = new ArrayList<>(maxNumberOfClient);
+        ExecutorCompletionService<ClientResponse<R>> executorCompletionService = new ExecutorCompletionService<>(executor);
+        List<Future<ClientResponse<R>>> futures = new ArrayList<>(maxNumberOfClient);
         try {
             int remaining = 0;
             for (int submitted = 0; submitted < maxNumberOfClient; submitted++) {
                 int idx = submitted;
                 remaining++;
                 futures.add(executorCompletionService.submit(() -> {
+
                     long now = System.currentTimeMillis();
                     ClientResponse<R> clientResponse = returnFirstNonFailure._call(null,
                         family,
@@ -145,30 +135,28 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                         checkDeadEveryNMillis,
                         clientsErrors,
                         clientsDeathTimestamp);
-                    return new CompletionResults<>(idx, now, clientResponse);
+
+                    tails[idx].completed(System.currentTimeMillis() - now);
+                    return clientResponse;
                 }));
 
-                CompletionResults<R> got = waitForSolution(family, tails, tryAnotherInNMillis, executorCompletionService);
+                ClientResponse<R> got = waitForSolution(family, tryAnotherInNMillis, executorCompletionService);
                 if (got != null) {
                     remaining--;
-                    if (got.clientResponse != null) {
-                        return got.clientResponse.response;
-                    }
+                    return got.response;
                 }
             }
 
             while (remaining > 0) {
-                CompletionResults<R> got = waitForSolution(family, tails, -1, executorCompletionService);
+                ClientResponse<R> got = waitForSolution(family, -1, executorCompletionService);
                 if (got != null) {
                     remaining--;
-                    if (got.clientResponse != null) {
-                        return got.clientResponse.response;
-                    }
+                    return got.response;
                 }
             }
 
         } finally {
-            for (Future<CompletionResults<R>> f : futures) {
+            for (Future<ClientResponse<R>> f : futures) {
                 f.cancel(true);
             }
         }
@@ -186,22 +174,17 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(tails));
     }
 
-    private <R> CompletionResults<R> waitForSolution(String family,
-        Tail[] tails,
+    private <R> ClientResponse<R> waitForSolution(String family,
         long tryAnotherInNMillis,
-        ExecutorCompletionService<CompletionResults<R>> executorCompletionService) throws HttpClientException {
+        ExecutorCompletionService<ClientResponse<R>> executorCompletionService) throws HttpClientException {
         try {
-            Future<CompletionResults<R>> future = tryAnotherInNMillis < 0
+            Future<ClientResponse<R>> future = tryAnotherInNMillis < 0
                 ? executorCompletionService.take()
                 : executorCompletionService.poll(tryAnotherInNMillis, TimeUnit.MILLISECONDS);
 
             if (future != null) {
                 try {
-                    CompletionResults<R> got = future.get();
-                    if (got.clientResponse != null) {
-                        tails[got.index].completed(System.currentTimeMillis() - got.start);
-                        return got;
-                    }
+                    return future.get();
                 } catch (ExecutionException e) {
                     boolean interrupted = false;
                     Throwable cause = e;
@@ -231,18 +214,6 @@ public class TailAtScaleStrategy implements NextClientStrategy {
             throw new HttpClientException("InterruptedException", x);
         }
         return null;
-    }
-
-    private static class CompletionResults<R> {
-        private final int index;
-        private final long start;
-        private final ClientResponse<R> clientResponse;
-
-        CompletionResults(int index, long start, ClientResponse<R> clientResponse) {
-            this.index = index;
-            this.start = start;
-            this.clientResponse = clientResponse;
-        }
     }
 
     private static class Tail implements Comparable<Tail> {
