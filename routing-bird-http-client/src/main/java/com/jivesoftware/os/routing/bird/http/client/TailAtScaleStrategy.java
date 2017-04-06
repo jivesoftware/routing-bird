@@ -117,10 +117,10 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         ExecutorCompletionService<ClientResponse<R>> executorCompletionService = new ExecutorCompletionService<>(executor);
         List<Future<ClientResponse<R>>> futures = new ArrayList<>(maxNumberOfClient);
         try {
-            int remaining = 0;
+            AtomicInteger remaining = new AtomicInteger(0);
             for (int submitted = 0; submitted < maxNumberOfClient; submitted++) {
                 int idx = submitted;
-                remaining++;
+                remaining.incrementAndGet();
                 futures.add(executorCompletionService.submit(() -> {
 
                     long now = System.currentTimeMillis();
@@ -140,17 +140,15 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                     return clientResponse;
                 }));
 
-                ClientResponse<R> got = waitForSolution(family, tryAnotherInNMillis, executorCompletionService);
+                ClientResponse<R> got = waitForSolution(family, tryAnotherInNMillis, executorCompletionService, remaining);
                 if (got != null) {
-                    remaining--;
                     return got.response;
                 }
             }
 
-            while (remaining > 0) {
-                ClientResponse<R> got = waitForSolution(family, -1, executorCompletionService);
+            while (remaining.get() > 0) {
+                ClientResponse<R> got = waitForSolution(family, -1, executorCompletionService, remaining);
                 if (got != null) {
-                    remaining--;
                     return got.response;
                 }
             }
@@ -176,13 +174,15 @@ public class TailAtScaleStrategy implements NextClientStrategy {
 
     private <R> ClientResponse<R> waitForSolution(String family,
         long tryAnotherInNMillis,
-        ExecutorCompletionService<ClientResponse<R>> executorCompletionService) throws HttpClientException {
+        ExecutorCompletionService<ClientResponse<R>> executorCompletionService,
+        AtomicInteger remaining) throws HttpClientException {
         try {
             Future<ClientResponse<R>> future = tryAnotherInNMillis < 0
                 ? executorCompletionService.take()
                 : executorCompletionService.poll(tryAnotherInNMillis, TimeUnit.MILLISECONDS);
 
             if (future != null) {
+                remaining.decrementAndGet();
                 try {
                     return future.get();
                 } catch (ExecutionException e) {
