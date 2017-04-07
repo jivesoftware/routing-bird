@@ -40,11 +40,13 @@ public class TailAtScaleStrategy implements NextClientStrategy {
     private final Executor executor;
     private final int windowSize;
     private final float percentile;
+    private final long initialSLAMillis;
 
-    public TailAtScaleStrategy(Executor executor, int windowSize, float percentile) {
+    public TailAtScaleStrategy(Executor executor, int windowSize, float percentile, long initialSLAMillis) {
         this.executor = executor;
         this.windowSize = windowSize;
         this.percentile = percentile;
+        this.initialSLAMillis = initialSLAMillis;
     }
 
     @Override
@@ -87,10 +89,10 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                     Tail tail;
                     if (retainTheseConnections.contains(instanceKey)) {
                         Tail oldTail = currentTails.get(instanceKey);
-                        tail = new Tail(oldTail.statistics, percentile, i);
+                        tail = new Tail(oldTail.statistics, percentile, i, initialSLAMillis);
 
                     } else {
-                        tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i);
+                        tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i, initialSLAMillis);
                     }
                     newTails.put(instanceKey, tail);
                 }
@@ -223,10 +225,11 @@ public class TailAtScaleStrategy implements NextClientStrategy {
 
         private volatile double percentileLatency;
 
-        private Tail(DescriptiveStatistics statistics, float percentile, int index) {
+        private Tail(DescriptiveStatistics statistics, float percentile, int index, long initialSLAMillis) {
             this.statistics = statistics;
             this.percentile = percentile;
             this.index = index;
+            this.percentileLatency = (double)initialSLAMillis;
         }
 
         public void completed(long latency) {
