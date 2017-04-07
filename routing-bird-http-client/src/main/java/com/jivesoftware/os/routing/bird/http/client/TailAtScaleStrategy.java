@@ -100,7 +100,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
             } else {
                 for (int i = 0; i < connectionDescriptors.length; i++) {
                     ConnectionDescriptor connectionDescriptor = connectionDescriptors[i];
-                    Tail tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i);
+                    Tail tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i, initialSLAMillis);
                     newTails.put(connectionDescriptor.getInstanceDescriptor().instanceKey, tail);
                 }
             }

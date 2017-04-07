@@ -18,7 +18,7 @@ public class TailAtScaleStrategyTest {
 
     @Test
     public void testTas() throws Exception {
-        TailAtScaleStrategy tas = new TailAtScaleStrategy(Executors.newCachedThreadPool(), 20, 95f);
+        TailAtScaleStrategy tas = new TailAtScaleStrategy(Executors.newCachedThreadPool(), 20, 95f, 0);
 
         ConnectionDescriptor[] connectionDescriptors = new ConnectionDescriptor[3];
         Integer[] clients = new Integer[3];
