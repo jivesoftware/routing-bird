@@ -50,6 +50,26 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         this.initialSLAMillis = initialSLAMillis;
     }
 
+
+    /*
+    Allows a selective bias to be introduce into tail at scale. For example if you wanted to nudge calls onto a different AWS region you could call this
+    method with the appropriate connectionDescriptors.
+     */
+    public void favor(ConnectionDescriptor connectionDescriptor) {
+
+        Map<String, Tail> currentTails = familyTails.get();
+        Tail tail = currentTails.get(connectionDescriptor.getInstanceDescriptor().instanceKey);
+        if (tail != null) {
+            tail.completed(1);
+        }
+    }
+
+    /*
+    This allows a subclasser to know which connectionDescriptor are being used.
+     */
+    public void favored(ConnectionDescriptor connectionDescriptor, long latency) {
+    }
+
     @Override
     public <C, R> R call(String family,
         ClientCall<C, R, HttpClientException> httpCall,
@@ -121,12 +141,12 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         Tail[] tails = connectionTails.values().toArray(new Tail[0]);
         Arrays.sort(tails);
 
-        int maxNumberOfClient = 3; // TODO config?
+        int maxNumberOfClient = Math.min(3, tails.length); // TODO config?
         double percentile = tails[0].statistics.getPercentile(this.percentile);
         long tryAnotherInNMillis = Double.isNaN(percentile) ? 1 : (long) percentile;
 
-        ExecutorCompletionService<ClientResponse<R>> executorCompletionService = new ExecutorCompletionService<>(executor);
-        List<Future<ClientResponse<R>>> futures = new ArrayList<>(maxNumberOfClient);
+        ExecutorCompletionService<Solution<ClientResponse<R>>> executorCompletionService = new ExecutorCompletionService<>(executor);
+        List<Future<Solution<ClientResponse<R>>>> futures = new ArrayList<>(maxNumberOfClient);
         try {
             AtomicInteger remaining = new AtomicInteger(0);
             for (int submitted = 0; submitted < maxNumberOfClient; submitted++) {
@@ -135,7 +155,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                 futures.add(executorCompletionService.submit(() -> {
 
                     long now = System.currentTimeMillis();
-                    ClientResponse<R> clientResponse = returnFirstNonFailure._call(null,
+                    ClientResponse<R> clientResponse = returnFirstNonFailure.indexedCall(null,
                         family,
                         now,
                         httpCall,
@@ -147,13 +167,14 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                         clientsErrors,
                         clientsDeathTimestamp);
 
-                    tails[idx].completed(System.currentTimeMillis() - now);
-                    return clientResponse;
+                    long latency = System.currentTimeMillis() - now;
+                    return new Solution<>(clientResponse, tails[idx].index, latency);
                 }));
 
-                ClientResponse<R> got = waitForSolution(family, tryAnotherInNMillis, executorCompletionService, remaining);
-                if (got != null) {
-                    return got.response;
+                Solution<ClientResponse<R>> solution = waitForSolution(family, tryAnotherInNMillis, executorCompletionService, remaining);
+                if (solution != null) {
+                    favored(connectionDescriptors[solution.index], solution.latency);
+                    return solution.answer.response;
                 }
             }
 
@@ -166,7 +187,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                     futures.add(executorCompletionService.submit(() -> {
 
                         long now = System.currentTimeMillis();
-                        ClientResponse<R> clientResponse = returnFirstNonFailure._call(null,
+                        ClientResponse<R> clientResponse = returnFirstNonFailure.indexedCall(null,
                             family,
                             now,
                             httpCall,
@@ -178,21 +199,23 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                             clientsErrors,
                             clientsDeathTimestamp);
 
-                        tails[idx].completed(System.currentTimeMillis() - now);
-                        return clientResponse;
+                        long latency = System.currentTimeMillis() - now;
+                        tails[idx].completed(latency);
+                        return new Solution<>(clientResponse, tails[idx].index, latency);
                     }));
                 }
             }
 
             while (remaining.get() > 0) {
-                ClientResponse<R> got = waitForSolution(family, -1, executorCompletionService, remaining);
-                if (got != null) {
-                    return got.response;
+                Solution<ClientResponse<R>> solution = waitForSolution(family, -1, executorCompletionService, remaining);
+                if (solution != null) {
+                    favored(connectionDescriptors[solution.index], solution.latency);
+                    return solution.answer.response;
                 }
             }
 
         } finally {
-            for (Future<ClientResponse<R>> f : futures) {
+            for (Future<Solution<ClientResponse<R>>> f : futures) {
                 f.cancel(true);
             }
         }
@@ -210,12 +233,13 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(tails));
     }
 
-    private <R> ClientResponse<R> waitForSolution(String family,
+    private <R> Solution<ClientResponse<R>> waitForSolution(String family,
         long tryAnotherInNMillis,
-        ExecutorCompletionService<ClientResponse<R>> executorCompletionService,
+        ExecutorCompletionService<Solution<ClientResponse<R>>> executorCompletionService,
         AtomicInteger remaining) throws HttpClientException {
+
         try {
-            Future<ClientResponse<R>> future = tryAnotherInNMillis < 0
+            Future<Solution<ClientResponse<R>>> future = tryAnotherInNMillis < 0
                 ? executorCompletionService.take()
                 : executorCompletionService.poll(tryAnotherInNMillis, TimeUnit.MILLISECONDS);
 
@@ -252,6 +276,19 @@ public class TailAtScaleStrategy implements NextClientStrategy {
             throw new HttpClientException("InterruptedException", x);
         }
         return null;
+    }
+
+    private static class Solution<A> {
+
+        public final A answer;
+        public final int index;
+        public final long latency;
+
+        private Solution(A answer, int index, long latency) {
+            this.answer = answer;
+            this.index = index;
+            this.latency = latency;
+        }
     }
 
     private static class Tail implements Comparable<Tail> {

@@ -36,7 +36,7 @@ public class ReturnFirstNonFailure {
             if (clientIndex < 0) {
                 continue;
             }
-            ClientResponse<R> clientResponse = _call(strategy, family, now, httpCall, clientIndex, clients, clientHealths, deadAfterNErrors,
+            ClientResponse<R> clientResponse = indexedCall(strategy, family, now, httpCall, clientIndex, clients, clientHealths, deadAfterNErrors,
                 checkDeadEveryNMillis, clientsErrors,
                 clientsDeathTimestamp);
             if (clientResponse != null) {
@@ -58,7 +58,7 @@ public class ReturnFirstNonFailure {
         throw new HttpClientException("No clients are available. possible:" + sb + " filteredIndexes:" + Arrays.toString(clientIndexes));
     }
 
-    public <C, R> ClientResponse<R> _call(IndexedClientStrategy strategy,
+    public <C, R> ClientResponse<R> indexedCall(IndexedClientStrategy strategy,
         String family,
         long now,
         ClientCall<C, R, HttpClientException> httpCall,
