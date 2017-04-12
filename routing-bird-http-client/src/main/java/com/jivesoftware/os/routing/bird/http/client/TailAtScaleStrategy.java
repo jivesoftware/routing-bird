@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math.stat.descriptive.SynchronizedDescriptiveStatistics;
 
@@ -89,10 +90,10 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                     Tail tail;
                     if (retainTheseConnections.contains(instanceKey)) {
                         Tail oldTail = currentTails.get(instanceKey);
-                        tail = new Tail(oldTail.statistics, percentile, i, initialSLAMillis);
+                        tail = new Tail(oldTail.statistics, percentile, i, initialSLAMillis, Math.random());
 
                     } else {
-                        tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i, initialSLAMillis);
+                        tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i, initialSLAMillis, Math.random());
                     }
                     newTails.put(instanceKey, tail);
                 }
@@ -100,7 +101,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
             } else {
                 for (int i = 0; i < connectionDescriptors.length; i++) {
                     ConnectionDescriptor connectionDescriptor = connectionDescriptors[i];
-                    Tail tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i, initialSLAMillis);
+                    Tail tail = new Tail(new SynchronizedDescriptiveStatistics(windowSize), percentile, i, initialSLAMillis, Math.random());
                     newTails.put(connectionDescriptor.getInstanceDescriptor().instanceKey, tail);
                 }
             }
@@ -109,10 +110,18 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         }
 
         Map<String, Tail> connectionTails = familyTails.get();
+        while (connectionTails == null) {
+            try {
+                Thread.sleep(10);
+                connectionTails = familyTails.get();
+            } catch (InterruptedException ie) {
+                throw new HttpClientException("family tails was null", ie);
+            }
+        }
         Tail[] tails = connectionTails.values().toArray(new Tail[0]);
         Arrays.sort(tails);
 
-        int maxNumberOfClient = clients.length;
+        int maxNumberOfClient = 3; // TODO config?
         double percentile = tails[0].statistics.getPercentile(this.percentile);
         long tryAnotherInNMillis = Double.isNaN(percentile) ? 1 : (long) percentile;
 
@@ -145,6 +154,33 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                 ClientResponse<R> got = waitForSolution(family, tryAnotherInNMillis, executorCompletionService, remaining);
                 if (got != null) {
                     return got.response;
+                }
+            }
+
+            // Everyone is slow so lets drag somebody else into the party
+            if (tails.length > maxNumberOfClient) {
+                int count = tails.length - maxNumberOfClient;
+                int idx = (int) (count * Math.random()) + maxNumberOfClient;
+                if (idx < tails.length) {
+                    remaining.incrementAndGet();
+                    futures.add(executorCompletionService.submit(() -> {
+
+                        long now = System.currentTimeMillis();
+                        ClientResponse<R> clientResponse = returnFirstNonFailure._call(null,
+                            family,
+                            now,
+                            httpCall,
+                            tails[idx].index,
+                            clients,
+                            clientHealths,
+                            deadAfterNErrors,
+                            checkDeadEveryNMillis,
+                            clientsErrors,
+                            clientsDeathTimestamp);
+
+                        tails[idx].completed(System.currentTimeMillis() - now);
+                        return clientResponse;
+                    }));
                 }
             }
 
@@ -222,24 +258,32 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         private final DescriptiveStatistics statistics;
         private final float percentile;
         private final int index;
+        private final double shuffle;
 
         private volatile double percentileLatency;
+        private LongAdder completed = new LongAdder();
 
-        private Tail(DescriptiveStatistics statistics, float percentile, int index, long initialSLAMillis) {
+        private Tail(DescriptiveStatistics statistics, float percentile, int index, long initialSLAMillis, double shuffle) {
             this.statistics = statistics;
             this.percentile = percentile;
             this.index = index;
-            this.percentileLatency = (double)initialSLAMillis;
+            this.percentileLatency = (double) initialSLAMillis;
+            this.shuffle = shuffle;
         }
 
         public void completed(long latency) {
             statistics.addValue(latency);
             percentileLatency = statistics.getPercentile(percentile);
+            completed.increment();
         }
 
         @Override
         public int compareTo(Tail o) {
             int c = Double.compare(percentileLatency, o.percentileLatency);
+            if (c != 0) {
+                return c;
+            }
+            c = Double.compare(shuffle, o.shuffle);
             if (c != 0) {
                 return c;
             }
@@ -250,9 +294,12 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         @Override
         public String toString() {
             return "Tail{" +
-                "percentile=" + percentile +
-                ", value=" + statistics.getPercentile(percentile) +
+                "statistics=" + statistics +
+                ", percentile=" + percentile +
                 ", index=" + index +
+                ", shuffle=" + shuffle +
+                ", percentileLatency=" + percentileLatency +
+                ", completed=" + completed +
                 '}';
         }
     }

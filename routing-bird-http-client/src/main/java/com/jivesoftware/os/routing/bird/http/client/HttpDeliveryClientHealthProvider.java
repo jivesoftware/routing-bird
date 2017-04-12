@@ -1,6 +1,5 @@
 package com.jivesoftware.os.routing.bird.http.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.shared.ClientHealth;
@@ -10,15 +9,14 @@ import com.jivesoftware.os.routing.bird.shared.ConnectionHealthLatencyStats;
 import com.jivesoftware.os.routing.bird.shared.HostPort;
 import com.jivesoftware.os.routing.bird.shared.InstanceConnectionHealth;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
 
@@ -90,9 +88,9 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
                         h.lastMarkedAsDeadTimestamp,
                         h.fatalError.get() == null ? "" : ExceptionUtils.getStackTrace(h.fatalError.get()),
                         familyStats.getKey(),
-                        fs.attempts.get(),
-                        fs.success.get(),
-                        fs.failure.get(),
+                        fs.attempts.longValue(),
+                        fs.success.longValue(),
+                        fs.failure.longValue(),
                         fs.successPerSecond(time),
                         fs.failurePerSecond(time),
                         latencyStats));
@@ -176,9 +174,9 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
 
     static class FamilyStats {
 
-        final AtomicLong attempts = new AtomicLong(0);
-        final AtomicLong success = new AtomicLong(0);
-        final AtomicLong failure = new AtomicLong(0);
+        final LongAdder attempts = new LongAdder();
+        final LongAdder success = new LongAdder();
+        final LongAdder failure = new LongAdder();
         final DescriptiveStatistics ds;
         long successes;
         long failures;
@@ -192,7 +190,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
         }
 
         public void attempt(long timestamp) {
-            attempts.incrementAndGet();
+            attempts.increment();
         }
 
         public void success(long timestamp, long latency) {
@@ -203,7 +201,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
                 successes = 0;
             }
             successes++;
-            success.incrementAndGet();
+            success.increment();
             ds.addValue(latency);
         }
 
@@ -215,7 +213,7 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
                 failures = 0;
             }
             failures++;
-            failure.incrementAndGet();
+            failure.increment();
         }
 
         public long successPerSecond(long time) {
@@ -245,15 +243,6 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
             }
             return failurePerSecond;
         }
-    }
-
-    static HttpRequestHelper buildRequestHelper(OAuthSigner signer, String host, int port) {
-        HttpClientConfig httpClientConfig = HttpClientConfig.newBuilder().build();
-        HttpClientFactory httpClientFactory = new HttpClientFactoryProvider().createHttpClientFactory(Arrays.<HttpClientConfiguration>asList(httpClientConfig),
-            false);
-        HttpClient httpClient = httpClientFactory.createClient(signer, host, port);
-        HttpRequestHelper requestHelper = new HttpRequestHelper(httpClient, new ObjectMapper());
-        return requestHelper;
     }
 
 }
