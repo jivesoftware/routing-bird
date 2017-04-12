@@ -64,11 +64,6 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         }
     }
 
-    /*
-    This allows a subclasser to know which connectionDescriptor are being used.
-     */
-    public void favored(ConnectionDescriptor connectionDescriptor, long latency) {
-    }
 
     @Override
     public <C, R> R call(String family,
@@ -81,6 +76,27 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         long checkDeadEveryNMillis,
         AtomicInteger[] clientsErrors,
         AtomicLong[] clientsDeathTimestamp) throws HttpClientException {
+
+        return call(family, httpCall, connectionDescriptors, connectionDescriptorsVersion, clients, clientHealths, deadAfterNErrors, checkDeadEveryNMillis,
+            clientsErrors, clientsDeathTimestamp, null);
+    }
+
+    public interface Favored {
+        void favored(ConnectionDescriptor connectionDescriptor, long latency);
+    }
+
+    public <C, R> R call(String family,
+        ClientCall<C, R, HttpClientException> httpCall,
+        ConnectionDescriptor[] connectionDescriptors,
+        long connectionDescriptorsVersion,
+        C[] clients,
+        ClientHealth[] clientHealths,
+        int deadAfterNErrors,
+        long checkDeadEveryNMillis,
+        AtomicInteger[] clientsErrors,
+        AtomicLong[] clientsDeathTimestamp,
+        Favored favored) throws HttpClientException {
+
 
         long v = versions.get();
         boolean won = false;
@@ -173,7 +189,13 @@ public class TailAtScaleStrategy implements NextClientStrategy {
 
                 Solution<ClientResponse<R>> solution = waitForSolution(family, tryAnotherInNMillis, executorCompletionService, remaining);
                 if (solution != null) {
-                    favored(connectionDescriptors[solution.index], solution.latency);
+                    try {
+                        if (favored != null) {
+                            favored.favored(connectionDescriptors[solution.index], solution.latency);
+                        }
+                    } catch (Exception x) {
+                        LOG.warn("Favored failure.", x);
+                    }
                     return solution.answer.response;
                 }
             }
@@ -209,7 +231,13 @@ public class TailAtScaleStrategy implements NextClientStrategy {
             while (remaining.get() > 0) {
                 Solution<ClientResponse<R>> solution = waitForSolution(family, -1, executorCompletionService, remaining);
                 if (solution != null) {
-                    favored(connectionDescriptors[solution.index], solution.latency);
+                    try {
+                        if (favored != null) {
+                            favored.favored(connectionDescriptors[solution.index], solution.latency);
+                        }
+                    } catch (Exception x) {
+                        LOG.warn("Favored failure.", x);
+                    }
                     return solution.answer.response;
                 }
             }
