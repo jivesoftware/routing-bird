@@ -15,12 +15,13 @@
  */
 package com.jivesoftware.os.routing.bird.http.client;
 
+import com.jivesoftware.os.routing.bird.shared.HasHttpClientPoolStats;
 import com.jivesoftware.os.routing.bird.shared.HttpClientException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 
-public interface HttpClient {
+public interface HttpClient extends HasHttpClientPoolStats {
 
     HttpResponse get(String path, Map<String, String> headers) throws HttpClientException;
 
@@ -39,7 +40,7 @@ public interface HttpClient {
 
     void close();
 
-    public static interface StreamableRequest {
+    interface StreamableRequest {
 
         void writeRequest(OutputStream out) throws IOException;
 

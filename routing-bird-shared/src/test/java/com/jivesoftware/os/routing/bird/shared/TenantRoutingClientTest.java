@@ -86,7 +86,11 @@ public class TenantRoutingClientTest {
         Mockito.verify(closer).closeClients(testClients);
     }
 
-    private static class TestClient {
+    private static class TestClient implements HasHttpClientPoolStats {
+        @Override
+        public HttpClientPoolStats getPoolStats() {
+            return new HttpClientPoolStats(0, 0, 0, 0);
+        }
     }
 
     private static class TestStrategy implements NextClientStrategy, IndexedClientStrategy {

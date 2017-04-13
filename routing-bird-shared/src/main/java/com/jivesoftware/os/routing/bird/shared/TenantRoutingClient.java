@@ -20,7 +20,7 @@ import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TenantRoutingClient<T, C, E extends Throwable> {
+public class TenantRoutingClient<T, C extends HasHttpClientPoolStats, E extends Throwable> {
 
     static private final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final TenantsServiceConnectionDescriptorProvider<T> connectionPoolProvider;
@@ -76,6 +76,14 @@ public class TenantRoutingClient<T, C, E extends Throwable> {
             }
         });
         return timestampedClients.call(strategy, family, call);
+    }
+
+    public void gatherPoolStats(HttpClientPoolStatsStream poolStats) {
+        for (TimestampedClients<C, E> client : tenantsHttpClient.values()) {
+            for (C c : client.getClients()) {
+                poolStats.poolStats(connectionPoolProvider.getConnectToServiceNamed()+":"+connectionPoolProvider.getPortName(), c.getPoolStats());
+            }
+        }
     }
 
     public void closeAll() {

@@ -18,6 +18,7 @@ package com.jivesoftware.os.routing.bird.http.client;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.shared.HttpClientException;
+import com.jivesoftware.os.routing.bird.shared.HttpClientPoolStats;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -42,11 +43,14 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.HttpClientUtils;
+import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.pool.ConnPoolControl;
+import org.apache.http.pool.PoolStats;
 
 class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
@@ -64,6 +68,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     private final int port;
     private final OAuthSigner oauthSigner;
     private final CloseableHttpClient client;
+    private final ConnPoolControl<HttpRoute> connPoolControl;
     private final Closeable onClose;
     private final Map<String, String> headersForEveryRequest;
     private final AtomicLong activeCount = new AtomicLong(0);
@@ -74,7 +79,9 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         OAuthSigner signer,
         CloseableHttpClient client,
         Closeable onClose,
+        ConnPoolControl<HttpRoute> connPoolControl,
         Map<String, String> headersForEveryRequest) {
+
         this.scheme = scheme;
         this.host = host;
         this.port = port;
@@ -82,7 +89,17 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         this.oauthSigner = signer;
         this.client = client;
         this.onClose = onClose;
+        this.connPoolControl = connPoolControl;
         this.headersForEveryRequest = headersForEveryRequest;
+    }
+
+    @Override
+    public HttpClientPoolStats getPoolStats() {
+        PoolStats totalStats = connPoolControl.getTotalStats();
+        return new HttpClientPoolStats(totalStats.getLeased(),
+            totalStats.getPending(),
+            totalStats.getAvailable(),
+            totalStats.getMax());
     }
 
     @Override

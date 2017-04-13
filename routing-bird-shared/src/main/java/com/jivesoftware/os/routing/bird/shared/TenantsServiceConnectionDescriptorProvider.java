@@ -61,6 +61,10 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
         return connectToServiceNamed;
     }
 
+    public String getPortName() {
+        return portName;
+    }
+
     void invalidateAll() {
         tenantToReleaseGroup.clear();
         releaseGroupToConnectionDescriptors.clear();

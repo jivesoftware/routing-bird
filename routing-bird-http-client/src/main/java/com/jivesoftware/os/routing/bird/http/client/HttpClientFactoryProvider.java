@@ -28,6 +28,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.pool.PoolStats;
 
 public class HttpClientFactoryProvider {
 
@@ -73,6 +74,9 @@ public class HttpClientFactoryProvider {
                 .setSoTimeout(httpClientConfig.getSocketTimeoutInMillis() > 0 ? httpClientConfig.getSocketTimeoutInMillis() : 0)
                 .build());
 
+
+        PoolStats poolStats = poolingHttpClientConnectionManager.getTotalStats();
+
         Closeable closeable;
         HttpClientConnectionManager clientConnectionManager;
         clientConnectionManager = poolingHttpClientConnectionManager;
@@ -89,7 +93,9 @@ public class HttpClientFactoryProvider {
                 signer,
                 client,
                 closeable,
-                httpClientConfig.getCopyOfHeadersForEveryRequest());
+                poolingHttpClientConnectionManager,
+                httpClientConfig.getCopyOfHeadersForEveryRequest()
+                );
 
             if (latentClient) {
                 httpClient = new LatentHttpClient(httpClient);

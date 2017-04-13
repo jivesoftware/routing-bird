@@ -17,6 +17,7 @@ package com.jivesoftware.os.routing.bird.http.client;
 
 import com.jivesoftware.os.routing.bird.shared.ClientCall;
 import com.jivesoftware.os.routing.bird.shared.HttpClientException;
+import com.jivesoftware.os.routing.bird.shared.HttpClientPoolStatsStream;
 import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
 import com.jivesoftware.os.routing.bird.shared.TenantRoutingClient;
 
@@ -35,5 +36,10 @@ public class TenantRoutingHttpClient<T> implements TenantAwareHttpClient<T> {
         ClientCall<HttpClient, R, HttpClientException> clientCall)
         throws HttpClientException {
         return tenantRoutingClient.tenantAwareCall(tenant, strategy, family, clientCall);
+    }
+
+    @Override
+    public void gatherPoolStats(HttpClientPoolStatsStream poolStats) {
+        tenantRoutingClient.gatherPoolStats(poolStats);
     }
 }
