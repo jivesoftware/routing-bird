@@ -188,7 +188,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                 }));
 
                 Solution<ClientResponse<R>> solution = waitForSolution(family, tryAnotherInNMillis, executorCompletionService, remaining);
-                if (solution != null) {
+                if (solution != null && solution.answer != null) {
                     try {
                         if (favored != null) {
                             favored.favored(connectionDescriptors[solution.index], solution.latency);
@@ -230,7 +230,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
 
             while (remaining.get() > 0) {
                 Solution<ClientResponse<R>> solution = waitForSolution(family, -1, executorCompletionService, remaining);
-                if (solution != null) {
+                if (solution != null && solution.answer != null) {
                     try {
                         if (favored != null) {
                             favored.favored(connectionDescriptors[solution.index], solution.latency);
