@@ -22,7 +22,7 @@ public class TenantAwareHttpClientHealthCheck implements HealthCheck {
 
         StringBuilder messages = new StringBuilder();
 
-        double[] health = new double[1];
+        double[] health = {1d};
 
         client.gatherPoolStats((name, poolStats) -> {
             double poolHealth = (poolStats.max - (poolStats.leased + poolStats.pending)) / (double) poolStats.max;
