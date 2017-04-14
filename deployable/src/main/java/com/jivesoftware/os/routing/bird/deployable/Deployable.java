@@ -55,7 +55,9 @@ import com.jivesoftware.os.routing.bird.server.session.SessionEvaluator;
 import com.jivesoftware.os.routing.bird.server.session.SessionValidator;
 import com.jivesoftware.os.routing.bird.server.util.Resource;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator;
+import com.jivesoftware.os.routing.bird.shared.BoundedExecutor;
 import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptorsProvider;
+import com.jivesoftware.os.routing.bird.shared.MonitoredExecutorService;
 import com.jivesoftware.os.routing.bird.shared.RSAKeyPairGenerator;
 import com.jivesoftware.os.routing.bird.shared.TenantRoutingProvider;
 import java.io.File;
@@ -65,6 +67,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -515,7 +518,6 @@ public class Deployable implements ConfigProvider {
                 }
             };
         }
-
     }
 
     public void addErrorHealthChecks(ErrorHealthCheckConfig config) {
@@ -645,6 +647,12 @@ public class Deployable implements ConfigProvider {
         } else {
             throw new IllegalStateException("Cannot start server more than once.");
         }
+    }
+
+    public ExecutorService newBoundedExecutor(int maxThreads, String name) {
+        MonitoredExecutorService executorService = BoundedExecutor.newBoundedExecutor(maxThreads, name);
+        addHealthCheck(new MonitoredExecutorServiceHealthCheck(name, executorService));
+        return executorService;
     }
 
     void banneredOneLiner(String message) {
