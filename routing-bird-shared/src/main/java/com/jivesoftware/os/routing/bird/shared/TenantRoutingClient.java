@@ -81,7 +81,7 @@ public class TenantRoutingClient<T, C extends HasHttpClientPoolStats, E extends 
     public void gatherPoolStats(HttpClientPoolStatsStream poolStats) {
         for (TimestampedClients<C, E> client : tenantsHttpClient.values()) {
             for (C c : client.getClients()) {
-                poolStats.poolStats(connectionPoolProvider.getConnectToServiceNamed()+":"+connectionPoolProvider.getPortName(), c.getPoolStats());
+                poolStats.poolStats(connectionPoolProvider.getConnectToServiceNamed() + ":" + connectionPoolProvider.getPortName(), c.getPoolStats());
             }
         }
     }

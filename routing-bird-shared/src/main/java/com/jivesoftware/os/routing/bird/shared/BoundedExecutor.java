@@ -2,9 +2,7 @@ package com.jivesoftware.os.routing.bird.shared;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -13,7 +11,8 @@ import java.util.concurrent.TimeUnit;
 public class BoundedExecutor {
 
 
-    public static ExecutorService newBoundedExecutor(int maxThreads, String name) {
+    public static MonitoredExecutorService newBoundedExecutor(int maxThreads, String name) {
+
         BlockingQueue<Runnable> queue = new LinkedTransferQueue<Runnable>() {
             @Override
             public boolean offer(Runnable e) {
@@ -21,11 +20,11 @@ public class BoundedExecutor {
             }
         };
 
-
-        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
+        MonitoredExecutorService threadPool = new MonitoredExecutorService(
+            1000, // TODO config
             1,
             maxThreads,
-            60,
+            10,
             TimeUnit.SECONDS,
             queue,
             new ThreadFactoryBuilder().setNameFormat(name + "-%d").build());
@@ -42,3 +41,4 @@ public class BoundedExecutor {
     }
 
 }
+

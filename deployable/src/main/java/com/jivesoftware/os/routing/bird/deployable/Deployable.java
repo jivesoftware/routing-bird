@@ -124,7 +124,6 @@ public class Deployable implements ConfigProvider {
 
         tenantRoutingProvider = new TenantRoutingProvider(connectionRefresh, instanceConfig.getInstanceKey(), connectionsDescriptorProvider);
 
-        String applicationName = "manage " + instanceConfig.getServiceName() + " " + instanceConfig.getClusterName();
 
         String keyStorePassword = null;
         String keyStorePath = "./certs/sslKeystore";
@@ -136,7 +135,7 @@ public class Deployable implements ConfigProvider {
 
         restfulManageServer = new RestfulManageServer(instanceConfig.getManageLoopback(),
             instanceConfig.getManagePort(),
-            applicationName,
+            "server-manage-" + instanceConfig.getServiceName(),
             instanceConfig.getManageSslEnabled(),
             instanceConfig.getInstanceKey(),
             keyStorePassword,
@@ -165,7 +164,7 @@ public class Deployable implements ConfigProvider {
         jerseyEndpoints = new JerseyEndpoints();
         restfulServer = new InitializeRestfulServer(false,
             instanceConfig.getMainPort(),
-            applicationName,
+            "server-" + instanceConfig.getServiceName(),
             instanceConfig.getMainSslEnabled(),
             instanceConfig.getInstanceKey(),
             keyStorePassword,
@@ -502,7 +501,7 @@ public class Deployable implements ConfigProvider {
                             }
                         }
                     }
-                    return "Recent Errors:\n" + Joiner.on("\n").join(Objects.firstNonNull(errors, new String[]{""}));
+                    return "Recent Errors:\n" + Joiner.on("\n").join(Objects.firstNonNull(errors, new String[] { "" }));
                 }
 
                 @Override
