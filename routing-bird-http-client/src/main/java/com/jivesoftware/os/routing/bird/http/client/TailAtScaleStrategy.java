@@ -155,7 +155,11 @@ public class TailAtScaleStrategy implements NextClientStrategy {
             }
         }
         Tail[] tails = connectionTails.values().toArray(new Tail[0]);
+        if (tails.length == 0) {
+            throw new HttpClientException("No tails");
+        }
         Arrays.sort(tails);
+
 
         int maxNumberOfClient = Math.min(3, tails.length); // TODO config?
         double percentile = tails[0].statistics.getPercentile(this.percentile);
