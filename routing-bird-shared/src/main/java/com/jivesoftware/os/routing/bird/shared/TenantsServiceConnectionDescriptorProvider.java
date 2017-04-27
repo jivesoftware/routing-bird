@@ -57,6 +57,10 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
         this.refreshConnectionsAfterNMillis = refreshConnectionsAfterNMillis;
     }
 
+    public String getInstanceId() {
+        return instanceId;
+    }
+
     public String getConnectToServiceNamed() {
         return connectToServiceNamed;
     }
@@ -138,9 +142,9 @@ public class TenantsServiceConnectionDescriptorProvider<T> {
                     Map<ConnectionDescriptorKey, ConnectionDescriptor> currentConnectionDescriptors = new HashMap<>();
                     for (ConnectionDescriptor connectionDescriptor : current.getConnectionDescriptors()) {
                         currentConnectionDescriptors.put(new ConnectionDescriptorKey(connectionDescriptor.getInstanceDescriptor(),
-                            connectionDescriptor.getHostPort(),
-                            connectionDescriptor.getProperties(),
-                            connectionDescriptor.getMonkeys()),
+                                connectionDescriptor.getHostPort(),
+                                connectionDescriptor.getProperties(),
+                                connectionDescriptor.getMonkeys()),
                             connectionDescriptor);
                     }
                     for (ConnectionDescriptor connectionDescriptor : latest) {

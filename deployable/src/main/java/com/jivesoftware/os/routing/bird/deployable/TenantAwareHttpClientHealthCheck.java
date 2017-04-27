@@ -28,8 +28,8 @@ public class TenantAwareHttpClientHealthCheck implements HealthCheck {
             double poolHealth = (poolStats.max - (poolStats.leased + poolStats.pending)) / (double) poolStats.max;
             health[0] = Math.min(health[0], poolHealth);
             
-            messages.append(name)
-                .append(" = available:").append(poolStats.available)
+            messages.append(name).append("\n")
+                .append(" available:").append(poolStats.available)
                 .append(" leased:").append(poolStats.leased)
                 .append(" pending:").append(poolStats.pending)
                 .append(" max:").append(poolStats.max)
