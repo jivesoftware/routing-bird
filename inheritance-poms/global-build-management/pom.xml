@@ -5,12 +5,12 @@
     <parent>
         <groupId>com.jivesoftware.os.routing.bird.inheritance.poms</groupId>
         <artifactId>global-repo-management</artifactId>
-        <version>0.199-SNAPSHOT</version>
+        <version>0.199</version>
         <relativePath>../global-repo-management/pom.xml</relativePath>
     </parent>
     <groupId>com.jivesoftware.os.routing.bird.inheritance.poms</groupId>
     <artifactId>global-build-management</artifactId>
-    <version>0.199-SNAPSHOT</version>
+    <version>0.199</version>
     <packaging>pom</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
