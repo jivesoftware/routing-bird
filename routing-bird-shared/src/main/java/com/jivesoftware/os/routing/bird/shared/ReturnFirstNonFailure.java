@@ -106,6 +106,15 @@ public class ReturnFirstNonFailure {
                     throw e;
                 }
             } catch (Exception e) {
+                Throwable c = e;
+                while(c != null) {
+                    if (c instanceof InterruptedIOException || c instanceof InterruptedException || c instanceof  ClosedByInterruptException) {
+                        clientHealths[clientIndex].interrupted(family, e);
+                        throw e;
+                    }
+                    c = c.getCause();
+                }
+
                 clientHealths[clientIndex].fatalError(family, e);
                 throw e;
             } finally {

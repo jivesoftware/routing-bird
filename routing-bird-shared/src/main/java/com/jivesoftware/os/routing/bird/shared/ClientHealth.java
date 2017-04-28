@@ -17,4 +17,5 @@ public interface ClientHealth {
 
     void stillDead();
 
+    void interrupted(String family, Exception e);
 }

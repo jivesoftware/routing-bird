@@ -14,8 +14,10 @@ public class ConnectionHealth {
     public long attempt;
     public long success;
     public long failure;
+    public long interrupted;
     public long successPerSecond;
     public long failurePerSecond;
+    public long interruptedPerSecond;
     public ConnectionHealthLatencyStats latencyStats;
 
     public ConnectionHealth() {
@@ -31,8 +33,10 @@ public class ConnectionHealth {
         long attempt,
         long success,
         long failure,
+        long interrupted,
         long successPerSecond,
         long failurePerSecond,
+        long interruptedPerSecond,
         ConnectionHealthLatencyStats deliverableLatencyStats) {
         this.connectionDescriptor = connectionDescriptor;
         this.timestampMillis = timestampMillis;
@@ -44,8 +48,10 @@ public class ConnectionHealth {
         this.attempt = attempt;
         this.success = success;
         this.failure = failure;
+        this.interrupted = interrupted;
         this.successPerSecond = successPerSecond;
         this.failurePerSecond = failurePerSecond;
+        this.interruptedPerSecond = interruptedPerSecond;
         this.latencyStats = deliverableLatencyStats;
     }
 

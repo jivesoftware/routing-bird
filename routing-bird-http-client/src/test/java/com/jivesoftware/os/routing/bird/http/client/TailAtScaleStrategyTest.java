@@ -62,6 +62,12 @@ public class TailAtScaleStrategyTest {
                 @Override
                 public void stillDead() {
                 }
+
+                @Override
+                public void interrupted(String family, Exception e) {
+                }
+
+
             };
             clientsErrors[i] = new AtomicInteger();
             clientsDeathTimestamp[i] = new AtomicLong();

@@ -91,8 +91,10 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
                         fs.attempts.longValue(),
                         fs.success.longValue(),
                         fs.failure.longValue(),
+                        fs.interrupt.longValue(),
                         fs.successPerSecond(time),
                         fs.failurePerSecond(time),
+                        fs.interruptedPerSecond(time),
                         latencyStats));
                 }
             }
@@ -170,6 +172,15 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
             timestamp = currentTimeMillis;
         }
 
+        @Override
+        public void interrupted(String family, Exception e) {
+            long currentTimeMillis = System.currentTimeMillis();
+            FamilyStats stats = familyStats.computeIfAbsent(family, t -> new FamilyStats(sampleWindow));
+            stats.interrupted(currentTimeMillis);
+            timestamp = currentTimeMillis;
+        }
+
+
     }
 
     static class FamilyStats {
@@ -177,13 +188,17 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
         final LongAdder attempts = new LongAdder();
         final LongAdder success = new LongAdder();
         final LongAdder failure = new LongAdder();
+        final LongAdder interrupt = new LongAdder();
         final DescriptiveStatistics ds;
         long successes;
         long failures;
+        long interrupted;
         long lastSuccessSecond;
+        long lastInteruptedSecond;
         long lastFailureSecond;
         long successPerSecond;
         long failurePerSecond;
+        long interruptedPerSecond;
 
         FamilyStats(int window) {
             ds = new DescriptiveStatistics(window);
@@ -193,8 +208,8 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
             attempts.increment();
         }
 
-        public void success(long timestamp, long latency) {
-            long second = timestamp / 1000;
+        public void success(long time, long latency) {
+            long second = time / 1000;
             if (lastSuccessSecond < second) {
                 lastSuccessSecond = second;
                 successPerSecond = successes;
@@ -205,8 +220,20 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
             ds.addValue(latency);
         }
 
-        public void failure(long timestamp) {
-            long second = timestamp / 1000;
+
+        public void interrupted(long time) {
+            long second = time / 1000;
+            if (lastInteruptedSecond < second) {
+                lastInteruptedSecond = second;
+                interruptedPerSecond = interrupted;
+                interrupted = 0;
+            }
+            interrupted++;
+            interrupt.increment();
+        }
+
+        public void failure(long time) {
+            long second = time / 1000;
             if (lastFailureSecond < second) {
                 lastFailureSecond = second;
                 failurePerSecond = failures;
@@ -243,6 +270,21 @@ public class HttpDeliveryClientHealthProvider implements ClientHealthProvider, R
             }
             return failurePerSecond;
         }
+
+        public long interruptedPerSecond(long time) {
+            long second = time / 1000;
+            if (lastInteruptedSecond < second) {
+                if (second - lastInteruptedSecond > 1) {
+                    interruptedPerSecond = 0;
+                } else {
+                    interruptedPerSecond = interrupted;
+                }
+                interrupted = 0;
+                lastInteruptedSecond = interrupted;
+            }
+            return interruptedPerSecond;
+        }
+
     }
 
 }
