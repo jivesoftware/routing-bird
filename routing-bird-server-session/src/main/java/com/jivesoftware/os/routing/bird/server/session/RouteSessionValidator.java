@@ -5,6 +5,7 @@ import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.http.client.HttpRequestHelper;
 import com.jivesoftware.os.routing.bird.http.client.NonSuccessStatusCodeException;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -44,19 +45,18 @@ public class RouteSessionValidator implements SessionValidator {
 
     @Override
     public SessionStatus isAuthenticated(ContainerRequestContext requestContext) throws SessionValidationException {
-
         String sessionTokenKey = SESSION_TOKEN + "_" + instanceKey;
         Cookie sessionTokenCookie = requestContext.getCookies().get(sessionTokenKey);
         String sessionToken = sessionTokenCookie == null ? null : sessionTokenCookie.getValue();
 
-        Boolean result = null;
+        Boolean result;
         if (sessionToken != null) {
             Session session = sessions.get(sessionToken);
             if (session == null || session.timestamp < System.currentTimeMillis() - sessionCacheDurationMillis) {
-                Map<String, String> cookies = Maps.newHashMap();
-                cookies.put(SESSION_ID, instanceKey);
-                cookies.put(SESSION_TOKEN, sessionToken);
-                result = requestHelper.executeRequest(cookies, validatorPath, Boolean.class, null);
+                Map<String, String> requestParams = Maps.newHashMap();
+                requestParams.put(SESSION_ID, instanceKey);
+                requestParams.put(SESSION_TOKEN, sessionToken);
+                result = requestHelper.executeRequest(requestParams, validatorPath, Boolean.class, null);
                 if (result == null) {
                     throw new SessionValidationException("Routes failed to respond to validation request for id:" + instanceKey);
                 } else if (result) {
@@ -79,7 +79,6 @@ public class RouteSessionValidator implements SessionValidator {
             return SessionStatus.valid;
         }
         return SessionStatus.invalid;
-
     }
 
     @Override
@@ -91,11 +90,21 @@ public class RouteSessionValidator implements SessionValidator {
     @Override
     public boolean exchangeAccessToken(ContainerRequestContext requestContext) {
         List<String> accessToken = requestContext.getUriInfo().getQueryParameters().get("rb_access_token");
+        List<String> redirSsl = requestContext.getUriInfo().getQueryParameters().get("rb_access_redir_ssl");
+        List<String> redirPort = requestContext.getUriInfo().getQueryParameters().get("rb_access_redir_port");
+
         if (accessToken != null && !accessToken.isEmpty()) {
             try {
                 byte[] sessionToken = requestHelper.executeGet(exchangePath + "/" + instanceKey + "/" + accessToken.get(0));
                 if (sessionToken != null) {
                     requestContext.setProperty("rb_session_token_" + instanceKey, new String(sessionToken, StandardCharsets.UTF_8));
+                    requestContext.setProperty("rb_session_redir_ssl", redirSsl.get(0));
+                    requestContext.setProperty("rb_session_redir_port", redirPort.get(0));
+
+                    LOG.trace("rb_session_token_" + instanceKey + ": " + new String(sessionToken, StandardCharsets.UTF_8));
+                    LOG.trace("rb_session_redir_ssl: " + redirSsl.get(0));
+                    LOG.trace("rb_session_redir_port: " + redirPort.get(0));
+
                     return true;
                 }
             } catch (NonSuccessStatusCodeException e) {
@@ -103,11 +112,11 @@ public class RouteSessionValidator implements SessionValidator {
                 return false;
             }
         }
+
         return false;
     }
 
     private static class Session {
-
         private final String id;
         private final long timestamp;
 
