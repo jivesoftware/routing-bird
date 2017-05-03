@@ -97,10 +97,9 @@ public class RouteSessionValidator implements SessionValidator {
                 byte[] sessionToken = requestHelper.executeGet(exchangePath + "/" + instanceKey + "/" + accessToken.get(0));
                 if (sessionToken != null) {
                     requestContext.setProperty("rb_session_token_" + instanceKey, new String(sessionToken, StandardCharsets.UTF_8));
-                    requestContext.setProperty("rb_session_redir_url", redirUrl.get(0));
-
-                    LOG.trace("rb_session_token_" + instanceKey + ": " + new String(sessionToken, StandardCharsets.UTF_8));
-                    LOG.trace("rb_session_redir_url: " + redirUrl.get(0));
+                    if (redirUrl != null) {
+                        requestContext.setProperty("rb_session_redir_url", redirUrl.get(0));
+                    }
 
                     return true;
                 }
