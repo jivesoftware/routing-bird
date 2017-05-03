@@ -90,20 +90,17 @@ public class RouteSessionValidator implements SessionValidator {
     @Override
     public boolean exchangeAccessToken(ContainerRequestContext requestContext) {
         List<String> accessToken = requestContext.getUriInfo().getQueryParameters().get("rb_access_token");
-        List<String> redirSsl = requestContext.getUriInfo().getQueryParameters().get("rb_access_redir_ssl");
-        List<String> redirPort = requestContext.getUriInfo().getQueryParameters().get("rb_access_redir_port");
+        List<String> redirUrl = requestContext.getUriInfo().getQueryParameters().get("rb_access_redir_url");
 
         if (accessToken != null && !accessToken.isEmpty()) {
             try {
                 byte[] sessionToken = requestHelper.executeGet(exchangePath + "/" + instanceKey + "/" + accessToken.get(0));
                 if (sessionToken != null) {
                     requestContext.setProperty("rb_session_token_" + instanceKey, new String(sessionToken, StandardCharsets.UTF_8));
-                    requestContext.setProperty("rb_session_redir_ssl", redirSsl.get(0));
-                    requestContext.setProperty("rb_session_redir_port", redirPort.get(0));
+                    requestContext.setProperty("rb_session_redir_url", redirUrl.get(0));
 
                     LOG.trace("rb_session_token_" + instanceKey + ": " + new String(sessionToken, StandardCharsets.UTF_8));
-                    LOG.trace("rb_session_redir_ssl: " + redirSsl.get(0));
-                    LOG.trace("rb_session_redir_port: " + redirPort.get(0));
+                    LOG.trace("rb_session_redir_url: " + redirUrl.get(0));
 
                     return true;
                 }
