@@ -90,22 +90,21 @@ public class RouteSessionValidator implements SessionValidator {
     @Override
     public boolean exchangeAccessToken(ContainerRequestContext requestContext) {
         List<String> accessToken = requestContext.getUriInfo().getQueryParameters().get("rb_access_token");
-        List<String> redirUrl = requestContext.getUriInfo().getQueryParameters().get("rb_access_redir_url");
-
         if (accessToken != null && !accessToken.isEmpty()) {
             try {
                 byte[] sessionToken = requestHelper.executeGet(exchangePath + "/" + instanceKey + "/" + accessToken.get(0));
                 if (sessionToken != null) {
                     requestContext.setProperty("rb_session_token_" + instanceKey, new String(sessionToken, StandardCharsets.UTF_8));
-                    if (redirUrl != null) {
-                        requestContext.setProperty("rb_session_redir_url", redirUrl.get(0));
+
+                    List<String> redirUrl = requestContext.getUriInfo().getQueryParameters().get("rb_access_redir_url");
+                    if (redirUrl != null && !redirUrl.isEmpty()) {
+                        requestContext.getHeaders().putSingle("rb_session_redir_url", redirUrl.get(0));
                     }
 
                     return true;
                 }
             } catch (NonSuccessStatusCodeException e) {
                 LOG.warn("access token rejected.", e);
-                return false;
             }
         }
 
