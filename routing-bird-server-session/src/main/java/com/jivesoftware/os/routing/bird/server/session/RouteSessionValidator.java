@@ -72,16 +72,17 @@ public class RouteSessionValidator implements SessionValidator {
                         LOG.warn("Invalid session for token: {} != {}", instanceKey, got.id);
                         return SessionStatus.invalid;
                     }
-
-                    Cookie redirCookie = requestContext.getCookies().get(SESSION_REDIR);
-                    if (redirCookie != null) {
-                        requestContext.getHeaders().putSingle(SESSION_REDIR, redirCookie.getValue());
-                    }
                 } else {
                     sessions.remove(sessionToken);
                     return SessionStatus.expired;
                 }
             }
+
+            Cookie redirCookie = requestContext.getCookies().get(SESSION_REDIR);
+            if (redirCookie != null) {
+                requestContext.getHeaders().putSingle(SESSION_REDIR, redirCookie.getValue());
+            }
+
             return SessionStatus.valid;
         }
         return SessionStatus.invalid;
