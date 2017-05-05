@@ -21,6 +21,7 @@ public class RouteSessionValidator implements SessionValidator {
 
     public static final String SESSION_ID = "rb_session_id";
     public static final String SESSION_TOKEN = "rb_session_token";
+    public static final String SESSION_REDIR = "rb_session_redir_url";
 
     private final String instanceKey;
     private final HttpRequestHelper requestHelper;
@@ -71,6 +72,11 @@ public class RouteSessionValidator implements SessionValidator {
                         LOG.warn("Invalid session for token: {} != {}", instanceKey, got.id);
                         return SessionStatus.invalid;
                     }
+
+                    Cookie redirCookie = requestContext.getCookies().get(SESSION_REDIR);
+                    if (redirCookie != null) {
+                        requestContext.getHeaders().putSingle(SESSION_REDIR, redirCookie.getValue());
+                    }
                 } else {
                     sessions.remove(sessionToken);
                     return SessionStatus.expired;
@@ -98,7 +104,7 @@ public class RouteSessionValidator implements SessionValidator {
 
                     List<String> redirUrl = requestContext.getUriInfo().getQueryParameters().get("rb_access_redir_url");
                     if (redirUrl != null && !redirUrl.isEmpty()) {
-                        requestContext.getHeaders().putSingle("rb_session_redir_url", redirUrl.get(0));
+                        requestContext.getHeaders().putSingle(SESSION_REDIR, redirUrl.get(0));
                     }
 
                     return true;
