@@ -16,6 +16,7 @@
 package com.jivesoftware.os.routing.bird.shared;
 
 import com.jivesoftware.os.routing.bird.shared.ClientCall.ClientResponse;
+import com.jivesoftware.os.routing.bird.shared.ReturnFirstNonFailure.Favored;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -106,7 +107,8 @@ public class TenantRoutingClientTest {
             int deadAfterNErrors,
             long checkDeadEveryNMillis,
             AtomicInteger[] clientsErrors,
-            AtomicLong[] clientsDeathTimestamp) throws HttpClientException {
+            AtomicLong[] clientsDeathTimestamp,
+            Favored favored) throws HttpClientException {
             return returnFirstNonFailure.call(this,
                 family,
                 httpCall,
@@ -117,7 +119,8 @@ public class TenantRoutingClientTest {
                 deadAfterNErrors,
                 checkDeadEveryNMillis,
                 clientsErrors,
-                clientsDeathTimestamp);
+                clientsDeathTimestamp,
+                favored);
         }
 
         @Override

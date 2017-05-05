@@ -22,6 +22,7 @@ import com.jivesoftware.os.routing.bird.shared.HttpClientException;
 import com.jivesoftware.os.routing.bird.shared.IndexedClientStrategy;
 import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
 import com.jivesoftware.os.routing.bird.shared.ReturnFirstNonFailure;
+import com.jivesoftware.os.routing.bird.shared.ReturnFirstNonFailure.Favored;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,7 +47,8 @@ public class StableShuffleStrategy implements NextClientStrategy, IndexedClientS
         int deadAfterNErrors,
         long checkDeadEveryNMillis,
         AtomicInteger[] clientsErrors,
-        AtomicLong[] clientsDeathTimestamp) throws HttpClientException {
+        AtomicLong[] clientsDeathTimestamp,
+        Favored favored) throws HttpClientException {
         return returnFirstNonFailure.call(this,
             family,
             httpCall,
@@ -57,7 +59,8 @@ public class StableShuffleStrategy implements NextClientStrategy, IndexedClientS
             deadAfterNErrors,
             checkDeadEveryNMillis,
             clientsErrors,
-            clientsDeathTimestamp);
+            clientsDeathTimestamp,
+            favored);
     }
 
     @Override

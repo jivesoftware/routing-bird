@@ -76,7 +76,9 @@ public class ErrorCheckingTimestampedClients<C> implements TimestampedClients<C,
             clientHealths,
             deadAfterNErrors,
             checkDeadEveryNMillis,
-            clientsErrors, clientsDeathTimestamp);
+            clientsErrors,
+            clientsDeathTimestamp,
+            null);
     }
 
 

@@ -17,6 +17,10 @@ public class ReturnFirstNonFailure {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
+    public interface Favored {
+        void favored(ConnectionDescriptor connectionDescriptor, long latency);
+    }
+
     public <C, R> R call(IndexedClientStrategy strategy,
         String family,
         ClientCall<C, R, HttpClientException> httpCall,
@@ -27,7 +31,8 @@ public class ReturnFirstNonFailure {
         int deadAfterNErrors,
         long checkDeadEveryNMillis,
         AtomicInteger[] clientsErrors,
-        AtomicLong[] clientsDeathTimestamp
+        AtomicLong[] clientsDeathTimestamp,
+        Favored favored
     ) throws HttpClientException {
 
         long now = System.currentTimeMillis();
@@ -40,6 +45,9 @@ public class ReturnFirstNonFailure {
                 checkDeadEveryNMillis, clientsErrors,
                 clientsDeathTimestamp);
             if (clientResponse != null) {
+                if (favored != null) {
+                    favored.favored(connectionDescriptors[clientIndex], System.currentTimeMillis() - now);
+                }
                 return clientResponse.response;
             }
         }
@@ -107,8 +115,8 @@ public class ReturnFirstNonFailure {
                 }
             } catch (Exception e) {
                 Throwable c = e;
-                while(c != null) {
-                    if (c instanceof InterruptedIOException || c instanceof InterruptedException || c instanceof  ClosedByInterruptException) {
+                while (c != null) {
+                    if (c instanceof InterruptedIOException || c instanceof InterruptedException || c instanceof ClosedByInterruptException) {
                         clientHealths[clientIndex].interrupted(family, e);
                         throw e;
                     }

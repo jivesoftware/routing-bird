@@ -96,7 +96,8 @@ public class TailAtScaleStrategyTest {
                 deadAfterNErrors,
                 checkDeadEveryNMillis,
                 clientsErrors,
-                clientsDeathTimestamp
+                clientsDeathTimestamp,
+                null
             );
             System.out.print(got + " ");
             called[got]++;
@@ -127,7 +128,8 @@ public class TailAtScaleStrategyTest {
                 deadAfterNErrors,
                 checkDeadEveryNMillis,
                 clientsErrors,
-                clientsDeathTimestamp
+                clientsDeathTimestamp,
+                null
             );
             System.out.print(got + " ");
             called[got]++;
@@ -157,7 +159,8 @@ public class TailAtScaleStrategyTest {
                 deadAfterNErrors,
                 checkDeadEveryNMillis,
                 clientsErrors,
-                clientsDeathTimestamp
+                clientsDeathTimestamp,
+                null
             );
             System.out.print(got + " ");
             called[got]++;

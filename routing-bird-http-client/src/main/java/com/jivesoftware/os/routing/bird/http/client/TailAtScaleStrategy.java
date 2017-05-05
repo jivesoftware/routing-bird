@@ -9,6 +9,7 @@ import com.jivesoftware.os.routing.bird.shared.ConnectionDescriptor;
 import com.jivesoftware.os.routing.bird.shared.HttpClientException;
 import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
 import com.jivesoftware.os.routing.bird.shared.ReturnFirstNonFailure;
+import com.jivesoftware.os.routing.bird.shared.ReturnFirstNonFailure.Favored;
 import java.io.InterruptedIOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
@@ -64,27 +65,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         }
     }
 
-
     @Override
-    public <C, R> R call(String family,
-        ClientCall<C, R, HttpClientException> httpCall,
-        ConnectionDescriptor[] connectionDescriptors,
-        long connectionDescriptorsVersion,
-        C[] clients,
-        ClientHealth[] clientHealths,
-        int deadAfterNErrors,
-        long checkDeadEveryNMillis,
-        AtomicInteger[] clientsErrors,
-        AtomicLong[] clientsDeathTimestamp) throws HttpClientException {
-
-        return call(family, httpCall, connectionDescriptors, connectionDescriptorsVersion, clients, clientHealths, deadAfterNErrors, checkDeadEveryNMillis,
-            clientsErrors, clientsDeathTimestamp, null);
-    }
-
-    public interface Favored {
-        void favored(ConnectionDescriptor connectionDescriptor, long latency);
-    }
-
     public <C, R> R call(String family,
         ClientCall<C, R, HttpClientException> httpCall,
         ConnectionDescriptor[] connectionDescriptors,

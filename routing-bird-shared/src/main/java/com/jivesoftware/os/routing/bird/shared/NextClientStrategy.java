@@ -1,5 +1,6 @@
 package com.jivesoftware.os.routing.bird.shared;
 
+import com.jivesoftware.os.routing.bird.shared.ReturnFirstNonFailure.Favored;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -17,7 +18,8 @@ public interface NextClientStrategy {
         int deadAfterNErrors,
         long checkDeadEveryNMillis,
         AtomicInteger[] clientsErrors,
-        AtomicLong[] clientsDeathTimestamp
+        AtomicLong[] clientsDeathTimestamp,
+        Favored favored
     ) throws HttpClientException;
 
 }

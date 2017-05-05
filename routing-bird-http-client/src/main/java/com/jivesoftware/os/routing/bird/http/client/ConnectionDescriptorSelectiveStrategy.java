@@ -23,6 +23,7 @@ import com.jivesoftware.os.routing.bird.shared.HttpClientException;
 import com.jivesoftware.os.routing.bird.shared.IndexedClientStrategy;
 import com.jivesoftware.os.routing.bird.shared.NextClientStrategy;
 import com.jivesoftware.os.routing.bird.shared.ReturnFirstNonFailure;
+import com.jivesoftware.os.routing.bird.shared.ReturnFirstNonFailure.Favored;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,7 +49,8 @@ public class ConnectionDescriptorSelectiveStrategy implements NextClientStrategy
         int deadAfterNErrors,
         long checkDeadEveryNMillis,
         AtomicInteger[] clientsErrors,
-        AtomicLong[] clientsDeathTimestamp) throws HttpClientException {
+        AtomicLong[] clientsDeathTimestamp,
+        Favored favored) throws HttpClientException {
         return returnFirstNonFailure.call(this,
             family,
             httpCall,
@@ -59,7 +61,8 @@ public class ConnectionDescriptorSelectiveStrategy implements NextClientStrategy
             deadAfterNErrors,
             checkDeadEveryNMillis,
             clientsErrors,
-            clientsDeathTimestamp);
+            clientsDeathTimestamp,
+            favored);
     }
 
     @Override
