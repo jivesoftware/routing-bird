@@ -149,9 +149,11 @@ public class TailAtScaleStrategy implements NextClientStrategy {
         ExecutorCompletionService<Solution<ClientResponse<R>>> executorCompletionService = new ExecutorCompletionService<>(executor);
         List<Future<Solution<ClientResponse<R>>>> futures = new ArrayList<>(maxNumberOfClient);
         try {
+            AtomicInteger totalAttempts = new AtomicInteger();
             AtomicInteger remaining = new AtomicInteger(0);
             for (int submitted = 0; submitted < maxNumberOfClient; submitted++) {
                 int idx = submitted;
+                totalAttempts.incrementAndGet();
                 remaining.incrementAndGet();
                 futures.add(executorCompletionService.submit(() -> {
 
@@ -169,14 +171,14 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                         clientsDeathTimestamp);
 
                     long latency = System.currentTimeMillis() - now;
-                    return new Solution<>(clientResponse, tails[idx].index, latency);
+                    return new Solution<>(clientResponse, idx, tails[idx].index, latency);
                 }));
 
                 Solution<ClientResponse<R>> solution = waitForSolution(family, tryAnotherInNMillis, executorCompletionService, remaining);
                 if (solution != null && solution.answer != null) {
                     try {
                         if (favored != null) {
-                            favored.favored(connectionDescriptors[solution.index], solution.latency);
+                            favored.favored(solution.attempt, totalAttempts.get(), connectionDescriptors[solution.index], solution.latency);
                         }
                     } catch (Exception x) {
                         LOG.warn("Favored failure.", x);
@@ -190,6 +192,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                 int count = tails.length - maxNumberOfClient;
                 int idx = (int) (count * Math.random()) + maxNumberOfClient;
                 if (idx < tails.length) {
+                    totalAttempts.incrementAndGet();
                     remaining.incrementAndGet();
                     futures.add(executorCompletionService.submit(() -> {
 
@@ -208,7 +211,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
 
                         long latency = System.currentTimeMillis() - now;
                         tails[idx].completed(latency);
-                        return new Solution<>(clientResponse, tails[idx].index, latency);
+                        return new Solution<>(clientResponse, maxNumberOfClient, tails[idx].index, latency);
                     }));
                 }
             }
@@ -218,7 +221,7 @@ public class TailAtScaleStrategy implements NextClientStrategy {
                 if (solution != null && solution.answer != null) {
                     try {
                         if (favored != null) {
-                            favored.favored(connectionDescriptors[solution.index], solution.latency);
+                            favored.favored(solution.attempt, totalAttempts.get(), connectionDescriptors[solution.index], solution.latency);
                         }
                     } catch (Exception x) {
                         LOG.warn("Favored failure.", x);
@@ -294,11 +297,13 @@ public class TailAtScaleStrategy implements NextClientStrategy {
     private static class Solution<A> {
 
         public final A answer;
+        public final int attempt;
         public final int index;
         public final long latency;
 
-        private Solution(A answer, int index, long latency) {
+        private Solution(A answer, int attempt, int index, long latency) {
             this.answer = answer;
+            this.attempt = attempt;
             this.index = index;
             this.latency = latency;
         }

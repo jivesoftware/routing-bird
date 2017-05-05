@@ -18,7 +18,7 @@ public class ReturnFirstNonFailure {
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     public interface Favored {
-        void favored(ConnectionDescriptor connectionDescriptor, long latency);
+        void favored(int attempt, int totalAttempts, ConnectionDescriptor connectionDescriptor, long latency);
     }
 
     public <C, R> R call(IndexedClientStrategy strategy,
@@ -37,6 +37,7 @@ public class ReturnFirstNonFailure {
 
         long now = System.currentTimeMillis();
         int[] clientIndexes = strategy.getClients(connectionDescriptors);
+        int attempt = 0;
         for (int clientIndex : clientIndexes) {
             if (clientIndex < 0) {
                 continue;
@@ -46,10 +47,11 @@ public class ReturnFirstNonFailure {
                 clientsDeathTimestamp);
             if (clientResponse != null) {
                 if (favored != null) {
-                    favored.favored(connectionDescriptors[clientIndex], System.currentTimeMillis() - now);
+                    favored.favored(attempt, attempt, connectionDescriptors[clientIndex], System.currentTimeMillis() - now);
                 }
                 return clientResponse.response;
             }
+            attempt++;
         }
 
         StringBuilder sb = new StringBuilder();
