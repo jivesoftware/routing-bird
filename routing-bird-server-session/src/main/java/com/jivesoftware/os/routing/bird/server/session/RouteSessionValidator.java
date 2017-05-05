@@ -104,6 +104,7 @@ public class RouteSessionValidator implements SessionValidator {
 
                     List<String> redirUrl = requestContext.getUriInfo().getQueryParameters().get("rb_access_redir_url");
                     if (redirUrl != null && !redirUrl.isEmpty()) {
+                        requestContext.setProperty(SESSION_REDIR, redirUrl.get(0));
                         requestContext.getHeaders().putSingle(SESSION_REDIR, redirUrl.get(0));
                     }
 
