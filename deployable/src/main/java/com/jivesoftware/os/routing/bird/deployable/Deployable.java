@@ -545,7 +545,8 @@ public class Deployable implements ConfigProvider {
             DeployableMainAuthHealthCheckConfig dmahcc = config(DeployableMainAuthHealthCheckConfig.class);
             PercentileHealthChecker authFilterHealthCheck = new PercentileHealthChecker(dmahcc);
             addHealthCheck(authFilterHealthCheck);
-            authValidationFilter = new AuthValidationFilter(authFilterHealthCheck);
+            authValidationFilter = new AuthValidationFilter(authFilterHealthCheck)
+                .setInstanceKey(instanceConfig.getInstanceKey());
             jerseyEndpoints.addContainerRequestFilter(authValidationFilter);
         }
         return authValidationFilter;
