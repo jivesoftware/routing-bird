@@ -3,17 +3,20 @@ package com.jivesoftware.os.routing.bird.authentication;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.health.checkers.PercentileHealthChecker;
-import com.jivesoftware.os.routing.bird.server.oauth.OAuthServiceLocatorShim;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator;
 import com.jivesoftware.os.routing.bird.shared.AuthEvaluator.AuthStatus;
+
+import static com.jivesoftware.os.routing.bird.server.session.RouteSessionValidator.SESSION_REDIR;
+
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import jersey.repackaged.com.google.common.collect.Lists;
-import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
 
 /**
  *
@@ -21,11 +24,12 @@ import org.glassfish.jersey.oauth1.signature.OAuth1Signature;
 public class AuthValidationFilter implements ContainerRequestFilter {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
+
     private final PercentileHealthChecker successRate;
 
     private final List<PathedAuthEvaluator> evaluators = Lists.newArrayList();
-    private final OAuth1Signature verifier = new OAuth1Signature(new OAuthServiceLocatorShim());
     private boolean dryRun = false;
+    private String instanceKey = "";
 
     public AuthValidationFilter(PercentileHealthChecker successRate) {
         this.successRate = successRate;
@@ -38,6 +42,11 @@ public class AuthValidationFilter implements ContainerRequestFilter {
 
     public AuthValidationFilter dryRun(boolean dryRun) {
         this.dryRun = dryRun;
+        return this;
+    }
+
+    public AuthValidationFilter setInstanceKey(String instanceKey) {
+        this.instanceKey = instanceKey;
         return this;
     }
 
@@ -76,7 +85,20 @@ public class AuthValidationFilter implements ContainerRequestFilter {
             LOG.warn("Dry run validation failed, matches:{} misses:{}", matches, misses);
         } else {
             LOG.inc("auth>unauthorized");
-            requestContext.abortWith(Response.status(Status.UNAUTHORIZED).entity(failedAuthStatus.description()).build());
+            LOG.warn("Authorization error: {}", failedAuthStatus.description());
+            try {
+                Cookie redirCookie = requestContext.getCookies().get(SESSION_REDIR);
+                if (redirCookie != null && !instanceKey.isEmpty()) {
+                    URI redirUri = new URI(redirCookie.getValue() +
+                        "/ui/deployable/redirect/" + instanceKey + "?portName=main&path=" + path);
+                    requestContext.abortWith(Response.temporaryRedirect(redirUri).build());
+                    return;
+                }
+            } catch(URISyntaxException e) {
+                LOG.warn("Redirect error occurred.", e);
+            }
+
+            requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity(failedAuthStatus.description()).build());
         }
     }
 
