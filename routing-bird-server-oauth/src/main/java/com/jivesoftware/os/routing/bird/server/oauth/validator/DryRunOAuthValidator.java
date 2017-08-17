@@ -42,7 +42,12 @@ public class DryRunOAuthValidator implements AuthValidator<OAuth1Signature, OAut
                 return new AuthValidationResult(consumerKey, true);
             }
         } catch (AuthValidationException x) {
-            LOG.warn("Dry run validation failed for consumerKey:{}", new Object[] { consumerKey }, x);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Dry run validation failed for consumerKey:{}", new Object[]{consumerKey}, x);
+            } else {
+                LOG.warn("Dry run validation failed for consumerKey:{}", consumerKey);
+            }
+
             return new AuthValidationResult(consumerKey, true);
         }
     }
