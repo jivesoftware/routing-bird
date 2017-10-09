@@ -16,11 +16,11 @@
 package com.jivesoftware.os.routing.bird.server;
 
 import com.jivesoftware.os.routing.bird.endpoints.base.RestfulBaseEndpoints;
-import com.jivesoftware.os.routing.bird.endpoints.base.RestfulBaseEndpoints.ResfulServiceName;
 import com.jivesoftware.os.routing.bird.endpoints.logging.level.LogLevelRestEndpoints;
 import com.jivesoftware.os.routing.bird.endpoints.logging.metric.LogMetricRestfulEndpoints;
 import com.jivesoftware.os.routing.bird.health.HealthCheck;
 import com.jivesoftware.os.routing.bird.health.HealthCheckService;
+
 import java.io.File;
 import java.util.Arrays;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -49,9 +49,7 @@ public class RestfulManageServer {
             .humanReadableJson()
             .addEndpoint(RestfulBaseEndpoints.class).addInjectable(healthCheckService).addInjectable(new File("logs/service.log"))
             .addEndpoint(LogMetricRestfulEndpoints.class)
-            .addEndpoint(LogLevelRestEndpoints.class)
-            .addInjectable(ResfulServiceName.class, new ResfulServiceName(applicationName, port));
-
+            .addEndpoint(LogLevelRestEndpoints.class);
     }
 
     public int getThreads() {
@@ -96,9 +94,8 @@ public class RestfulManageServer {
         return this;
     }
 
-    public RestfulManageServer removeHealthCheck(HealthCheck... check) {
+    public void removeHealthCheck(HealthCheck... check) {
         healthCheckService.removeHealthCheck(Arrays.asList(check));
-        return this;
     }
 
     public void start() throws Exception {
@@ -108,4 +105,5 @@ public class RestfulManageServer {
     public void stop() throws Exception {
         server.stop();
     }
+
 }

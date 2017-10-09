@@ -3,9 +3,6 @@ package com.jivesoftware.os.routing.bird.deployable;
 import com.jivesoftware.os.routing.bird.health.api.HealthCheckRegistry;
 import com.jivesoftware.os.routing.bird.health.api.HealthChecker;
 
-/**
- *
- */
 public class DeployableHealthCheckRegistry implements HealthCheckRegistry {
 
     private final Deployable deployable;
@@ -23,4 +20,5 @@ public class DeployableHealthCheckRegistry implements HealthCheckRegistry {
     public void unregister(HealthChecker<?> healthChecker) {
         deployable.removeHealthCheck(healthChecker);
     }
+
 }

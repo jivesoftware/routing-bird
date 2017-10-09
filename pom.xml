@@ -27,6 +27,5 @@
         <module>deployable-scripts</module>
         <module>deployable-config-shared</module>
         <module>deployable-config-extractor</module>
-        <module>hello</module>
     </modules>
 </project>

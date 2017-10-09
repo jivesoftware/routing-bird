@@ -18,6 +18,7 @@ package com.jivesoftware.os.routing.bird.endpoints.logging.level;
 import com.google.inject.Singleton;
 import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,6 +31,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,7 +43,7 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 @Path("/logging")
 public class LogLevelRestEndpoints {
 
-    private static final MetricLogger log = MetricLoggerFactory.getLogger();
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     @GET
     @Path("/listLogLevels")
@@ -62,7 +64,6 @@ public class LogLevelRestEndpoints {
 
         changeLogLevel(loggerName, loggerLevel);
         return Response.ok().build();
-
     }
 
     private void changeLogLevel(String loggerName, String loggerLevel) {
@@ -71,7 +72,7 @@ public class LogLevelRestEndpoints {
             level = Level.toLevel(loggerLevel);
         }
 
-        log.info("Set metricLogger={} to level={}", loggerName, level);
+        LOG.info("Set metricLogger={} to level={}", loggerName, level);
         MetricLoggerFactory.setLogLevel(loggerName, false, level);
 
         org.apache.logging.log4j.spi.LoggerContext context = LogManager.getContext(false);
@@ -80,24 +81,24 @@ public class LogLevelRestEndpoints {
             Configuration config = ctx.getConfiguration();
             LoggerConfig loggerConfig = config.getLoggerConfig(loggerName);
             if (!loggerConfig.getName().equals(loggerName)) {
-                log.warn("Creating new logger config for '{}' because nearest config was '{}'", loggerName, loggerConfig.getName());
+                LOG.warn("Creating new logger config for '{}' because nearest config was '{}'", loggerName, loggerConfig.getName());
                 loggerConfig = new LoggerConfig(loggerName, level, true);
                 config.addLogger(loggerName, loggerConfig);
             }
 
-            log.info("Set loggerConfig={} to level={}", loggerConfig.getName(), level);
+            LOG.info("Set loggerConfig={} to level={}", loggerConfig.getName(), level);
             loggerConfig.setLevel(level);
             ctx.updateLoggers();
         } else {
-            log.warn("Cannot get logger config because logger context isn't an instance of org.apache.logging.log4j.core.LoggerContext");
+            LOG.warn("Cannot get logger config because logger context is not an instance of org.apache.logging.log4j.core.LoggerContext");
         }
 
         Logger logger = LogManager.getLogger(loggerName);
         if (logger instanceof org.apache.logging.log4j.core.Logger) {
             ((org.apache.logging.log4j.core.Logger) logger).setLevel(level);
-            log.info("Set logger={} to level={}", logger.getName(), level);
+            LOG.info("Set logger={} to level={}", logger.getName(), level);
         } else {
-            log.warn("Cannot get log level because root logger isn't an instance of org.apache.logging.log4j.core.Logger");
+            LOG.warn("Cannot get log level because root logger is not an instance of org.apache.logging.log4j.core.Logger");
         }
     }
 
@@ -117,7 +118,7 @@ public class LogLevelRestEndpoints {
                 addToLogLevels(logger, logLevels);
             }
         } else {
-            log.warn("Cannot get log level because root logger isn't an instance of org.apache.logging.log4j.core.Logger");
+            LOG.warn("Cannot get log level because root logger is not an instance of org.apache.logging.log4j.core.Logger");
         }
         addToLogLevels(rootLogger, logLevels);
         return new JsonLogLevels(tenantId, logLevels);
@@ -133,9 +134,9 @@ public class LogLevelRestEndpoints {
     @Consumes("application/json")
     @Path("/setLevels")
     public void setLogLevels(JsonLogLevels jsonLogLevels) {
-
         for (JsonLogLevel l : jsonLogLevels.getLogLevels()) {
             changeLogLevel(l.getLoggerName(), l.getLoggerLevel());
         }
     }
+
 }

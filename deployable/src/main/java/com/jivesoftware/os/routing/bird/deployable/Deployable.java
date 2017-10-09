@@ -98,13 +98,6 @@ public class Deployable implements ConfigProvider {
     private final ScheduledExecutorService connectionRefresh = Executors.newScheduledThreadPool(1, new ThreadFactoryBuilder().setNameFormat(
         "connectionRefresh-%d").build());
 
-    public Deployable(String[] args) throws Exception {
-        this.mainProperties = new MainProperties(args);
-        this.configBinder = new ConfigBinder(args);
-        this.instanceConfig = configBinder.bind(InstanceConfig.class);
-        init(null);
-    }
-
     public Deployable(String[] args,
         ConfigBinder configBinder,
         InstanceConfig instanceConfig,
@@ -117,16 +110,13 @@ public class Deployable implements ConfigProvider {
     }
 
     private void init(ConnectionDescriptorsProvider connectionsDescriptorProvider) throws Exception {
-
         if (connectionsDescriptorProvider == null) {
-
             TenantRoutingBirdProviderBuilder tenantRoutingBirdBuilder = new TenantRoutingBirdProviderBuilder(instanceConfig.getRoutesHost(),
                 instanceConfig.getRoutesPort(), instanceConfig.getRoutesPath());
             connectionsDescriptorProvider = tenantRoutingBirdBuilder.build(null);
         }
 
         tenantRoutingProvider = new TenantRoutingProvider(connectionRefresh, instanceConfig.getInstanceKey(), connectionsDescriptorProvider);
-
 
         String keyStorePassword = null;
         String keyStorePath = "./certs/sslKeystore";
@@ -174,14 +164,6 @@ public class Deployable implements ConfigProvider {
             keyStorePath,
             instanceConfig.getMainMaxThreads(),
             instanceConfig.getMainMaxQueuedRequests());
-    }
-
-    public ServiceHandle buildMetricPublisher() {
-        return null;
-    }
-
-    public ServiceHandle buildLogPublisher() {
-        return null;
     }
 
     public TenantRoutingProvider getTenantRoutingProvider() {
@@ -234,13 +216,6 @@ public class Deployable implements ConfigProvider {
         return configBinder.bind(clazz);
     }
 
-    public void addManageEndpoints(Class clazz) {
-        if (manageServerStarted.get()) {
-            throw new IllegalStateException("Cannot add endpoints after the manage server has been started.");
-        }
-        restfulManageServer.addEndpoint(clazz);
-    }
-
     public void addManageInjectables(Class clazz, Object injectable) {
         if (manageServerStarted.get()) {
             throw new IllegalStateException("Cannot add injectables after the manage server has been started.");
@@ -289,10 +264,6 @@ public class Deployable implements ConfigProvider {
         }
     }
 
-    public void enableSwagger(String resourcePackage) {
-        jerseyEndpoints.enableSwagger(resourcePackage);
-    }
-
     public void addEndpoints(Class clazz) {
         if (serverStarted.get()) {
             throw new IllegalStateException("Cannot add endpoints after the server has been started.");
@@ -305,13 +276,6 @@ public class Deployable implements ConfigProvider {
             throw new IllegalStateException("Cannot add injectables after the server has been started.");
         }
         jerseyEndpoints.addInjectable(clazz, injectable);
-    }
-
-    public void addContainerRequestFilter(ContainerRequestFilter containerRequestFilter) {
-        if (serverStarted.get()) {
-            throw new IllegalStateException("Cannot add request filters after the server has been started.");
-        }
-        jerseyEndpoints.addContainerRequestFilter(containerRequestFilter);
     }
 
     public void addResource(Resource resource) {
@@ -589,6 +553,7 @@ public class Deployable implements ConfigProvider {
                 jerseyEndpoints.addContainerResponseFilter(authRoutingBirdSessionFilter);
             }
         }
+
         return this;
     }
 
@@ -665,7 +630,6 @@ public class Deployable implements ConfigProvider {
     }
 
     void startedUpBanner() {
-
         LOG.info(pad("-", "", "-", '-', 100));
         LOG.info(pad("|", "", "|", ' ', 100));
         LOG.info(pad("|", "      Service INSTANCEKEY:" + instanceConfig.getInstanceKey(), "|", ' ', 100));
@@ -690,4 +654,5 @@ public class Deployable implements ConfigProvider {
         Arrays.fill(padding, pad);
         return prefic + string + new String(padding) + postFix;
     }
+
 }
