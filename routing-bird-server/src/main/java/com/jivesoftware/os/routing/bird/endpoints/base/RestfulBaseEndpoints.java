@@ -62,14 +62,17 @@ public class RestfulBaseEndpoints {
     private final HealthCheckService healthCheckService;
     private final File logFile;
     private final HasUI hasUI;
+    private final FullyOnlineVersion fullyOnlineVersion;
 
     public RestfulBaseEndpoints(@Context HealthCheckService healthCheckService,
         @Context File logFile,
-        @Context HasUI hasUI) {
+        @Context HasUI hasUI,
+        @Context FullyOnlineVersion fullyOnlineVersion) {
 
         this.healthCheckService = healthCheckService;
         this.logFile = logFile;
         this.hasUI = hasUI;
+        this.fullyOnlineVersion = fullyOnlineVersion;
     }
 
     @GET
@@ -339,6 +342,58 @@ public class RestfulBaseEndpoints {
         }
     }
 
+    class Health {
+        public String version = "unknown";
+        public boolean fullyOnline = false;
+        public double health = 1.0d;
+        public List<HealthCheckResponse> healthChecks = new ArrayList<>();
+    }
+
+    /**
+     * Health of service
+     *
+     * @param callback
+     * @return
+     */
+    @GET
+    @Path("/health")
+    public Response health(@QueryParam("callback") @DefaultValue("") String callback) {
+        try {
+            Health health = new Health();
+            String version = fullyOnlineVersion.getFullyOnlineVersion();
+            if (version == null) {
+                health.fullyOnline = false;
+                health.version = "still in startup";
+            } else {
+                health.fullyOnline = true;
+                health.version = version;
+            }
+
+            health.healthChecks = healthCheckService.checkHealth();
+            for (HealthCheckResponse response : health.healthChecks) {
+                if (-Double.MAX_VALUE != response.getHealth()) {
+                    health.health = Math.min(health.health, response.getHealth());
+                }
+            }
+
+            Response.ResponseBuilder builder;
+            if (health.health > 0.0d) {
+                builder = Response.ok();
+            } else {
+                builder = Response.status(Response.Status.SERVICE_UNAVAILABLE);
+            }
+            if (callback.length() > 0) {
+                return builder.entity(ResponseHelper.INSTANCE.jsonpResponse(callback, health).getEntity()).type(new MediaType("application", "javascript")).
+                    build();
+            } else {
+                return builder.entity(health).type(MediaType.APPLICATION_JSON).build();
+            }
+        } catch (Exception x) {
+            LOG.warn("Failed to get health.", x);
+            return ResponseHelper.INSTANCE.errorResponse("Failed to get health.", x);
+        }
+    }
+
     @GET
     @Path("/resetHealth")
     public Response resetHealth() {
@@ -347,7 +402,7 @@ public class RestfulBaseEndpoints {
             return Response.ok("Reset Health", MediaType.TEXT_PLAIN).build();
         } catch (Exception x) {
             LOG.warn("Failed to reset health.", x);
-            return ResponseHelper.INSTANCE.errorResponse("Failed to reset health checks.", x);
+            return ResponseHelper.INSTANCE.errorResponse("Failed to reset health.", x);
         }
     }
 
@@ -358,8 +413,8 @@ public class RestfulBaseEndpoints {
             LoggerSummary.INSTANCE.reset();
             return Response.ok("Reset LoggerSummary", MediaType.TEXT_PLAIN).build();
         } catch (Exception x) {
-            LOG.warn("Failed to reset health.", x);
-            return ResponseHelper.INSTANCE.errorResponse("Failed to reset health checks.", x);
+            LOG.warn("Failed to reset thrown.", x);
+            return ResponseHelper.INSTANCE.errorResponse("Failed to reset thrown.", x);
         }
     }
 
@@ -384,7 +439,7 @@ public class RestfulBaseEndpoints {
                         String level = (logger.getLevel() == null) ? null : logger.getLevel().toString();
                         canvas.option(HtmlAttributesFactory.value(logger.getName())).content(level + "=" + logger.getName());
                     } catch (ClassNotFoundException e) {
-                        LOG.warn("Failed to find class.", e.getLocalizedMessage());
+                        LOG.warn("Failed to find class:{}", e.getLocalizedMessage());
                     }
                 }
                 canvas._select();

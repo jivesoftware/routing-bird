@@ -26,7 +26,7 @@ import com.jivesoftware.os.routing.bird.server.binding.InjectableBinder;
 import com.jivesoftware.os.routing.bird.server.filter.NewRelicRequestFilter;
 import io.swagger.jaxrs.config.BeanConfig;
 import io.swagger.jaxrs.listing.ApiListingResource;
-import java.util.Collections;
+
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -34,11 +34,11 @@ import java.util.Set;
 import javax.servlet.DispatcherType;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseFilter;
+
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.glassfish.hk2.utilities.Binder;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -59,7 +59,6 @@ public class JerseyEndpoints implements HasServletContextHandler {
     private final List<ContainerRequestFilter> containerRequestFilters = Lists.newArrayList();
     private final List<ContainerResponseFilter> containerResponseFilters = Lists.newArrayList();
     private boolean supportCORS = false;
-    private String resourcePackage;
     private boolean enableSwagger = false;
 
     private final ObjectMapper mapper;
@@ -69,18 +68,8 @@ public class JerseyEndpoints implements HasServletContextHandler {
             .configure(JsonGenerator.Feature.WRITE_NUMBERS_AS_STRINGS, true);
     }
 
-    public JerseyEndpoints addProvider(Class<?> provider) {
-        allClasses.add(provider);
-        return this;
-    }
-
     public JerseyEndpoints addEndpoint(Class<?> jerseyEndpoint) {
         allClasses.add(jerseyEndpoint);
-        return this;
-    }
-
-    public JerseyEndpoints addBinder(Binder requestInfoInjectable) {
-        allBinders.add(requestInfoInjectable);
         return this;
     }
 
@@ -109,7 +98,7 @@ public class JerseyEndpoints implements HasServletContextHandler {
         return this;
     }
 
-     public JerseyEndpoints addContainerResponseFilter(ContainerResponseFilter containerResponseFilter) {
+    public JerseyEndpoints addContainerResponseFilter(ContainerResponseFilter containerResponseFilter) {
         containerResponseFilters.add(containerResponseFilter);
         return this;
     }
@@ -117,16 +106,6 @@ public class JerseyEndpoints implements HasServletContextHandler {
     public JerseyEndpoints enableCORS() {
         supportCORS = true;
         return this;
-    }
-
-    public JerseyEndpoints enableSwagger(String resourcePackage) {
-        this.resourcePackage = resourcePackage;
-        enableSwagger = true;
-        return this;
-    }
-
-    public List<Injectable<?>> getInjectables() {
-        return Collections.unmodifiableList(allInjectables);
     }
 
     public JerseyEndpoints humanReadableJson() {
@@ -140,13 +119,12 @@ public class JerseyEndpoints implements HasServletContextHandler {
 
     @Override
     public Handler getHandler(final Server server, String context, String applicationName) {
-
         ResourceConfig rc = new ResourceConfig();
 
         if (enableSwagger) {
             BeanConfig beanConfig = new BeanConfig();
             beanConfig.setVersion("1.0.0");
-            beanConfig.setResourcePackage(resourcePackage);
+            beanConfig.setResourcePackage("");
             beanConfig.setScan(true);
             beanConfig.setBasePath("/");
             beanConfig.setTitle(applicationName);
@@ -167,11 +145,11 @@ public class JerseyEndpoints implements HasServletContextHandler {
         rc.registerInstances(
             new InjectableBinder(allInjectables),
             new AbstractBinder() {
-            @Override
-            protected void configure() {
-                bind(server).to(Server.class);
+                @Override
+                protected void configure() {
+                    bind(server).to(Server.class);
+                }
             }
-        }
         );
 
         if (supportCORS) {
@@ -181,8 +159,8 @@ public class JerseyEndpoints implements HasServletContextHandler {
         for (ContainerRequestFilter containerRequestFilter : containerRequestFilters) {
             rc.register(containerRequestFilter);
         }
-        
-         for (ContainerResponseFilter containerResponseFilter : containerResponseFilters) {
+
+        for (ContainerResponseFilter containerResponseFilter : containerResponseFilters) {
             rc.register(containerResponseFilter);
         }
 
@@ -198,4 +176,5 @@ public class JerseyEndpoints implements HasServletContextHandler {
 
         return servletContextHandler;
     }
+
 }
