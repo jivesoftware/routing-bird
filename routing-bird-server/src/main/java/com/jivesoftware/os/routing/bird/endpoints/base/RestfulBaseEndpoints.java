@@ -39,12 +39,12 @@ import javax.inject.Singleton;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
@@ -419,12 +419,12 @@ public class RestfulBaseEndpoints {
     }
 
     @GET
-    @Path("/setLogLevel")
-    public Response setLogLevel(@Context UriInfo uriInfo) {
+    @Path("/logLevels/{instanceKey}")
+    public Response logLevels(@PathParam("instanceKey") @DefaultValue("") String instanceKey) {
         try {
             HtmlCanvas canvas = new HtmlCanvas();
 
-            canvas.form(HtmlAttributesFactory.action(uriInfo.getBaseUri().getPath() + "logging/setLevels").method("get").id("setLevels-form"));
+            canvas.form(HtmlAttributesFactory.action("/ui/deployable/setLogLevel/" + instanceKey).method("get").id("setLogLevels-form"));
             canvas.fieldset();
 
             org.apache.logging.log4j.Logger rl = LogManager.getRootLogger();

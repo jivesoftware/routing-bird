@@ -57,13 +57,13 @@ public class LogLevelRestEndpoints {
 
     @GET
     @Consumes("application/json")
-    @Path("/setLevel")
+    @Path("/setLogLevel")
     public Response setLogLevel(
         @QueryParam("logger") @DefaultValue("") String loggerName,
         @QueryParam("level") @DefaultValue("null") String loggerLevel) {
 
         changeLogLevel(loggerName, loggerLevel);
-        return Response.ok().build();
+        return Response.ok(loggerName + " set to " + loggerLevel, MediaType.TEXT_PLAIN).build();
     }
 
     private void changeLogLevel(String loggerName, String loggerLevel) {
@@ -132,7 +132,7 @@ public class LogLevelRestEndpoints {
 
     @POST
     @Consumes("application/json")
-    @Path("/setLevels")
+    @Path("/setLogLevels")
     public void setLogLevels(JsonLogLevels jsonLogLevels) {
         for (JsonLogLevel l : jsonLogLevels.getLogLevels()) {
             changeLogLevel(l.getLoggerName(), l.getLoggerLevel());
