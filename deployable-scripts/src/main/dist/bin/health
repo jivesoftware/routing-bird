@@ -9,4 +9,3 @@ if [ $SSL = "true" ]; then
 else
     cd $APP_ROOT && curl -s http://localhost:${PORT}/manage/health
 fi
-exit 0;

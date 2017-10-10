@@ -11,4 +11,3 @@ fi
 if [ ! -d $VAR_LOG ]; then
     mkdir -p $VAR_LOG
 fi
-exit 0;

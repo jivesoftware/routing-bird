@@ -10,8 +10,7 @@ INSTANCE_VERSION=`grep InstanceConfig_default_version $APP_ROOT/config/instance.
 
 function build_plugin_classpath() {
     CP=""
-    for JAR in $APP_ROOT/plugin-lib/*.*;
-    do
+    for JAR in $APP_ROOT/plugin-lib/*.*; do
       if [ "${CP}x" != "x" ]; then
         CP="${CP}:"
       fi
@@ -20,12 +19,13 @@ function build_plugin_classpath() {
     echo $CP
 }
 
-PLUGIN_CLASSPATH=$(build_plugin_classpath);
-echo "Generating default config...."
-# echo "classpath="${DEPLOYABLE_ARTIFACT}:${CLASSPATH}:${PLUGIN_CLASSPATH}
-# echo "plugin-classpath="${PLUGIN_CLASSPATH}
+echo "Generating default config..."
+PLUGIN_CLASSPATH=$(build_plugin_classpath)
 cd $APP_ROOT && $JAVA_HOME/bin/java \
   -cp ${DEPLOYABLE_ARTIFACT}:${CLASSPATH}:${PLUGIN_CLASSPATH} \
-  com.jivesoftware.os.routing.bird.deployable.config.extractor.ConfigExtractor ${CONFIG_HOST} ${CONFIG_PORT} ${INSTANCE_KEY} ${INSTANCE_VERSION} /upenaConfig/set /upenaConfig/get com.jivesoftware 
-echo "Generated default config."
-exit 0;
+  com.jivesoftware.os.routing.bird.deployable.config.extractor.ConfigExtractor \
+  ${CONFIG_HOST} ${CONFIG_PORT} \
+  ${INSTANCE_KEY} ${INSTANCE_VERSION} \
+  /upenaConfig/set /upenaConfig/get com.jivesoftware
+
+echo "Generated default config"

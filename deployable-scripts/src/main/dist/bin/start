@@ -7,7 +7,6 @@ LOG4J=file://${APP_ROOT}/etc/log4j2.xml
 LOG_PATH=${APP_ROOT}/var/log
 SERVICE_NAME=$(basename $APP_ROOT);
 
-
 CLASSPATH=`grep classpath $APP_ROOT/lib/build.properties | sed -e 's/[^=]*=//' | sed 's/\\\\//g'`
 DEPLOYABLE_ARTIFACT=`grep deployable.artifact $APP_ROOT/lib/build.properties | sed -e 's/[^=]*=//'`
 JAVA_MAIN=`grep "java.main" $APP_ROOT/lib/build.properties | sed -e 's/[^=]*=//'`
@@ -17,7 +16,7 @@ JMX_PORT=`grep InstanceConfig_default_jmxPort $APP_ROOT/config/config.properties
 
 JMX=""
 if [ "$JMX_ADDRESS" != "" ]; then
-    JMX="-Dcom.sun.management.jmxremote.port=${JMX_PORT} -Dcom.sun.management.jmxremote.rmi.port=${JMX_PORT} -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false  -Dcom.sun.management.jmxremote.host=${JMX_ADDRESS}"
+    JMX="-Dcom.sun.management.jmxremote.port=${JMX_PORT} -Dcom.sun.management.jmxremote.rmi.port=${JMX_PORT} -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.host=${JMX_ADDRESS}"
 fi
 
 DEBUG_ADDRESS=`grep InstanceConfig_default_debugAddress $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`
@@ -29,8 +28,7 @@ if [ "$DEBUG_ADDRESS" != "" ]; then
 fi
 
 JAVA_XMX="-Xmx"`grep JavaStartupConfig_default_xmx $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//'`"m"
-if [ "$JAVA_XMX" = "-Xmx0m" ];
-then
+if [ "$JAVA_XMX" = "-Xmx0m" ]; then
     JAVA_XMX="";
 fi
 
@@ -39,19 +37,14 @@ if [ "$JAVA_XMS" = "-Xms0m" ]; then
     JAVA_XMS="";
 fi
 
-JAVA_FLAGS=`grep JavaStartupConfig_default_flags $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//' | tr -d '\\'`
+JAVA_FLAGS=`grep JavaStartupConfig_default_flags $APP_ROOT/config/config.properties | sed -e 's/[^=]*=//' | tr -d '\\\\'`
 
-
-# is the service already running?
-if ps -efwww | grep -v grep | grep "\-DserviceName="${SERVICE_NAME} > /dev/null
-then
+if ps -ef | grep -v grep | grep "\-DserviceName="${SERVICE_NAME} > /dev/null; then
     echo "$SERVICE_NAME service running"
-    exit 0
+    exit
 fi
 
-echo "starting serviceNamed="$SERVICE_NAME
-
-DATE_SUFFIX="-$(/bin/date +%Y-%m-%d_%H%M%S)"
+echo "Starting serviceNamed="$SERVICE_NAME
 
 function build_plugin_classpath() {
     CP=""
@@ -65,9 +58,9 @@ function build_plugin_classpath() {
     echo $CP
 }
 
+DATE_SUFFIX="-$(/bin/date +%Y-%m-%d_%H%M%S)"
 PLUGIN_CLASSPATH=$(build_plugin_classpath);
 
-# start java process
 echo "java.classpath="${CLASSPATH}:${PLUGIN_CLASSPATH}
 echo "java.artifact="${DEPLOYABLE_ARTIFACT}
 echo "java.main="${JAVA_MAIN}
@@ -75,23 +68,23 @@ echo "java.xmx="${JAVA_XMX}
 echo "java.xms="${JAVA_XMS}
 echo "java.flags="${JAVA_FLAGS}
 
-
-cd $APP_ROOT && nohup $JAVA_HOME/bin/java \
-  -DserviceName=${SERVICE_NAME} \
-  -cp ${DEPLOYABLE_ARTIFACT}:${CLASSPATH}:${PLUGIN_CLASSPATH} \
-  ${JAVA_FLAGS} \
-  ${JAVA_XMS} \
-  ${JAVA_XMX} \
-  -server \
-  -ea \
-  -Dsun.net.inetaddr.ttl=30 \
-  -XX:+PrintGCDetails -XX:+PrintGCDateStamps \
-  -Xloggc:${LOG_PATH}/gc${DATE_SUFFIX}.log -XX:OnOutOfMemoryError="kill -9 %p" \
-  ${JMX} \
-  -Dlog4j.configurationFile=${LOG4J} \
-  -Dlog.dir=${LOG_PATH} \
-  -Dlog.name=service.log \
-  ${DEBUG} \
-  ${JAVA_MAIN} config/config.properties >> ${LOG_PATH}/stdout.log 2>&1 &
-
-exit 0
+cd $APP_ROOT
+nohup $JAVA_HOME/bin/java \
+    -DserviceName=${SERVICE_NAME} \
+    -cp ${DEPLOYABLE_ARTIFACT}:${CLASSPATH}:${PLUGIN_CLASSPATH} \
+    ${JAVA_FLAGS} \
+    ${JAVA_XMS} \
+    ${JAVA_XMX} \
+    -server \
+    -ea \
+    -Dsun.net.inetaddr.ttl=30 \
+    -XX:+PrintGCDetails -XX:+PrintGCDateStamps \
+    -Xloggc:${LOG_PATH}/gc${DATE_SUFFIX}.log \
+    -XX:OnOutOfMemoryError="kill -9 %p" \
+    ${JMX} \
+    -Dlog4j.configurationFile=${LOG4J} \
+    -Dlog.dir=${LOG_PATH} \
+    -Dlog.name=service.log \
+    ${DEBUG} \
+    ${JAVA_MAIN} config/config.properties >> ${LOG_PATH}/stdout.log 2>&1 &
+echo "Started $!"
