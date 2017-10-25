@@ -49,21 +49,19 @@ public class LogLevelRestEndpoints {
     @Path("/listLogLevels")
     public Response listLogLevels() {
         StringBuilder sb = new StringBuilder();
-        for (JsonLogLevel l : getLogLevels("null").getLogLevels()) {
+        for (JsonLogLevel l : getLogLevels().getLogLevels()) {
             sb.append(l.getLoggerName()).append('=').append(l.getLoggerLevel()).append('\n');
         }
         return Response.ok(sb.toString(), MediaType.TEXT_PLAIN).build();
     }
 
     @GET
-    @Consumes("application/json")
     @Path("/setLogLevel")
-    public Response setLogLevel(
-        @QueryParam("logger") @DefaultValue("") String loggerName,
+    public Response setLogLevel(@QueryParam("logger") @DefaultValue("") String loggerName,
         @QueryParam("level") @DefaultValue("null") String loggerLevel) {
 
         changeLogLevel(loggerName, loggerLevel);
-        return Response.ok(loggerName + " set to " + loggerLevel, MediaType.TEXT_PLAIN).build();
+        return Response.ok(loggerName + " set to " + loggerLevel + "\n", MediaType.TEXT_PLAIN).build();
     }
 
     private void changeLogLevel(String loggerName, String loggerLevel) {
@@ -103,11 +101,9 @@ public class LogLevelRestEndpoints {
     }
 
     @POST
-    @Consumes("application/json")
     @Path("/getLevels")
     @Produces("application/json")
-    public JsonLogLevels getLogLevels(String tenantId) {
-
+    public JsonLogLevels getLogLevels() {
         List<JsonLogLevel> logLevels = new ArrayList<>();
 
         Logger rootLogger = LogManager.getRootLogger();
@@ -121,7 +117,7 @@ public class LogLevelRestEndpoints {
             LOG.warn("Cannot get log level because root logger is not an instance of org.apache.logging.log4j.core.Logger");
         }
         addToLogLevels(rootLogger, logLevels);
-        return new JsonLogLevels(tenantId, logLevels);
+        return new JsonLogLevels(logLevels);
     }
 
     private void addToLogLevels(Logger logger,
@@ -131,7 +127,7 @@ public class LogLevelRestEndpoints {
     }
 
     @POST
-    @Consumes("application/json")
+    @Consumes(MediaType.APPLICATION_JSON)
     @Path("/setLogLevels")
     public void setLogLevels(JsonLogLevels jsonLogLevels) {
         for (JsonLogLevel l : jsonLogLevels.getLogLevels()) {

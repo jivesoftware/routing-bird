@@ -17,26 +17,16 @@ package com.jivesoftware.os.routing.bird.endpoints.logging.level;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
-/**
- *
- */
 public class JsonLogLevels {
 
-    private final String tenantId;
     private final List<JsonLogLevel> logLevels;
 
     @JsonCreator
-    public JsonLogLevels(@JsonProperty(value = "tenantId") String tenantId,
-        @JsonProperty(value = "logLevels") List<JsonLogLevel> logLevels) {
-
-        this.tenantId = tenantId;
+    public JsonLogLevels(@JsonProperty(value = "logLevels") List<JsonLogLevel> logLevels) {
         this.logLevels = logLevels;
-    }
-
-    public String getTenantId() {
-        return tenantId;
     }
 
     public List<JsonLogLevel> getLogLevels() {
@@ -57,22 +47,19 @@ public class JsonLogLevels {
         if (logLevels != null ? !logLevels.equals(that.logLevels) : that.logLevels != null) {
             return false;
         }
-        if (tenantId != null ? !tenantId.equals(that.tenantId) : that.tenantId != null) {
-            return false;
-        }
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = tenantId != null ? tenantId.hashCode() : 0;
-        result = 31 * result + (logLevels != null ? logLevels.hashCode() : 0);
+        int result = logLevels != null ? logLevels.hashCode() : 0;
         return result;
     }
 
     @Override
     public String toString() {
-        return "JsonLogLevels{" + "tenantId=" + tenantId + ", logLevels=" + logLevels + '}';
+        return "JsonLogLevels{" + "logLevels=" + logLevels + '}';
     }
+
 }
