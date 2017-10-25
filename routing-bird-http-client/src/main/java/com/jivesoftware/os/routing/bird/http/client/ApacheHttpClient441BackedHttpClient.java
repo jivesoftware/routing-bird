@@ -19,6 +19,7 @@ import com.jivesoftware.os.mlogger.core.MetricLogger;
 import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
 import com.jivesoftware.os.routing.bird.shared.HttpClientException;
 import com.jivesoftware.os.routing.bird.shared.HttpClientPoolStats;
+
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -29,6 +30,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+
 import oauth.signpost.exception.OAuthCommunicationException;
 import oauth.signpost.exception.OAuthExpectationFailedException;
 import oauth.signpost.exception.OAuthMessageSignerException;
@@ -52,16 +54,15 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.pool.ConnPoolControl;
 import org.apache.http.pool.PoolStats;
 
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+
 class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger(true);
 
     private static final int JSON_POST_LOG_LENGTH_LIMIT = 2048;
     private static final String TIMER_NAME = "OutboundHttpRequest";
-
-    public static final String CONTENT_TYPE_HEADER_NAME = "Content-Type";
-    public static final String APPLICATION_JSON_CONTENT_TYPE = "application/json";
-    public static final String APPLICATION_OCTET_STREAM_TYPE = "application/octet-stream";
 
     private final String scheme;
     private final String host;
@@ -81,7 +82,6 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         Closeable onClose,
         ConnPoolControl<HttpRoute> connPoolControl,
         Map<String, String> headersForEveryRequest) {
-
         this.scheme = scheme;
         this.host = host;
         this.port = port;
@@ -126,23 +126,23 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     }
 
     private String clientToString() {
-        return client.toString(); //TODO
+        return scheme + "://" + host + ':' + port;
     }
 
-    private HttpStreamResponse executePostJsonStreamingResponse(HttpEntityEnclosingRequestBase requestBase, String jsonBody, Map<String, String> headers)
-        throws HttpClientException {
+    private HttpStreamResponse executePostJsonStreamingResponse(HttpEntityEnclosingRequestBase requestBase,
+        String jsonBody,
+        Map<String, String> headers) throws HttpClientException {
         try {
             setRequestHeaders(headers, requestBase);
-
             requestBase.setEntity(new StringEntity(jsonBody, ContentType.APPLICATION_JSON));
-            requestBase.addHeader(CONTENT_TYPE_HEADER_NAME, APPLICATION_JSON_CONTENT_TYPE);
+            requestBase.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
             return executeStream(requestBase);
         } catch (IOException | UnsupportedCharsetException | OAuthCommunicationException | OAuthExpectationFailedException |
             OAuthMessageSignerException e) {
             String trimmedMethodBody = (jsonBody.length() > JSON_POST_LOG_LENGTH_LIMIT)
                 ? jsonBody.substring(0, JSON_POST_LOG_LENGTH_LIMIT) : jsonBody;
-            throw new HttpClientException("Error executing " + requestBase.getMethod() + " request to: "
-                + clientToString() + " path: " + requestBase.getURI().getPath() + " JSON body: " + trimmedMethodBody, e);
+            throw new HttpClientException("Error executing " + requestBase.getMethod() + " request " +
+                "to:" + clientToString() + "/" + requestBase.getURI().getPath() + " body:" + trimmedMethodBody, e);
         }
     }
 
@@ -150,20 +150,19 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         OAuthExpectationFailedException,
         OAuthCommunicationException,
         IOException {
-
         applyHeadersCommonToAllRequests(requestBase);
-
         activeCount.incrementAndGet();
         CloseableHttpResponse response = client.execute(requestBase);
         StatusLine statusLine = response.getStatusLine();
+
         int status = statusLine.getStatusCode();
-        LOG.debug("Got status: {} {}", status, statusLine.getReasonPhrase());
         if (status < 200 || status >= 300) {
             activeCount.decrementAndGet();
             HttpClientUtils.closeQuietly(response);
             requestBase.reset();
             throw new IOException("Bad status : " + statusLine);
         }
+
         return new HttpStreamResponse(statusLine.getStatusCode(),
             statusLine.getReasonPhrase(),
             response,
@@ -175,28 +174,24 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     @Override
     public HttpResponse get(String path, Map<String, String> headers) throws HttpClientException {
         HttpGet get = new HttpGet(toURI(path));
-
         setRequestHeaders(headers, get);
-
         try {
             return execute(get);
         } catch (IOException | OAuthCommunicationException | OAuthExpectationFailedException | OAuthMessageSignerException e) {
-            throw new HttpClientException("Error executing GET request to: " + clientToString()
-                + " path: " + path, e);
+            throw new HttpClientException("Error executing GET request " +
+                "to:" + clientToString() + "/" + path, e);
         }
     }
 
     @Override
     public HttpResponse delete(String path, Map<String, String> headers) throws HttpClientException {
         HttpDelete delete = new HttpDelete(toURI(path));
-
         setRequestHeaders(headers, delete);
-
         try {
             return execute(delete);
         } catch (IOException | OAuthCommunicationException | OAuthExpectationFailedException | OAuthMessageSignerException e) {
-            throw new HttpClientException("Error executing GET request to: " + clientToString()
-                + " path: " + path, e);
+            throw new HttpClientException("Error executing GET request " +
+                "to:" + clientToString() + "/" + path, e);
         }
     }
 
@@ -204,17 +199,15 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     public HttpResponse postJson(String path, String postJsonBody, Map<String, String> headers) throws HttpClientException {
         try {
             HttpPost post = new HttpPost(toURI(path));
-
             setRequestHeaders(headers, post);
-
             post.setEntity(new StringEntity(postJsonBody, ContentType.APPLICATION_JSON));
-            post.setHeader(CONTENT_TYPE_HEADER_NAME, APPLICATION_JSON_CONTENT_TYPE);
+            post.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
             return execute(post);
         } catch (IOException | UnsupportedCharsetException | OAuthCommunicationException | OAuthExpectationFailedException | OAuthMessageSignerException e) {
             String trimmedPostBody = (postJsonBody.length() > JSON_POST_LOG_LENGTH_LIMIT)
                 ? postJsonBody.substring(0, JSON_POST_LOG_LENGTH_LIMIT) : postJsonBody;
-            throw new HttpClientException("Error executing POST request to: "
-                + clientToString() + " path: " + path + " JSON body: " + trimmedPostBody, e);
+            throw new HttpClientException("Error executing POST json request " +
+                "to:" + clientToString() + "/" + path + " body:" + trimmedPostBody, e);
         }
     }
 
@@ -222,15 +215,13 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     public HttpResponse postBytes(String path, byte[] postBytes, Map<String, String> headers) throws HttpClientException {
         try {
             HttpPost post = new HttpPost(toURI(path));
-
             setRequestHeaders(headers, post);
-
             post.setEntity(new ByteArrayEntity(postBytes, ContentType.APPLICATION_OCTET_STREAM));
-            post.setHeader(CONTENT_TYPE_HEADER_NAME, APPLICATION_OCTET_STREAM_TYPE);
+            post.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM);
             return execute(post);
         } catch (IOException | OAuthCommunicationException | OAuthExpectationFailedException | OAuthMessageSignerException e) {
-            throw new HttpClientException("Error executing POST request to: "
-                + clientToString() + " path: " + path + " JSON body of length: " + postBytes.length, e);
+            throw new HttpClientException("Error executing POST bytes request " +
+                "to:" + clientToString() + "/" + path + " byte length:" + postBytes.length, e);
         }
     }
 
@@ -240,14 +231,13 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         Map<String, String> headers) throws HttpClientException {
         try {
             HttpPost post = new HttpPost(toURI(path));
-
             setRequestHeaders(headers, post);
             post.setEntity(new StreamableEntity(streamable));
-            post.setHeader(CONTENT_TYPE_HEADER_NAME, APPLICATION_OCTET_STREAM_TYPE);
+            post.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM);
             return executeStream(post);
         } catch (IOException | OAuthCommunicationException | OAuthExpectationFailedException | OAuthMessageSignerException e) {
-            throw new HttpClientException("Error executing POST request to: "
-                + clientToString() + " path: " + path + " streamable: " + streamable, e);
+            throw new HttpClientException("Error executing POST request " +
+                "to:" + clientToString() + "/" + path + " streamable:" + streamable, e);
         }
     }
 
@@ -255,19 +245,17 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
     public HttpResponse postStreamableRequest(String path, StreamableRequest streamable, Map<String, String> headers) throws HttpClientException {
         try {
             HttpPost post = new HttpPost(toURI(path));
-
             setRequestHeaders(headers, post);
             post.setEntity(new StreamableEntity(streamable));
-            post.setHeader(CONTENT_TYPE_HEADER_NAME, APPLICATION_OCTET_STREAM_TYPE);
+            post.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM);
             return execute(post);
         } catch (IOException | OAuthCommunicationException | OAuthExpectationFailedException | OAuthMessageSignerException e) {
-            throw new HttpClientException("Error executing POST request to: "
-                + clientToString() + " path: " + path + " streamable: " + streamable, e);
+            throw new HttpClientException("Error executing POST request " +
+                "to:" + clientToString() + "/" + path + " streamable:" + streamable, e);
         }
     }
 
     static class StreamableEntity implements HttpEntity {
-
         private final StreamableRequest streamable;
 
         public StreamableEntity(StreamableRequest streamable) {
@@ -291,7 +279,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
         @Override
         public Header getContentType() {
-            return new BasicHeader(CONTENT_TYPE_HEADER_NAME, APPLICATION_OCTET_STREAM_TYPE);
+            return new BasicHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM);
         }
 
         @Override
@@ -317,7 +305,6 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         @Override
         public void consumeContent() throws IOException {
         }
-
     }
 
     @Override
@@ -332,12 +319,10 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         OAuthMessageSignerException,
         OAuthExpectationFailedException,
         OAuthCommunicationException {
-
         applyHeadersCommonToAllRequests(requestBase);
-
         byte[] responseBody;
         StatusLine statusLine = null;
-        if (LOG.isInfoEnabled()) {
+        if (LOG.isTraceEnabled()) {
             LOG.startTimer(TIMER_NAME);
         }
 
@@ -355,24 +340,33 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
             responseBody = outputStream.toByteArray();
             statusLine = response.getStatusLine();
             return new HttpResponse(statusLine.getStatusCode(), statusLine.getReasonPhrase(), responseBody);
-
         } finally {
             if (response != null) {
                 HttpClientUtils.closeQuietly(response);
             }
             requestBase.reset();
             activeCount.decrementAndGet();
-            if (LOG.isInfoEnabled()) {
+            if (LOG.isTraceEnabled()) {
                 long elapsedTime = LOG.stopTimer(TIMER_NAME);
                 StringBuilder httpInfo = new StringBuilder();
                 if (statusLine != null) {
-                    httpInfo.append("Outbound ").append(statusLine.getProtocolVersion()).append(" Status ").append(statusLine.getStatusCode());
+                    httpInfo
+                        .append("Outbound ")
+                        .append(statusLine.getProtocolVersion())
+                        .append(" Status ")
+                        .append(statusLine.getStatusCode());
                 } else {
                     httpInfo.append("Exception sending request");
                 }
-                httpInfo.append(" in ").append(elapsedTime).append(" ms ").append(requestBase.getMethod()).append(" ")
-                    .append(client).append(requestBase.getURI());
-                LOG.debug(httpInfo.toString());
+                httpInfo
+                    .append(" in ")
+                    .append(elapsedTime)
+                    .append(" ms ")
+                    .append(requestBase.getMethod())
+                    .append(" ")
+                    .append(client)
+                    .append(requestBase.getURI());
+                LOG.trace(httpInfo.toString());
             }
         }
     }
@@ -387,7 +381,6 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
 
     private void applyHeadersCommonToAllRequests(HttpRequestBase requestBase) throws OAuthMessageSignerException,
         OAuthExpectationFailedException, OAuthCommunicationException {
-
         for (Map.Entry<String, String> headerEntry : headersForEveryRequest.entrySet()) {
             requestBase.setHeader(headerEntry.getKey(), headerEntry.getValue());
         }
