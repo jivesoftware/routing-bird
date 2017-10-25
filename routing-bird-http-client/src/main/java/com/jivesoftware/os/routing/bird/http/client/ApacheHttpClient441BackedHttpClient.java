@@ -125,8 +125,8 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
         return executePostJsonStreamingResponse(new HttpPost(toURI(path)), postJsonBody, headers);
     }
 
-    private String clientToString() {
-        return scheme + "://" + host + ':' + port;
+    private String clientPathToString(String path) {
+        return scheme + "://" + host + ':' + port + (path.startsWith("/") ? path : '/' + path);
     }
 
     private HttpStreamResponse executePostJsonStreamingResponse(HttpEntityEnclosingRequestBase requestBase,
@@ -142,7 +142,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
             String trimmedMethodBody = (jsonBody.length() > JSON_POST_LOG_LENGTH_LIMIT)
                 ? jsonBody.substring(0, JSON_POST_LOG_LENGTH_LIMIT) : jsonBody;
             throw new HttpClientException("Error executing " + requestBase.getMethod() + " request " +
-                "to:" + clientToString() + "/" + requestBase.getURI().getPath() + " body:" + trimmedMethodBody, e);
+                "to " + clientPathToString(requestBase.getURI().getPath()) + " body:" + trimmedMethodBody, e);
         }
     }
 
@@ -179,7 +179,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
             return execute(get);
         } catch (IOException | OAuthCommunicationException | OAuthExpectationFailedException | OAuthMessageSignerException e) {
             throw new HttpClientException("Error executing GET request " +
-                "to:" + clientToString() + "/" + path, e);
+                "to " + clientPathToString(path), e);
         }
     }
 
@@ -191,7 +191,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
             return execute(delete);
         } catch (IOException | OAuthCommunicationException | OAuthExpectationFailedException | OAuthMessageSignerException e) {
             throw new HttpClientException("Error executing GET request " +
-                "to:" + clientToString() + "/" + path, e);
+                "to " + clientPathToString(path), e);
         }
     }
 
@@ -207,7 +207,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
             String trimmedPostBody = (postJsonBody.length() > JSON_POST_LOG_LENGTH_LIMIT)
                 ? postJsonBody.substring(0, JSON_POST_LOG_LENGTH_LIMIT) : postJsonBody;
             throw new HttpClientException("Error executing POST json request " +
-                "to:" + clientToString() + "/" + path + " body:" + trimmedPostBody, e);
+                "to " + clientPathToString(path) + " body:" + trimmedPostBody, e);
         }
     }
 
@@ -221,7 +221,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
             return execute(post);
         } catch (IOException | OAuthCommunicationException | OAuthExpectationFailedException | OAuthMessageSignerException e) {
             throw new HttpClientException("Error executing POST bytes request " +
-                "to:" + clientToString() + "/" + path + " byte length:" + postBytes.length, e);
+                "to " + clientPathToString(path) + " byte length:" + postBytes.length, e);
         }
     }
 
@@ -236,8 +236,8 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
             post.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM);
             return executeStream(post);
         } catch (IOException | OAuthCommunicationException | OAuthExpectationFailedException | OAuthMessageSignerException e) {
-            throw new HttpClientException("Error executing POST request " +
-                "to:" + clientToString() + "/" + path + " streamable:" + streamable, e);
+            throw new HttpClientException("Error executing streaming POST request " +
+                "to " + clientPathToString(path) + " streamable:" + streamable, e);
         }
     }
 
@@ -251,7 +251,7 @@ class ApacheHttpClient441BackedHttpClient implements HttpClient {
             return execute(post);
         } catch (IOException | OAuthCommunicationException | OAuthExpectationFailedException | OAuthMessageSignerException e) {
             throw new HttpClientException("Error executing POST request " +
-                "to:" + clientToString() + "/" + path + " streamable:" + streamable, e);
+                "to " + clientPathToString(path) + " streamable:" + streamable, e);
         }
     }
 
