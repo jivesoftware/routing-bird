@@ -3,7 +3,6 @@ package com.jivesoftware.os.routing.bird.health.api;
 import org.merlin.config.defaults.LongDefault;
 
 /**
- *
  * @author jonathan.colt
  */
 public interface MinMaxHealthCheckConfig extends HealthCheckConfig {

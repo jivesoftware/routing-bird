@@ -34,17 +34,16 @@ public class PercentileHealthChecker implements HealthChecker<Double>, Resettabl
     }
 
     @Override
-    public HealthCheckResponse checkHealth() throws Exception {
-
+    public HealthCheckResponse checkHealth() {
         double health = 1.0f;
         if (total.longValue()> 0) {
             health = Math.min(health, HealthCheckUtil.zeroToOne(config.getMeanMax(), 0, dstat.getMean()));
             health = Math.min(health, HealthCheckUtil.zeroToOne(config.getVarianceMax(), 0, Math.abs(dstat.getVariance())));
-            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get50ThPecentileMax(), 0, dstat.getPercentile(50)));
-            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get75ThPecentileMax(), 0, dstat.getPercentile(75)));
-            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get90ThPecentileMax(), 0, dstat.getPercentile(90)));
-            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get95ThPecentileMax(), 0, dstat.getPercentile(95)));
-            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get99ThPecentileMax(), 0, dstat.getPercentile(99)));
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get50ThPercentileMax(), 0, dstat.getPercentile(50)));
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get75ThPercentileMax(), 0, dstat.getPercentile(75)));
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get90ThPercentileMax(), 0, dstat.getPercentile(90)));
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get95ThPercentileMax(), 0, dstat.getPercentile(95)));
+            health = Math.min(health, HealthCheckUtil.zeroToOne(config.get99ThPercentileMax(), 0, dstat.getPercentile(99)));
         }
         return new HealthCheckResponseImpl(config.getName(),
             Math.max(health, 0f),
@@ -52,7 +51,6 @@ public class PercentileHealthChecker implements HealthChecker<Double>, Resettabl
             config.getDescription(),
             config.getResolution(),
             System.currentTimeMillis());
-
     }
 
     @Override

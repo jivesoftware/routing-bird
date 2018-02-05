@@ -83,16 +83,16 @@ public class TimerHealthChecker implements HealthChecker<Timer>, ResettableHealt
         }
 
         @Override
-        public HealthCheckResponse call() throws Exception {
+        public HealthCheckResponse call() {
             double health = 1.0f;
             if (timer.getSampleCount() > 0) {
                 health = Math.min(health, HealthCheckUtil.zeroToOne(config.getMeanMax(), 0, timer.getMean()));
                 health = Math.min(health, HealthCheckUtil.zeroToOne(config.getVarianceMax(), 0, Math.abs(timer.getVariance())));
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get50ThPecentileMax(), 0, timer.get50ThPercentile()));
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get75ThPecentileMax(), 0, timer.get75ThPercentile()));
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get90ThPecentileMax(), 0, timer.get90ThPercentile()));
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get95ThPecentileMax(), 0, timer.get95ThPercentile()));
-                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get99ThPecentileMax(), 0, timer.get99ThPercentile()));
+                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get50ThPercentileMax(), 0, timer.get50ThPercentile()));
+                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get75ThPercentileMax(), 0, timer.get75ThPercentile()));
+                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get90ThPercentileMax(), 0, timer.get90ThPercentile()));
+                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get95ThPercentileMax(), 0, timer.get95ThPercentile()));
+                health = Math.min(health, HealthCheckUtil.zeroToOne(config.get99ThPercentileMax(), 0, timer.get99ThPercentile()));
             }
             return new HealthCheckResponseImpl(config.getName(), Math.max(health, 0f), healthString(timer), description, resolution, time);
         }

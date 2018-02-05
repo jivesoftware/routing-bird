@@ -3,9 +3,8 @@ package com.jivesoftware.os.routing.bird.health.api;
 import com.jivesoftware.os.routing.bird.health.HealthCheck;
 
 /**
- *
- * @author jonathan.colt
  * @param <C>
+ * @author jonathan.colt
  */
 public interface HealthChecker<C> extends HealthCheck {
 

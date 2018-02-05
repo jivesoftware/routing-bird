@@ -4,13 +4,9 @@ import org.merlin.config.defaults.DoubleDefault;
 import org.merlin.config.defaults.IntDefault;
 
 /**
- *
  * @author jonathan.colt
  */
 public interface TimerHealthCheckConfig extends HealthCheckConfig {
-
-    @IntDefault(500)
-    Integer getSampleWindowSize();
 
     @DoubleDefault(Double.MAX_VALUE)
     Double getMeanMax();
@@ -19,18 +15,18 @@ public interface TimerHealthCheckConfig extends HealthCheckConfig {
     Double getVarianceMax();
 
     @DoubleDefault(Double.MAX_VALUE)
-    Double get50ThPecentileMax();
+    Double get50ThPercentileMax();
 
     @DoubleDefault(Double.MAX_VALUE)
-    Double get75ThPecentileMax();
+    Double get75ThPercentileMax();
 
     @DoubleDefault(Double.MAX_VALUE)
-    Double get90ThPecentileMax();
+    Double get90ThPercentileMax();
 
     @DoubleDefault(Double.MAX_VALUE)
-    Double get95ThPecentileMax();
+    Double get95ThPercentileMax();
 
     @DoubleDefault(Double.MAX_VALUE)
-    Double get99ThPecentileMax();
+    Double get99ThPercentileMax();
 
 }

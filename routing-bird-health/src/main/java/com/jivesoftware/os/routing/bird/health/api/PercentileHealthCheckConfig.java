@@ -5,7 +5,6 @@ import org.merlin.config.defaults.IntDefault;
 import org.merlin.config.defaults.StringDefault;
 
 /**
- *
  * @author jonathan.colt
  */
 public interface PercentileHealthCheckConfig extends HealthCheckConfig {
@@ -14,7 +13,6 @@ public interface PercentileHealthCheckConfig extends HealthCheckConfig {
     String getResolution();
 
     void setResolution(String resolution);
-
 
     @IntDefault(500)
     Integer getSampleWindowSize();
@@ -26,18 +24,18 @@ public interface PercentileHealthCheckConfig extends HealthCheckConfig {
     Double getVarianceMax();
 
     @DoubleDefault(Double.MAX_VALUE)
-    Double get50ThPecentileMax();
+    Double get50ThPercentileMax();
 
     @DoubleDefault(Double.MAX_VALUE)
-    Double get75ThPecentileMax();
+    Double get75ThPercentileMax();
 
     @DoubleDefault(Double.MAX_VALUE)
-    Double get90ThPecentileMax();
+    Double get90ThPercentileMax();
 
     @DoubleDefault(Double.MAX_VALUE)
-    Double get95ThPecentileMax();
+    Double get95ThPercentileMax();
 
     @DoubleDefault(Double.MAX_VALUE)
-    Double get99ThPecentileMax();
+    Double get99ThPercentileMax();
 
 }
